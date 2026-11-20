@@ -1980,6 +1980,73 @@ body:has(#jpop .jpbox.talk) #jpop .jst-k{top:104px}
 #opn.blink .op-lid.a,#opn.blink .op-lid.b{animation:opLid2 3.4s ease-in-out both}
 @keyframes opLid2{0%{height:82%}30%{height:46%}47%{height:82%}100%{height:0}}
 body.rm .op-bg.wd{transform:translateY(-50%)!important}
+
+
+#fsbtn{position:fixed;right:10px;bottom:10px;z-index:500;width:36px;height:36px;display:grid;place-items:center;padding:0;background:rgba(6,8,13,.55);border:1px solid rgba(214,226,238,.35);color:#e6e0d0;cursor:pointer;opacity:.55;transition:opacity .2s,border-color .2s}
+#fsbtn svg{width:18px;height:18px}
+#fsbtn:hover,#fsbtn:focus-visible{opacity:1;border-color:#fff;color:#fff;outline:0}
+#fstip{position:fixed;right:56px;bottom:10px;z-index:500;max-width:340px;padding:10px 14px;background:rgba(7,8,12,.94);border:1px solid rgba(214,226,238,.45);color:#f1ece0;font:400 14px/1.4 var(--body)}
+
+/* v126 artwork changes by a plain cross-fade: no zoom or slide on pictures */
+@keyframes chBg{from{opacity:1}to{opacity:1}}
+@keyframes jstShot{from{opacity:0}to{opacity:1}}
+.op-bg,.op-bg.on,.op-bg.out{transform:none!important;transition:opacity .9s ease!important}
+.op-bg.wd,.op-bg.wd.on,.op-bg.wd.out{transform:translateY(-50%)!important}
+
+/* v128 panoramas sit in the same band as the narration bars */
+.jst-shot.wd,.op-bg.wd{height:min(61vh,35vw)!important;top:46.5%!important;background-position:center 55%}
+
+/* v129 */
+.jst[data-bgwd="1"]::before{inset:auto 0;top:46.5%;translate:0 -50%;height:min(61vh,35vw);background-size:cover;background-position:center 55%;background-color:transparent;-webkit-mask-image:linear-gradient(180deg,transparent,#000 13%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 13%,#000 78%,transparent)}
+.jst[data-bgwd="1"]{background:#040405}
+.jst[data-bgwd="1"]::after{background:none}
+/* the duel fills the screen */
+body.induel #top{display:none}
+body.induel .wrap{max-width:none;padding:0!important;gap:0}
+body.induel #view-match{gap:0}
+body.induel .table{border:0;box-shadow:none;min-height:100vh;border-radius:0}
+#duelx{display:none;position:fixed;right:12px;top:12px;z-index:120}
+body.induel #duelx{display:block}
+#duelx button{width:38px;height:38px;display:grid;place-items:center;padding:0;background:rgba(6,8,13,.55);border:1px solid rgba(214,226,238,.35);color:#e6e0d0;cursor:pointer;opacity:.6}
+#duelx button svg{width:20px;height:20px}
+#duelx button:hover,#duelx button:focus-visible{opacity:1;border-color:#fff;outline:0}
+/* victory: glow, runes and light instead of gilt metal */
+#end{background:radial-gradient(ellipse at 50% 40%,rgba(14,18,28,.94),rgba(3,4,7,.98) 70%);backdrop-filter:blur(8px)}
+#end.win{--c:#f0c24a}#end.lose{--c:#f0634a}#end.draw{--c:#cfd6e4}#end.rank{--c:#8fc7d6}
+.orb{width:min(46vh,440px)}
+.orb::before,.orb::after{content:"";position:absolute;inset:-12%;background:url(assets/fx/fx_ring_outer.webp) center/contain no-repeat;filter:drop-shadow(0 0 6px var(--c)) drop-shadow(0 0 22px var(--c));opacity:.85;animation:fxSpin 70s linear infinite;pointer-events:none}
+.orb::after{inset:6%;background-image:url(assets/fx/fx_ring_inner.webp);opacity:.7;animation:fxSpin 48s linear infinite reverse}
+.orb em{display:none}
+.orb i{inset:22%;box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 70%,transparent),0 0 40px color-mix(in srgb,var(--c) 55%,transparent);filter:saturate(.9) brightness(.95)}
+#end .orb i::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(3,4,7,.75))}
+.ban{background:none!important;width:auto;aspect-ratio:auto;margin-top:-18px}
+.ban b{margin:0;font-size:clamp(46px,6vw,76px);letter-spacing:.06em;color:#fff;text-shadow:0 0 18px var(--c),0 0 46px color-mix(in srgb,var(--c) 70%,transparent),0 0 2px #fff}
+.ban::after{content:"";display:block;width:min(420px,70vw);aspect-ratio:1405/177;margin:6px auto 0;background:url(assets/ui/band.webp) center/contain no-repeat;filter:drop-shadow(0 0 4px var(--c)) drop-shadow(0 0 10px var(--c))}
+.endsub{color:#ece6d6!important;font-style:italic}
+.medal span{background:none!important;border:0!important;box-shadow:none!important;position:relative}
+.medal span::before{content:"";position:absolute;inset:-26%;background:url(assets/fx/fx_ring_inner.webp) center/contain no-repeat;filter:drop-shadow(0 0 4px var(--c));opacity:.7;animation:fxSpin 40s linear infinite}
+.medal span img{filter:drop-shadow(0 0 6px var(--c))}
+.medal b{color:#fff!important;text-shadow:0 0 10px var(--c)}
+.medal small{color:#e6e0d0!important;letter-spacing:.16em;text-transform:uppercase}
+.endlist li{color:#ece6d6}
+.endlist li b{color:#fff;text-shadow:0 0 8px var(--c)}
+.endbar u{background:rgba(255,255,255,.08)!important;border:1px solid rgba(214,226,238,.35)!important;box-shadow:none!important}
+.endbar i{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 40%,transparent),var(--c))!important;box-shadow:0 0 12px var(--c)}
+.endrank{color:#e6e0d0!important}
+.gobtn{width:300px;max-width:74vw;aspect-ratio:1319/276;border-radius:0;background:url(assets/ui/button.webp) center/contain no-repeat;filter:drop-shadow(0 0 5px var(--c));position:relative}
+.gobtn img{display:none}
+.gobtn::after{content:"Go on";position:absolute;inset:0;display:grid;place-items:center;font:700 15px/1 var(--body);letter-spacing:.36em;text-indent:.36em;text-transform:uppercase;color:#fff;text-shadow:0 0 8px var(--c)}
+.gobtn:hover,.gobtn:focus-visible{filter:drop-shadow(0 0 6px var(--c)) drop-shadow(0 0 16px var(--c));outline:0}
+body.rm .orb::before,body.rm .orb::after,body.rm .medal span::before{animation:none}
+
+.endbar{background:none!important;aspect-ratio:auto;height:14px;width:min(440px,90%);margin-top:8px}
+.endbar u{left:0;right:0;top:3px;height:8px}
+.orb{width:min(36vh,380px)}
+.medal span img{filter:grayscale(.3) brightness(1.1) drop-shadow(0 0 8px var(--c))}
+
+/* v130 a panorama is never cropped: the band takes the picture's own shape */
+.jst-shot.wd,.op-bg.wd{height:min(82vh,calc(100vw / var(--ar,3)))!important;background-size:100% 100%!important}
+.jst[data-bgwd="1"]::before{height:min(82vh,calc(100vw / var(--bgar,3)));background-size:100% 100%}
 </style>
 </head>
 <body>
@@ -3579,7 +3646,7 @@ function hereHtml(n,st){const d=document.createElement('div');d.innerHTML=sideHt
   const acts=[...d.querySelectorAll('button[data-act]')].filter(b=>!b.disabled&&b.dataset.act!=='jans').map(b=>{let t=b.textContent.trim();if(b.dataset.act==='jduel'&&n.who)t=st.done[n.id]?'Duel '+n.who.n+' again':'Speak to '+n.who.n;return '<button class="jtk-o" data-act="'+b.dataset.act+'" data-v="'+esc(b.dataset.v||'')+'"><b>'+esc(t)+'</b></button>';});
   const two=s=>{const m=String(s||'').match(/[^.!?]+[.!?]+["”]?/g)||[String(s||'')];return m.slice(0,2).join(' ').trim();};
   const line=n.who?n.who.n+', '+String(n.who.role||'').replace(/^[A-Z]/,c=>c.toLowerCase())+'. '+(n.spot||'')+'.':n.kind==='riddle'?(n.spot||''):two(n.text||n.spot);
-  return '<div class="jst" style="--bg:url('+hereBg(n)+')"><div class="jst-box"><div class="jst-say end"><h2 class="jhere-t">'+esc(n.place)+'</h2><p class="jst-l n">'+esc(sFill(line,n))+'</p>'+(INS[n.id]?'<p class="jins">\u201c'+esc(INS[n.id][st.done[n.id]?1:0])+'\u201d</p>':'')+(TAGS[n.id]?'<p class="jst-l n jtag">'+esc(TAGS[n.id])+'</p>':'')+'</div>'
+  return '<div class="jst" data-bgwd="'+(jShot.ok[hereBg(n)]>2?1:0)+'" style="--bg:url('+hereBg(n)+')"><div class="jst-box"><div class="jst-say end"><h2 class="jhere-t">'+esc(n.place)+'</h2><p class="jst-l n">'+esc(sFill(line,n))+'</p>'+(INS[n.id]?'<p class="jins">\u201c'+esc(INS[n.id][st.done[n.id]?1:0])+'\u201d</p>':'')+(TAGS[n.id]?'<p class="jst-l n jtag">'+esc(TAGS[n.id])+'</p>':'')+'</div>'
     +'<div class="jst-foot">'+'<div class="jtk-opts">'+acts.join('')+'<button class="jtk-o" data-act="jtab" data-v="map"><b>Open the map</b></button></div></div></div>'
     +(n.kind==='riddle'?'<aside class="jhere-side jside-p">'+sideHtml(n)+'</aside>':'')+'</div>';}
 const HIC={map:'<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',words:'<rect x="4.5" y="3.5" width="10" height="14" rx="1.5" transform="rotate(-9 9.5 10.5)"/><rect x="9.5" y="6.5" width="10" height="14" rx="1.5"/>',journal:'<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11M9 8.5h6"/>',oracle:'<circle cx="12" cy="10" r="6.5"/><path d="M7.5 19.5h9l-1.4-3H8.9zM9.4 8.2a3 3 0 012.8-2"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',exit:'<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>',back:'<path d="M11 6l-6 6 6 6M5 12h14"/>'};
@@ -3607,15 +3674,16 @@ const XS={reeve:'The cart track into the wood. Smoke between the trunks, and the
 const sh2=(id,k)=>(SHOTS[id]||[]).length===2?'assets/sc/'+id+'_'+k+'.jpg':'';
 const xsU=(id,k)=>'assets/sc/'+id+'_'+k+'.jpg',xsOk=id=>!!XS[id]&&xsGot[id+3]&&xsGot[id+4]&&xsGot[id+5];
 function xsPre(id){if(!XS[id])return;[3,4,5].forEach(k=>{if(xsGot[id+k]!=null)return;xsGot[id+k]=0;const im=new Image();im.onload=()=>{xsGot[id+k]=1;jShot.ok[xsU(id,k)]=(im.naturalWidth/Math.max(1,im.naturalHeight));};im.src=xsU(id,k);});}
-const jShot={cur:'',ok:{}};function jPre(u){if(!u||jShot.ok[u])return;const im=new Image();im.onload=()=>{jShot.ok[u]=(im.naturalWidth/Math.max(1,im.naturalHeight));};im.src=u;}
-function jstShot(r){let s=[];try{s=JSON.parse(r.dataset.shots||'[]');}catch(e){}if(!s.length)return;s.forEach(jPre);const u=s[Math.min(s.length-1,+r.dataset.i)];if(!u||r.dataset.cur===u)return;r.dataset.want=u;r.dataset.cl=/_2\.jpg$/.test(u)?1:0;const im=new Image();im.onload=()=>{jShot.ok[u]=(im.naturalWidth/Math.max(1,im.naturalHeight));if(r.dataset.want!==u||r.dataset.cur===u||!r.isConnected)return;r.dataset.cur=u;jShot.cur=u;const old=[...r.querySelectorAll('.jst-shot')],l=document.createElement('i');const wd=jShot.ok[u]>2;r.dataset.wd=wd?1:0;l.className='jst-shot in'+(wd?' wd':'');l.style.backgroundImage='url('+u+')';(old[old.length-1]||r.firstChild).after(l);setTimeout(()=>old.forEach(x=>x.remove()),1000);};im.src=u;}
+const jShot={cur:'',ok:{}};function bgwdFix(){document.querySelectorAll('.jst[style*="--bg"]').forEach(r=>{const m=(r.getAttribute('style')||'').match(/--bg:url\(([^)]+)\)/);if(m&&jShot.ok[m[1]]!=null){r.dataset.bgwd=jShot.ok[m[1]]>2?1:0;r.style.setProperty('--bgar',jShot.ok[m[1]]);}});}
+function jPre(u){if(!u||jShot.ok[u])return;const im=new Image();im.onload=()=>{jShot.ok[u]=(im.naturalWidth/Math.max(1,im.naturalHeight));bgwdFix();};im.src=u;}
+function jstShot(r){let s=[];try{s=JSON.parse(r.dataset.shots||'[]');}catch(e){}if(!s.length)return;s.forEach(jPre);const u=s[Math.min(s.length-1,+r.dataset.i)];if(!u||r.dataset.cur===u)return;r.dataset.want=u;r.dataset.cl=/_2\.jpg$/.test(u)?1:0;const im=new Image();im.onload=()=>{jShot.ok[u]=(im.naturalWidth/Math.max(1,im.naturalHeight));if(r.dataset.want!==u||r.dataset.cur===u||!r.isConnected)return;r.dataset.cur=u;jShot.cur=u;const old=[...r.querySelectorAll('.jst-shot')],l=document.createElement('i');const wd=jShot.ok[u]>2;r.dataset.wd=wd?1:0;l.className='jst-shot in'+(wd?' wd':'');l.style.setProperty('--ar',jShot.ok[u]);l.style.backgroundImage='url('+u+')';(old[old.length-1]||r.firstChild).after(l);setTimeout(()=>old.forEach(x=>x.remove()),1000);};im.src=u;}
 function jstShow(r){setTimeout(()=>jstShot(r),0);const i=+r.dataset.i,ls=r.querySelectorAll('.jst-l');ls.forEach((p,k)=>p.hidden=k!==i);const p=ls[i],w=p?p.dataset.who:'n';r.dataset.sp=w;const nm=r.querySelector('.jst-name');nm.hidden=w==='n';if(w!=='n')nm.querySelector('b').textContent=w==='them'?r.dataset.them:w==='fam'?r.dataset.fam:r.dataset.me;const last=i>=ls.length-1;r.querySelector('.jst-foot').hidden=!last;r.querySelector('.jst-more').hidden=last;r.querySelector('.jst-say').classList.toggle('end',last);}
 function jScene(o){const B=o.beats||[],nw=B.findIndex(x=>/new/.test(x.cls||'')),i0=!B.length?0:o.still?(nw>=0?nw:B.length-1):0,cur=B[i0],sp=cur?cur.t:'n',last=i0>=B.length-1,tn=o.them?o.them.name:'',fn=famName(true),mn=meName();
   const fig=(img,cls,fixed)=>'<div class="jst-fig '+cls+'"><img src="'+img+'" alt="" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';this.parentNode.classList.add(\'ph\')}else this.style.visibility=\'hidden\'"></div>';
   if(o.beats&&o.beats.some(b=>b&&b.sh)){let last=o.bg||'';o.shots=o.beats.map(b=>last=(b.sh||last));}
   const _sh=o.shots||[],_u=_sh.length?_sh[Math.min(_sh.length-1,i0)]:'',shot0=_u&&jShot.cur===_u&&jShot.ok[_u]?_u:'';
-  return '<div class="jst'+(o.them?'':' solo')+(/assets\/ev\//.test(o.bg||'')?' wide':'')+'" data-i="'+i0+'" data-sp="'+sp+'" data-them="'+esc(tn)+'" data-me="'+esc(mn)+'" data-fam="'+esc(fn)+'" data-shots="'+esc(JSON.stringify(o.shots||[]))+'"'+(shot0?' data-cur="'+esc(shot0)+'"':'')+' data-wd="'+(shot0&&jShot.ok[shot0]>2?1:0)+'" data-cl="'+(/_2\.jpg$/.test(_u||o.bg||'')?1:0)+'"'+''+(o.bg?' style="--bg:url('+o.bg+')"':'')+'>'
-    +'<i class="jst-shot'+(shot0?' on'+(jShot.ok[shot0]>2?' wd':'')+'" style="background-image:url('+shot0+')':'')+'"></i><i class="jst-bars"></i>'+(o.kicker?'<small class="jst-k" style="--em:url(assets/ui/ch_'+chapNow().em+'.webp)">'+esc(o.kicker)+'</small>':'')+fig(meImg(),'me')+(o.them?fig(o.them.img,'them'):'')
+  return '<div class="jst'+(o.them?'':' solo')+(/assets\/ev\//.test(o.bg||'')?' wide':'')+'" data-i="'+i0+'" data-sp="'+sp+'" data-them="'+esc(tn)+'" data-me="'+esc(mn)+'" data-fam="'+esc(fn)+'" data-shots="'+esc(JSON.stringify(o.shots||[]))+'"'+(shot0?' data-cur="'+esc(shot0)+'"':'')+' data-wd="'+(shot0&&jShot.ok[shot0]>2?1:0)+'" data-cl="'+(/_2\.jpg$/.test(_u||o.bg||'')?1:0)+'"'+''+(o.bg?' data-bgwd="'+(jShot.ok[o.bg]>2?1:0)+'" style="--bg:url('+o.bg+')"':'')+'>'
+    +'<i class="jst-shot'+(shot0?' on'+(jShot.ok[shot0]>2?' wd':'')+'" style="--ar:'+jShot.ok[shot0]+';background-image:url('+shot0+')':'')+'"></i><i class="jst-bars"></i>'+(o.kicker?'<small class="jst-k" style="--em:url(assets/ui/ch_'+chapNow().em+'.webp)">'+esc(o.kicker)+'</small>':'')+fig(meImg(),'me')+(o.them?fig(o.them.img,'them'):'')
     +'<div class="jst-box"><button class="jst-say'+(last?' end':'')+'" data-act="jnext" aria-label="Go on"><span class="jst-name"'+(sp==='n'?' hidden':'')+'><b>'+esc(sp==='them'?tn:sp==='fam'?fn:mn)+'</b></span>'
     +B.map((x,k)=>'<p class="jst-l '+x.t+'" data-who="'+x.t+'"'+(k===i0?'':' hidden')+'>'+esc(x.x)+'</p>').join('')
     +'<span class="jst-more"'+(last?' hidden':'')+' aria-hidden="true">▸</span></button>'
@@ -4121,9 +4189,9 @@ function openRun(){let e=document.getElementById('opn');if(e)return;const st=sSt
 addEventListener('keydown',ev=>{const e=document.getElementById('opn');if(!e)return;if(/INPUT/.test((ev.target||{}).tagName||'')){if(ev.key==='Enter'){ev.preventDefault();const b=e.querySelector('[data-op=name],[data-op=fam]');if(b)b.click();}ev.stopPropagation();return;}if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();opNext();}},true);
 let opCur='';
 function opBg(s,force){const e=document.getElementById('opn');if(!e)return;const [u,stand]=opImg(s.im),key=u+'|'+stand;if(key===opCur&&!force)return;opCur=key;const ls=e.querySelectorAll('.op-bg'),on=e.querySelector('.op-bg.on'),nx=on===ls[0]?ls[1]:ls[0];
-  if(on){on.classList.remove('on');on.classList.add('out');}const wd=typeof s.im==='number'&&opOk[s.im]>2;e.classList.toggle('band',wd);nx.className='op-bg'+(stand?' stand':'')+(wd?' wd':'');nx.style.backgroundImage=u?'url('+u+')':'none';void nx.offsetWidth;nx.classList.add('on');}
+  if(on){on.classList.remove('on');on.classList.add('out');}const wd=typeof s.im==='number'&&opOk[s.im]>2;e.classList.toggle('band',wd);nx.className='op-bg'+(stand?' stand':'')+(wd?' wd':'');if(wd)nx.style.setProperty('--ar',opOk[s.im]);nx.style.backgroundImage=u?'url('+u+')':'none';void nx.offsetWidth;nx.classList.add('on');}
 function opDraw(){const e=document.getElementById('opn');if(!e)return;const S=opSteps();if(PF.op>=S.length){opEnd();return;}const s=S[PF.op],b=e.querySelector('.op-body');
-  e.dataset.k=s.k;e.classList.toggle('bars',!!s.band||s.k==='cards');if(s.k==='cards'){const at=PF.op;setTimeout(()=>{if(PF.op===at&&e.isConnected)e.classList.remove('bars');},1500);}opBg(s);e.classList.toggle('blink',!!s.blink);if(s.blink){e.classList.remove('blink');void e.offsetWidth;e.classList.add('blink');}
+  e.dataset.k=s.k;e.classList.toggle('bars',!!s.band);opBg(s);e.classList.toggle('blink',!!s.blink);if(s.blink){e.classList.remove('blink');void e.offsetWidth;e.classList.add('blink');}
   const go='<i class="op-go" aria-hidden="true"></i>',kick='<small class="op-k">Emberwick</small>';
   let h='';
   if(s.k==='card')h='<div class="op-card'+(s.v?' v':'')+'"><i class="op-em"></i><p>'+esc(s.x)+'</p>'+go+'</div>';
@@ -4386,7 +4454,7 @@ function slotsHtml(){const h=S.players[0].hand,cf=i=>miniFace(h[i],{ink:costOf(S
    one=(c,l,x,n)=>'<div class="slot '+c+(x?' full':'')+'"><div class="sock'+(n>1?' many':'')+'">'+(x||'')+'</div><small>'+l+'</small></div>';
   if(ui.clime!=null)return '<div class="slots'+(ui.adjs.length?' two':' one')+'">'+(ui.adjs.length?one('a','adjective',ui.adjs.map(cf).join(''),ui.adjs.length):'')+one('w','weather',cf(ui.clime))+'</div>';
   return '<div class="slots">'+one('a','adjective',ui.adjs.map(cf).join(''),ui.adjs.length)+one('s','subject',face(ui.subj))+one('v','verb',ui.kverb&&W[ui.kverb]?miniFace(ui.kverb,{}):ui.verb!=null?cf(ui.verb):'')+one('o','object',face(ui.obj))+'</div>';}
-function fit(){const de=document.documentElement,wide=innerWidth>=700;
+function fit(){const de=document.documentElement,wide=innerWidth>=700;document.body.classList.toggle('induel',view==='match');if(view==='match'&&!fit.q){fit.q=1;requestAnimationFrame(()=>setTimeout(()=>{fit.q=0;fit();},120));setTimeout(()=>{try{fit();}catch(e){}},700);}
   if(view==='home'||(view==='match'&&!live())){de.style.overflowY='';return;}
   const t=document.querySelector(view==='match'?'.table':view==='shop'?'.shopscene':view==='book'?'.bookscene':view==='ach'?'.achscene':view==='story'?'.storyscene':view==='scrip'?'.scripscene':'.deckscene');if(!t)return;
   if(view==='match'){const hd=$('hand'),n=hd.querySelectorAll('.card').length;hd.style.setProperty('--ov',n>1?Math.max(0,Math.ceil((n*132-hd.clientWidth)/(n-1)))+'px':'0px');}
@@ -4924,6 +4992,21 @@ if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.r
 document.addEventListener('change',ev=>{const t=ev.target;if(t.id==='j-deckn'){meSt().deck=t.value.trim().replace(/[<>&"]/g,'').slice(0,22);save();}else if(t.id==='j-sig'){meSt().sig=t.value;save();sfx('tick');}});
 
 addEventListener('keydown',ev=>{if(view!=='story'||document.getElementById('jpop')||document.getElementById('wrev')||/INPUT|TEXTAREA/.test((ev.target||{}).tagName||''))return;if((ev.key==='m'||ev.key==='M')&&(jS.tab==='here'||jS.tab==='map')){jS.tab=jS.tab==='map'?'here':'map';sfx('page');renderStory();}else if(ev.key==='Escape'&&jS.tab!=='here'){jS.tab='here';sfx('page');renderStory();}});
+
+/* ---- full screen: a corner button on every screen, and the F key ---- */
+(()=>{const d=document,el=d.documentElement,on=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
+ const go=()=>{try{if(on()){(d.exitFullscreen||d.webkitExitFullscreen).call(d);return;}const r=(el.requestFullscreen||el.webkitRequestFullscreen);const p=r&&r.call(el,{navigationUI:'hide'});if(p&&p.catch)p.catch(()=>fsTip());if(!r)fsTip();}catch(e){fsTip();}};
+ function fsTip(){let t=d.getElementById('fstip');if(t)t.remove();t=d.createElement('div');t.id='fstip';t.setAttribute('role','status');t.textContent='This window will not go full screen from inside Claude. Open the game on its own web page (your GitHub link) and press F or F11 there.';d.body.appendChild(t);setTimeout(()=>t.remove(),6500);}
+ const ICO=x=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(x?'<path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6"/>':'<path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/>')+'</svg>';
+ function mk(){let b=d.getElementById('fsbtn');if(!b){b=d.createElement('button');b.id='fsbtn';b.onclick=ev=>{ev.stopPropagation();go();};d.body.appendChild(b);}b.innerHTML=ICO(on());b.setAttribute('aria-label',on()?'Leave full screen (F)':'Full screen (F)');b.title=b.getAttribute('aria-label');}
+ addEventListener('load',mk);d.addEventListener('fullscreenchange',mk);d.addEventListener('webkitfullscreenchange',mk);
+ addEventListener('keydown',ev=>{if((ev.key==='f'||ev.key==='F')&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey&&!/INPUT|TEXTAREA/.test((ev.target||{}).tagName||'')){ev.preventDefault();go();}});})();
+
+/* ---- in a duel: only the table, with a quiet corner for settings ---- */
+addEventListener('load',()=>{const b=document.createElement('div');b.id='duelx';b.innerHTML='<button data-act="settings" aria-label="Settings" title="Settings">'+GEAR+'</button>';document.body.appendChild(b);});
+addEventListener('resize',()=>{try{if(view==='match')fit();}catch(e){}});
+
+addEventListener('load',()=>setTimeout(()=>{try{bgwdFix();}catch(e){}},300));
 </script>
 </body>
 </html>
