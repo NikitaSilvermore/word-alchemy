@@ -122,7 +122,7 @@ eng = RP(eng,"hit(S,o,a.t.vig*c.mult*(a.t.props.includes('sharp')?(plant?3:2):1)
 eng = RP(eng,"const o=guardOf(S,o0,a);if(!alive(S,o)||(o.k==='t'&&o.t===a.t))continue;","const o=window.DTV>=8?blockOf(S,o0,c,a):guardOf(S,o0,a);if(!alive(S,o)||(o.k==='t'&&o.t===a.t))continue;")
 eng = RP(eng,"hit(S,o,(a.t.vig+1)*c.mult,'sting')","hit(S,o,(window.DTV>=8?Math.ceil(a.t.vig*1.5):a.t.vig+1)*c.mult,'sting')")
 eng = RP(eng,"if(t.st.poisoned){damage(S,T(t),S.cfg.gw2?","if(t.st.poisoned){damage(S,T(t),window.DTV>=8?Math.max(1,Math.ceil(t.vig*0.1)):S.cfg.gw2?")
-eng = RP(eng,"if(!t.st.ferment){t.vig+=4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+' has fermented: 4 stronger, and potent.');}","if(!t.st.ferment){t.vig+=window.DTV>=8?Math.max(1,Math.ceil(t.vig*0.5)):4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+(window.DTV>=8?' has fermented, and is potent: '+t.vig+'.':' has fermented: 4 stronger, and potent.'));}")
+eng = RP(eng,"if(!t.st.ferment){t.vig+=4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+' has fermented: 4 stronger, and potent.');}","if(!t.st.ferment){t.vig+=window.DTV>=8?Math.max(1,Math.ceil(t.vig*(window.DTV>=11?0.3:0.5))):4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+(window.DTV>=8?' has fermented, and is potent: '+t.vig+'.':' has fermented: 4 stronger, and potent.'));}")
 eng = RP(eng,"if(gv&&gv!=='doubt'&&gs&&gs.props.includes('spell'))","if(gv&&gv!=='doubt'&&!(window.DTV>=8&&['transmute','dispel','sacrifice'].includes(gv))&&gs&&gs.props.includes('spell'))")
 eng = RP(eng,"didAct(S,who,a);say(S,Cap(nm(S,a))+' stings '+nm(S,o)+'.');hit(S,o,","didAct(S,who,a);say(S,Cap(nm(S,a))+' stings '+nm(S,o)+'.');hit(S,o,")
 eng = RP(eng,"\n    if(a.t.props.includes('toxic')&&alive(S,o)&&has(o,'living'))poison(S,o,1);}}}","\n    if(!(window.DTV>=8)&&a.t.props.includes('toxic')&&alive(S,o)&&has(o,'living'))poison(S,o,1);}}}")
@@ -134,6 +134,7 @@ def _mt(src,start,end):
     return src[:i]+blk+src[j:]
 eng=_mt(eng,"\n strike(S,who,subs,objs,c){","\n sleep(S,who,subs,objs,c)")
 eng=_mt(eng,"\n bite(S,who,subs,objs,c){","\n poison(S,who,subs,objs,c){")
+eng = RP(eng,"if(t.props.includes('beast')){say(S,'A beast will not be lured. It must be tamed.');continue;}if(t.vig>3)","if(t.props.includes('beast')){say(S,'A beast will not be lured. It must be tamed.');continue;}if(t.vig>(window.DTV>=11?5:3))")
 # ---- v4 hooks ----
 for a_,b_ in [("if(gold>=GOLDWIN){","if(gold>=GOLDWIN&&!(window.DTV>=4)){"),
               ("if((S.players[k].silence||[]).length>=SILENT){","if((S.players[k].silence||[]).length>=SILENT&&!(window.DTV>=4)){"),

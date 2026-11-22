@@ -1,3 +1,9 @@
+/* guard: a person reference with no person behind it (seen with some categories) used to crash the turn */
+try{const _okP=(S,e)=>!(e&&e.k==='p'&&!S.players[e.i]);for(const f of ['sleep','heat','cold','wet','poison']){const g=window[f];if(typeof g==='function')window[f]=function(S,e){if(!e||!_okP(S,e))return false;return g.apply(this,arguments);};}}catch(e){}
+/* guard: drop person references with no person behind them before any verb runs */
+try{if(typeof VERBF!=='undefined')setTimeout(()=>{for(const k in VERBF){const f=VERBF[k];if(f.__g)continue;const g=function(S,who,subs,objs){const ok=e=>e&&!(e.k==='p'&&!S.players[e.i]);arguments[2]=(subs||[]).filter(ok);arguments[3]=(objs||[]).filter(ok);return f.apply(this,arguments);};g.__g=1;VERBF[k]=g;}},0);}catch(e){}
+/* the tincture had no effect written, so fusing into it broke the turn */
+try{if(typeof EVENT!=='undefined'&&!EVENT.tincture){EVENT.tincture=function(S,who,c){const p=S.players[who];p.life=Math.min(LIFE,p.life+4);p.poisoned=0;say(S,(who===0?'You drink':'The rival drinks')+' the tincture: 4 life back, and the poison leaves.');c.effect=true;};if(W.tincture)W.tincture.gloss='Drunk at once: restores 4 life and washes out poison.';}}catch(e){}
 /* v8: the verbs round. Percentages, no minds, seep, toxify, summon, sacrifice, protect, dispel, ladders. */
 (function(){
 'use strict';
@@ -101,15 +107,15 @@ F.haunt=function(S,who,subs,objs,c){const ag=agents(S,who,subs,e=>e.k==='t'&&can
    didAct(S,who,a);const lab=Cap(nm(S,o)),tk=o.t.token;toHand(S,o.t);say(S,Cap(nm(S,a))+' haunts '+lab.toLowerCase().replace(/^the rival’s/,'the rival’s')+'. '+lab+(tk?' fades and is gone.':' flees back to its keeper’s hand.'));c.effect=true;}}};
 F.eat=function(S,who,subs,objs,c){const ag=agents(S,who,subs,e=>e.k==='p'||e.t.props.includes('beast')||e.t.props.includes('human'),'has no mouth to eat with.');
  for(const a of ag){for(const o of objs){if(!alive(S,a))break;if(!alive(S,o))continue;
-   if(o.k==='p'||!(o.t.props.includes('living'))||isG(o.t)){say(S,Cap(nm(S,o))+' cannot be eaten.');continue;}if(a.k==='t'&&o.t===a.t)continue;
-   if(a.k==='t'&&o.t.vig>=a.t.vig){say(S,Cap(nm(S,o))+' is too big for '+nm(S,a)+' to eat.');continue;}if(a.k==='t'&&!reach(S,a,o))continue;
-   didAct(S,who,a);const n=pc(o.t.vig,.5),pr=o.t.props.slice();say(S,Cap(nm(S,a))+' '+vb(a,'eat','eats')+' '+nm(S,o)+'.');destroy(S,o.t,'eaten');c.effect=true;
+   if(o.k==='p'||!(o.t.props.includes('living'))||isG(o.t)){say(S,Cap(nm(S,o))+' cannot be eaten.');continue;}if(window.DTV>=11&&o.t.side===who){say(S,'Only a rival thing can be eaten.');continue;}if(a.k==='t'&&o.t===a.t)continue;
+   if(a.k==='t'&&(window.DTV>=11?o.t.vig*2>a.t.vig:o.t.vig>=a.t.vig)){say(S,Cap(nm(S,o))+' is too big for '+nm(S,a)+' to eat'+(window.DTV>=11?': it can only swallow something half its size or less.':'.'));continue;}if(a.k==='t'&&!reach(S,a,o))continue;
+   didAct(S,who,a);const n=pc(o.t.vig,window.DTV>=11?.3:.5),pr=o.t.props.slice();say(S,Cap(nm(S,a))+' '+vb(a,'eat','eats')+' '+nm(S,o)+'.');destroy(S,o.t,'eaten');c.effect=true;
    if(a.k==='p'){const p=S.players[a.i];p.life=Math.min(LIFE,p.life+n);say(S,Cap(nm(S,a))+' '+vb(a,'gain','gains')+' '+n+' life.');}else if(!a.t.st.measured){a.t.vig+=n;say(S,Cap(nm(S,a))+' gains '+n+' and has '+a.t.vig+'.');}
    if((pr.includes('thorny')||pr.includes('sting'))&&alive(S,a)){say(S,'It stings going down.');damage(S,a,1,'sting');}
    if(pr.includes('toxic')&&alive(S,a)){say(S,'It was poison.');poison(S,a,1);}}}};
 F.scream=function(S,who,subs,objs,c){const ag=agents(S,who,subs,e=>has(e,'voiced'),'has no voice.');
  for(const a of ag){didAct(S,who,a);const k=(a.k==='t'&&a.t.w==='mandrake'?2:1)*c.mult;say(S,Cap(nm(S,a))+' '+vb(a,'scream','screams')+'.');
-  for(const t of S.things.slice())if(t.side===1-who&&!isG(t)&&S.things.includes(t))damage(S,T(t),k,'scream');damage(S,P(1-who),2*k,'scream');
+  for(const t of S.things.slice())if(t.side===1-who&&!isG(t)&&S.things.includes(t))damage(S,T(t),k,'scream');damage(S,P(1-who),(window.DTV>=11?1:2)*k,'scream');
   let woke=false;for(const t of S.things)if(t.st.asleep){t.st.asleep=0;woke=true;}for(const p of S.players)if(p.asleep){p.asleep=0;woke=true;}if(woke)say(S,'Every sleeper wakes.');c.effect=true;}};
 
 /* ---- spells ---- */
@@ -126,7 +132,7 @@ F.distil=buff('distilled',t=>t.props.includes('liquid'),'liquid',.3,.2,(S,t)=>ad
 const _rip=buff('ripe',t=>t.props.includes('plant'),'plant',.3,.2,(S,t)=>addProp(t,'potent'));
 F.ripen=function(S,who,subs,objs,c){const e=subs[0];if(e&&own(e,who)&&e.t.props.includes('sprout')){nextStage(S,e.t);c.effect=true;return;}return _rip(S,who,subs,objs,c);};
 F.coagulate=buff('coagulated',()=>true,'',.2,.2,(S,t)=>{t.st.fixed=1;say(S,'It can never be changed again.');});
-F.ferment=spell((S,who,e,c,o1)=>{if(!own(e,who)||isG(e.t)||e.t.st.ferment){if(o1)say(S,'Only your own things can ferment, once.');return;}e.t.st.ferment=2;say(S,Cap(nm(S,e))+' begins to work. In two turns it gains half again.');c.effect=true;});
+F.ferment=spell((S,who,e,c,o1)=>{if(!own(e,who)||isG(e.t)||e.t.st.ferment){if(o1)say(S,'Only your own things can ferment, once.');return;}e.t.st.ferment=2;say(S,Cap(nm(S,e))+' begins to work. In two turns it gains '+(window.DTV>=11?'30%':'half again')+'.');c.effect=true;});
 F.measure=spell((S,who,e,c,o1)=>{if(e.k==='p'||isG(e.t)){if(o1)say(S,'Only a thing can be measured.');return;}const t=e.t;if(t.st.measured){if(o1)say(S,Cap(nm(S,e))+' is measured already.');return;}t.st.measured=1;t.mv=t.vig;say(S,Cap(nm(S,e))+' is measured at '+t.vig+'. It can never gain vigour.');c.effect=true;});
 F.enchant=spell((S,who,e,c,o1)=>{if(!own(e,who)){if(o1)say(S,'Only your own things can be enchanted.');return;}const t=e.t,ills=['poisoned','frozen','bound','blind','asleep','sodden','burning'].filter(s=>t.st[s]);
  for(const s of ills)t.st[s]=0;const re=t.acted||t.nonAtk;t.acted=false;t.nonAtk=false;if(!ills.length&&!re){if(o1)say(S,Cap(nm(S,e))+' needs nothing: it is well and ready already.');return;}
@@ -140,7 +146,7 @@ F.crown=spell((S,who,e,c,o1)=>{if(e.k==='p'||!e.t.props.includes('living')){if(o
 F.protect=spell((S,who,e,c,o1)=>{if(e.k==='p'||isG(e.t)){if(o1)say(S,'Only a thing on the board can be protected, not ground.');return;}const t=e.t;
  if(t.w==='clay'){turnInto(S,t,'golem');t.vig=Math.max(t.vig,W.golem.vig);addProp(t,'named');say(S,'Protected, the clay wakes as a golem.');c.effect=true;return;}
  if(t.props.includes('blank')){const tg=side(S,1-t.side).filter(x=>!isG(x)&&!x.st.occult&&!x.st.masked).sort((a,b)=>b.vig-a.vig)[0];if(!tg){say(S,'There is nothing opposite to copy.');return;}turnInto(S,t,tg.w);t.vig=Math.max(t.vig,tg.vig);c.effect=true;return;}
- if(!evolve(S,t,'protected',t.st.measured?0:pc(t.vig,.1))){if(o1)say(S,Cap(nm(S,e))+' is protected already.');return;}addProp(t,'named');c.effect=true;});
+ if(!evolve(S,t,'protected',t.st.measured?0:pc(t.vig,window.DTV>=11?.2:.1))){if(o1)say(S,Cap(nm(S,e))+' is protected already.');return;}addProp(t,'named');c.effect=true;});
 F.forget=function(S,who,subs,objs,c){for(const e of subs){if(!alive(S,e))continue;
   if(e.k==='p'){const p=S.players[e.i];if(!p.hand.length){say(S,'Nothing is left in that hand to forget.');continue;}const i=Math.floor(rnd(S)*p.hand.length),w=p.hand.splice(i,1)[0];p.discard.push(w);say(S,Cap(nm(S,e))+' '+vb(e,'forget','forgets')+' a word'+(e.i===0?': '+w:'')+'.');c.effect=true;continue;}
   const t=e.t;if(isG(t)){if(one(subs))say(S,'Ground cannot forget.');continue;}const base=(W[t.w].props||[]).slice(),had=(t.forms||[]).length||t.verbs.some(v=>!(v==='strike'&&t.inn)&&!(t.innv||[]).includes(v));
@@ -267,10 +273,10 @@ const RO={knife:1.3,glass:1.2,flint:1,obsidian:1,wasp:1.2,scorpion:.9,egg:.1,'ph
  toad:.4,leech:.5,moth:.4,egg2:0,pelican:.4,peacock:.4,scarab:.4,owl:.6,crow:.6,magpie:.5,bat:.6,adder:.8,spider:.6,salamander:.8,phoenix:.8,ouroboros:.6,
  shepherdess:.4,apothecary:.3,hermit:.3,scribe:.3,miser:.3,alchemist:.5,homunculus:.6,'bog hag':.6,sage:.4,oracle:.4,druid:.5,mirror:.3,gnome:.4,barrow:.3,ash:.5,sand:.5,slag:.5,carrion:.5,ice:.6,spore:.4,seed:.2,sapling:.3,'philosopher’s stone':.8};
 function ratio(t){const w=t.w,p=t.props||[],h=x=>p.includes(x);if(RO[w]!=null)return RO[w];let r=.5;
- if(h('beast'))r+=.1;if(h('sharp'))r+=.25;if(h('sting'))r+=.15;if(h('fireborn'))r+=.2;if(h('explosive'))r+=.4;if(h('corrosive'))r+=.2;if(h('toxic'))r+=.05;if(h('spirit'))r+=.1;if(h('flying'))r+=.05;if(h('swift'))r+=.1;if(h('brittle'))r+=.15;
+ if(h('beast'))r+=.1;if(h('sharp'))r+=.25;if(h('sting'))r+=.15;if(h('fireborn'))r+=(V>=11?.3:.2);if(h('explosive'))r+=.4;if(h('corrosive'))r+=.2;if(h('toxic'))r+=.05;if(h('spirit'))r+=.1;if(h('flying'))r+=(V>=11?-.1:.05);if(h('swift'))r+=.1;if(h('brittle'))r+=.15;
  if(h('plant'))r-=.15;if(h('wood'))r-=.1;if(h('stone'))r-=.15;if(h('stubborn'))r-=.15;if(h('sacred'))r-=.1;if(h('eternal'))r-=.1;if(h('herb'))r-=.1;if(['adept','scribe','seer','hermit','hoard','herbalist','nurse'].some(h))r-=.15;
  return Math.max(.2,Math.min(1.3,r));}
-window.DTVRATIO=ratio;
+window.DTVRATIO=ratio;window.DTVRO=RO;
 window.MT=function(t){if(!(V>=10)||!t||!t.props)return t?t.vig:0;if(isG(t))return t.vig;return Math.max(1,Math.round(t.vig*ratio(t)));};
 window.MTW=function(w,vig){const d=W[w];if(!d||d.t!==NOUN)return null;return window.MT({w,props:d.props,vig:vig!=null?vig:d.vig});};
 if(!(V>=10))return;
@@ -283,4 +289,49 @@ const _dec=window.dtvDecorate;window.dtvDecorate=function(){if(_dec)_dec();try{c
  document.querySelectorAll('#hand .card').forEach(el=>{const w=p.hand[+el.dataset.i];const d=W[w];put(el,d&&d.t===NOUN&&!d.props.includes('event')&&!d.props.includes('spell')&&!d.props.includes('ground')?MTW(w,d.vig+2*upOf(S,0,w)):null);});
  document.querySelectorAll('#mdraw .card').forEach(el=>{const w=(S.shop||[])[+el.dataset.i];const d=W[w];put(el,d&&d.t===NOUN&&!d.props.includes('event')&&!d.props.includes('spell')&&!d.props.includes('ground')?MTW(w):null);});
 }catch(e){console.error(e);}};
+})();
+
+/* v11: balance from the simulations */
+(function(){
+'use strict';
+const V=window.DTV|0;if(!(V>=11))return;
+const pc=(n,p)=>Math.max(1,Math.ceil(n*p));
+/* nerfs: the strongest deck leaned on vast, eat, ferment and obsidian */
+ADJF.vast=(S,who,e)=>{if(e.t.vasted){say(S,Cap(nm(S,e))+' is already as vast as a word can make it.');return false;}e.t.vasted=1;e.t.vig+=pc(e.t.vig,.3);say(S,Cap(nm(S,e))+' is vast, and has '+e.t.vig+' vigour.');return true;};
+if(W.vast)W.vast.gloss='+30% vigour, and so +30% might.';
+if(W.eat)W.eat.gloss='A beast or person eats a rival thing half its size or less and gains 30% of its vigour. Eating something toxic poisons the eater.';
+if(W.ferment)W.ferment.gloss='Spell. In two turns, one of your things gains 30% and becomes potent.';
+if(W.obsidian){W.obsidian.vig=6;W.obsidian.gloss='Volcanic glass: the keenest edge, and it shatters. All edge, little body.';}if(window.DTVRO)DTVRO.obsidian=1.2;
+/* buffs: The Word and Water were far behind */
+if(W.word)W.word.vig=5;if(W.silence)W.silence.syl=1;if(W.dew)W.dew.vig=4;if(W.brine)W.brine.vig=5;if(W.pitch)W.pitch.vig=4;if(W.flint)W.flint.vig=4;
+if(W.protect)W.protect.gloss='Spell. A thing gains 20% and is protected: it can’t be stolen, lured, tamed, summoned or haunted. Clay wakes as a golem.';
+if(W.lure)W.lure.gloss='Spell. A rival thing of 5 or less, not a beast, comes to your side.';
+const _el=ADJF.eternal;ADJF.eternal=(S,who,e)=>{const r=_el(S,who,e);if(r&&e.t.side===who){const n=pc(e.t.vig,.3);e.t.vig+=n;say(S,'Eternal, it stands '+n+' stronger.');}return r;};
+if(W.eternal)W.eternal.gloss='Destroyed, it returns to its keeper’s hand. On your own thing it also gives +30% vigour.';
+EVENT.omen=function(S,who,c){const o=S.players[1-who];if(who===0)say(S,'The omen shows the rival’s hand: '+(o.hand.join(', ')||'nothing')+'.');else say(S,'The rival reads an omen of your hand.');const p=S.players[who];for(let k=0;k<2;k++){if(!p.deck.length&&p.discard.length){p.deck=shuffle(S,p.discard);p.discard=[];}if(p.deck.length)p.hand.push(p.deck.pop());}c.effect=true;};
+if(W.omen)W.omen.gloss='Said alone, then spent. You read the rival’s hand and draw two words.';
+EVENT.dream=function(S,who,c){for(const t of side(S,1-who).slice()){if(isG(t)||!S.things.includes(t))continue;damage(S,T(t),t.st.asleep?4:2,'dream');}damage(S,P(1-who),4,'dream');c.effect=true;};
+if(W.dream)W.dream.gloss='Said alone, then spent. Everything opposite takes 2 (asleep things 4), and the rival takes 4.';
+if(W.ink)W.ink.gloss='A well of ink. While it stands you get 1 more breath and 1 ink each turn. Lasts 4 turns.';
+
+
+/* v11, pass 3 */
+if(W.ember)W.ember.vig=6;if(W.smith)W.smith.vig=6;if(W.naphtha)W.naphtha.vig=6;
+const _addT=addThing;addThing=function(S,w,sd,owner,token,card){const t=_addT.apply(this,arguments);try{if(w==='unnamed'&&!S.quiet){const tg=side(S,1-sd).filter(x=>!isG(x)&&!x.st.occult&&!x.st.masked).sort((a,b)=>b.vig-a.vig)[0];if(tg){turnInto(S,t,tg.w);t.vig=Math.max(t.vig,tg.vig);say(S,'The unnamed thing takes the shape of '+tg.w+'.');}}}catch(e){}return t;};
+if(W.unnamed)W.unnamed.gloss='A thing with no word. When it arrives it becomes the strongest thing standing opposite.';
+if(typeof EVENT!=='undefined'&&EVENT.loan){EVENT.loan=function(S,who,c){const p=S.players[who];p.ink+=3;say(S,(who===0?'You borrow':'The rival borrows')+' 3 breath now.');if(!full(S,who,'debt')){addThing(S,'debt',who,who,true);say(S,'A debt settles on '+nm(S,P(who))+'.');}c.effect=true;};if(W.loan)W.loan.gloss='Said alone, then spent. You gain 3 breath now, and a debt settles on your own side.';}
+if(W.crucible)W.crucible.gloss='While it stands on your ground, every evolve costs 1 less breath.';
+/* v11, pass 2 */
+if(W.scream)W.scream.gloss='Everything opposite takes 1, and so does the rival. Wakes every sleeper. A mandrake’s scream does double.';
+if(window.DTVRO){DTVRO.wasp=.7;}if(W.eat)W.eat.syl=2;
+const _lu=VERBF.lure;VERBF.lure=function(S,who,subs,objs,c){for(const e of subs){if(!alive(S,e)||e.k!=='t')continue;const t=e.t;if(t.side===who||isG(t)){if(subs.length===1)say(S,Cap(nm(S,e))+' cannot be lured.');continue;}
+ if(t.props.includes('named')){say(S,Cap(nm(S,e))+' is protected and cannot be lured.');continue;}if(t.vig>5){say(S,Cap(nm(S,e))+' is too strong to lure: it has more than 5.');continue;}if(full(S,who)){say(S,'Your side is full: there is no room for it.');continue;}
+ const lab=Cap(nm(S,e));t.side=who;t.pl=placeFor(S,who);t.st.guarding=0;t.acted=true;say(S,lab+' is lured to '+(who===0?'your':'the rival’s')+' side.');c.effect=true;}};
+if(W.lure)W.lure.gloss='Spell. A rival thing of 5 or less, of any kind, comes to your side.';
+const _dr=VERBF.drink;VERBF.drink=function(S,who,subs,objs,c){const L=S.log.length;const r=_dr.apply(this,arguments);if(S.log.slice(L).some(l=>/ drinks? /.test(String(l.x||l)))){const a=subs.find(e=>alive(S,e));if(a&&a.k==='t'&&!a.t.st.measured){a.t.vig+=2;say(S,'Refreshed: '+nm(S,a)+' gains 2.');}else{const p=S.players[who];p.life+=2;say(S,'Refreshed: 2 life.');}}return r;};
+if(W.drink)W.drink.gloss='Drink one of your liquids: get what it gives, and the drinker gains 2.';
+const _bi=VERBF.bind;VERBF.bind=function(S,who,subs,objs,c){const a=subs.find(e=>e&&e.k==='t'&&alive(S,e));const was=objs.map(o=>o.k==='t'&&o.t&&!o.t.st.bound);const r=_bi.apply(this,arguments);
+ if(a)objs.forEach((o,i)=>{if(was[i]&&o.k==='t'&&alive(S,o)&&o.t.st.bound){const n=Math.max(1,Math.ceil(MT(a.t)*.5));say(S,'The binding crushes: '+n+'.');damage(S,o,n,'bind');}});return r;};
+if(W.bind)W.bind.gloss='Hold a thing still for a turn and squeeze it for half your might. A bound person has 2 less breath.';
+const _st=startTurn;startTurn=function(S,i){const r=_st.apply(this,arguments);try{if(S.over==null&&S.things.some(t=>t.side===i&&t.w==='ink')){S.players[i].ink+=1;}}catch(e){}return r;};
 })();

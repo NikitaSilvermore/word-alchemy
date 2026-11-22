@@ -756,7 +756,7 @@ const VERBF={
    if(!evolve(S,e.t,'ripe',(4)*c.mult)){say(S,Cap(nm(S,e))+' is ripe already.');continue;}addProp(e.t,'potent');c.effect=true;}},
  lure(S,who,subs,objs,c){for(const e of subs){if(!alive(S,e))continue;if(e.k==='p'){say(S,'A person cannot be lured away.');continue;}const t=e.t;if(t.props.includes('named')&&t.side!==who){say(S,Cap(nm(S,e))+' has a name of its own and will not come.');continue;}
    if(t.side===who){if(subs.length===1)say(S,Cap(nm(S,e))+' is on your side already.');continue;}if(t.props.includes('ground')||t.props.includes('spell')){say(S,Cap(nm(S,e))+' cannot be moved.');continue;}
-   if(t.props.includes('beast')){say(S,'A beast will not be lured. It must be tamed.');continue;}if(t.vig>3){say(S,Cap(nm(S,e))+' is too strong to lure.');continue;}if(full(S,who,t.w)){say(S,'There is no room for it on that side.');continue;}
+   if(t.props.includes('beast')){say(S,'A beast will not be lured. It must be tamed.');continue;}if(t.vig>(window.DTV>=11?5:3)){say(S,Cap(nm(S,e))+' is too strong to lure.');continue;}if(full(S,who,t.w)){say(S,'There is no room for it on that side.');continue;}
    say(S,Cap(nm(S,e))+' is lured away and changes sides.');t.side=who;t.st.guarding=0;t.acted=true;c.effect=true;}},
  tame(S,who,subs,objs,c){for(const e of subs){if(!alive(S,e))continue;if(e.k==='p'||!e.t.props.includes('beast')){if(subs.length===1)say(S,'Only a beast can be tamed.');continue;}
    const t=e.t;if(t.side!==who){if(t.props.includes('named')){say(S,Cap(nm(S,e))+' has a name of its own and will not be tamed.');continue;}if(S.things.some(x=>x.side===t.side&&x.props.includes('seer'))){say(S,'The shepherdess keeps her flock.');continue;}if(t.vig>6){say(S,Cap(nm(S,e))+' is too strong to tame.');continue;}if(full(S,who)){say(S,'There is no room for it on that side.');continue;}
@@ -1200,7 +1200,7 @@ function startTurn(S,i){
       if(!S.things.includes(t))continue;}
     if(t.st.poisoned){damage(S,T(t),window.DTV>=8?Math.max(1,Math.ceil(t.vig*0.1)):S.cfg.gw2?(S.players[1-t.side].attune==='rot'?4:3)*t.st.poisoned:2,'poison');if(!S.things.includes(t))continue;}
     if(S.cfg.gw2){gw2Tick(S,i,t);if(!S.things.includes(t))continue;}
-    if(t.st.ferment){t.st.ferment--;if(!t.st.ferment){t.vig+=window.DTV>=8?Math.max(1,Math.ceil(t.vig*0.5)):4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+(window.DTV>=8?' has fermented, and is potent: '+t.vig+'.':' has fermented: 4 stronger, and potent.'));}}
+    if(t.st.ferment){t.st.ferment--;if(!t.st.ferment){t.vig+=window.DTV>=8?Math.max(1,Math.ceil(t.vig*(window.DTV>=11?0.3:0.5))):4;addProp(t,'potent');say(S,Cap(nm(S,T(t)))+(window.DTV>=8?' has fermented, and is potent: '+t.vig+'.':' has fermented: 4 stronger, and potent.'));}}
     if(pr.includes('hoard'))p.coins++;
     if(pr.includes('tower')&&S.cfg.gw2){p.coins++;p.life+=1;}else if(pr.includes('tower')){p.coins++;const l=side(S,1-i).filter(x=>!isG(x));if(l.length){say(S,'The tower is seen from across the field. Everything opposite gains 1.');for(const x of l)x.vig++;}}
     if(pr.includes('attractor')){const isA=w=>ATTACKV.includes(w),isN=w=>W[w].t===NOUN&&!W[w].props.includes('event')&&!W[w].props.includes('spell')&&!W[w].props.includes('ground'),pool=p.deck.concat(p.discard),best=l=>l.slice().sort((a,b)=>tierOf(b)-tierOf(a)||(W[b].vig||0)-(W[a].vig||0))[0];

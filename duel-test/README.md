@@ -22,4 +22,8 @@ Snapshot of the published "Word Alchemy: Duel Test" artifact. Art packs (`assets
 node duel-test/node/load.js
 ```
 
-Set `DTV` in `load.js` to choose the version (0–10; the page defaults to 10). Card definitions live in `W` after `engine.js` loads; for v8 and later, `v8.js` rewrites many glosses and verb functions (`VERBF`), and adds `MT()` (might). `newGame(seed, opts)` makes a state; `resolve(S, who, sentence)` plays a sentence; `botChoose(S, who)` picks one.
+Set `DTV` in `load.js` to choose the version (0–11; the page defaults to 11). Card definitions live in `W` after `engine.js` loads; for v8 and later, `v8.js` rewrites many glosses and verb functions (`VERBF`), and adds `MT()` (might). `newGame(seed, opts)` makes a state; `resolve(S, who, sentence)` plays a sentence; `botChoose(S, who)` picks one.
+
+## Balance simulator
+
+`node/sim.js` is injected into a copy of `index.html` and plays bot-vs-bot duels in a browser (`node/drv.py` drives Chromium with Playwright; `node/an.py` summarises; `node/search.py` evolves strong decks). It is a test tool only and is not part of the game.
