@@ -28,3 +28,13 @@ Set `DTV` in `load.js` to choose the version (0–13; the page defaults to 13). 
 ## Balance simulator
 
 `node/sim.js` is injected into a copy of `index.html` and plays bot-vs-bot duels in a browser (`node/drv.py` drives Chromium with Playwright; `node/an.py` summarises; `node/search.py` evolves strong decks). It is a test tool only and is not part of the game.
+
+## Game logs (artifact db)
+
+Every finished duel is saved once, when the end-of-duel sheet opens, to the artifact's db collection `games` (one doc per duel, id = timestamp + random suffix). Rating and notes given afterwards update the same doc. Code: `src/logs.js`; the end-sheet hook is in `src/gfeed.js`.
+
+Fields: `savedAt` (ISO), `version` {`n`, `label`, `build`}, `rival`, `result` (win/loss/draw), `turns`, `rounds`, `lifeMe`, `lifeRival`, `lifeByTurn` [{`me`,`rival`}], `decidedRound`, `myDeck`, `rivalDeck`, `myBest` / `rivalBest` {`round`,`text`,`harm`}, `rating` (1–5 or null), `notes` {`annoying`,`best`}, `flags` [{`type`,`line`,`text`}], `flagCount`, `flagTypes`, `log` [{`k`,`x`}], `txtHead` + `txtBody` (together, joined by a blank line, the exact .txt download), `chunkCount`.
+
+If a doc would pass 240 KB, `log` and `txtBody` move to `games/<id>/chunks/<n>` docs ({`n`, `part`}); join the parts in order and JSON.parse to get {`log`,`txtBody`}.
+
+Flag types: unloggedLife, badSum, sameNameFusion, freeFusion, trapOnAttacker (a non-curse word sprang), learnedOnFail, doubleAttack, error. `line` is the index into `log`.

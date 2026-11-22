@@ -31,10 +31,10 @@ function ask(){
    +'<label>Anything slow, unclear or annoying?</label><textarea data-q="annoying"></textarea><label>Best moment?</label><textarea data-q="best"></textarea>'
    +'<div class="dtb"><button class="dtgo" data-k="copy">Copy feedback and log</button><button data-k="dl">Download</button><button data-k="mail">Email</button></div><p class="dtm"></p></div>';
   document.body.appendChild(e);
-  const ans={};const msg=t=>e.querySelector('.dtm').textContent=t;
-  e.querySelectorAll('.dts button').forEach(b=>b.onclick=()=>{e.querySelectorAll('.dts button').forEach(x=>x.classList.remove('on'));b.classList.add('on');ans.fun=b.dataset.v;});
+  const ans={};let LG=null;try{LG=window.dtvLogSave?dtvLogSave({sum,log,full:()=>full(),ans,el:e}):null;}catch(x){}const msg=t=>e.querySelector('.dtm').textContent=t;
+  e.querySelectorAll('.dts button').forEach(b=>b.onclick=()=>{e.querySelectorAll('.dts button').forEach(x=>x.classList.remove('on'));b.classList.add('on');ans.fun=b.dataset.v;if(LG)LG.update();});e.querySelectorAll('textarea').forEach(t=>t.addEventListener('change',()=>{if(LG)LG.update();}));
   const full=()=>{e.querySelectorAll('textarea').forEach(t=>ans[t.dataset.q]=t.value);return 'Word Alchemy duel test feedback\n'+Object.entries(ans).map(([k,v])=>k+': '+v).join('\n')+'\n\n'+log;};
-  e.querySelector('.dtx').onclick=()=>e.remove();
+  e.querySelector('.dtx').onclick=()=>{if(LG)LG.update();e.remove();};
   e.querySelector('[data-k=copy]').onclick=()=>{const t=full(),fbk=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(x){}ta.remove();msg(ok?'Copied.':'Copy blocked here; use Download.');};
     if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>msg('Copied.'),fbk);else fbk();};
   e.querySelector('[data-k=dl]').onclick=async()=>{const fn='word-alchemy-duel-'+fb.games.length+'.txt';let d=null;try{d=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(x){}

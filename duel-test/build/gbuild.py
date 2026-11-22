@@ -164,7 +164,11 @@ assert gd in eng
 eng = eng.replace(gd, "if(att.riddle)return false;if(S.things.some(t=>t.side===1-who&&t.st.guarding&&!(window.DTV>=5&&t.props.includes('fleeting'))&&")
 import base64 as _b
 _mat = 'data:image/webp;base64,' + _b.b64encode(open(H + 'mat_duel.webp', 'rb').read()).decode()
+# ---- logs: keep the cloud profile off in the duel test ----
+ui = RP(ui,"async function linkStore(){","async function linkStore(){if(window.DTVNOSTORE)return;")
 # ---- v13: the overnight bug report ----
+eng = RP(eng,"if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?","const b13=window.DTV>=13&&direct&&!pre&&c.mult<=1&&window.dtvBase13?dtvBase13(S,n):null;if(direct&&(b||nv||ex||pv||c.mult>1||pre||(b13&&/hurt/.test(b13)))){const m=c.mult,base=n%m===0?n/m:null;let s=b13?b13:pre?")
+ui = RP(ui,"ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil?","ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil&&(!(window.DTV>=13)||(window.TRAPA||[]).includes(S.players[0].hand[ui.adjs[0]]))?")
 eng = RP(eng,"one more each turn, up to '+S.cfg.ink+'.');","one more each turn, up to '+S.cfg.ink+(window.DTV>=13?', plus up to '+WELL+' carried from the turn before':'')+'.');")
 D13 = "window.DTV>=13"
 eng = RP(eng,"if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};","if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if("+D13+"&&!(window.TRAPA||[]).includes(w))return{ok:false,why:'Only a curse can be laid face down: '+(window.TRAPA||[]).join(', ')+'.'};")
@@ -184,7 +188,7 @@ dtv = r(H + 'dtv.js').replace('var(--dmat)', 'url(' + _mat + ')')
 head = head.replace('<title>Word Alchemy Prototype</title>', '<title>Word Alchemy: Duel Test</title>')
 i = head.index('<head>') + len('<head>'); head = head[:i] + '\n<script>' + r(H + 'gguard.js') + '</script>\n' + head[i:]
 g = {}; exec(r('/home/claude/wgtest/build.py').split('inlset=set(fs)')[0], g); inl = g['inl']
-tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n</body>\n</html>\n'
+tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.DTVBUILD=' + json.dumps(__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')) + ';\n' + r(H + 'logs.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n</body>\n</html>\n'
 open(P + 'duel.html', 'w', encoding='utf8').write(head + '<script id="engine">\n' + eng + '</script>\n\n' + tail)
 pm = {}
 for pk in ['art0', 'art1', 'art2', 'art3', 'art4', 'art5', 'art6', 'art7', 'ui', 'misc']:

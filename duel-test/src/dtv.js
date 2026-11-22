@@ -189,7 +189,7 @@ window.dtvSummary=function(S){const H=(S.dh||[]).slice();if(H.length<1)return nu
   for(let k=0;k<H.length-1;k++){const a=H[k],b=H[k+1];const lines=(S.log||[]).slice(a.g,b.g).map(l=>l.x||'');
     seg.push({who:a.i,t:a.t,dy:b.l[0]-a.l[0],dr:b.l[1]-a.l[1],lines});}
   const said=(sg,who)=>sg.lines.filter(x=>who===0?/^You say:/.test(x):/^The rival says:|^[A-Z][a-z]+ says:/.test(x)).map(x=>x.replace(/^[^:]+:\s*/,''));
-  const best=who=>{let m=null;for(const sg of seg){if(sg.who!==who)continue;const v=who===0?(-sg.dr+Math.max(0,sg.dy)):(-sg.dy+Math.max(0,sg.dr));if(v>0&&(!m||v>m.v))m={v,sg};}return m;};
+  const best=who=>{let m=null;for(const sg of seg){if(sg.who!==who)continue;const v=V>=13?(who===0?-sg.dr:-sg.dy):who===0?(-sg.dr+Math.max(0,sg.dy)):(-sg.dy+Math.max(0,sg.dr));if(v>0&&(!m||v>m.v))m={v,sg};}return m;};
   const bR=best(1),bY=best(0);
   /* decided: the last time the lead changed hands, counting the winner */
   const lead=l=>Math.sign(l[0]-l[1]);let dec=null;const W0=S.over;
@@ -212,7 +212,8 @@ window.dtvSummary=function(S){const H=(S.dh||[]).slice();if(H.length<1)return nu
     return '<li><b>'+(who===0?'Your best turn':esc(rv)+'’s best turn')+'</b> (round '+rnd(m.sg.t)+'): '+(s.length?'“'+esc(s.join(' / '))+'”':'no sentence')+' · '+(hurt>0?hurt+' harm':'')+(hurt>0&&heal>0?', ':'')+(heal>0?heal+' mended':'')+'</li>';};
   const html='<div class="dsum"><b class="dsh">How it went</b>'+svg+'<p class="dsd">'+decTxt+'</p><ul>'+play(bR,1)+play(bY,0)+'</ul></div>';
   const text='How it went\nLife by turn (you / rival): '+H.map(x=>x.l[0]+'/'+x.l[1]).join(' · ')+'\n'+decTxt.replace(/<[^>]+>/g,'')+'\nRival best: '+(bR?'round '+rnd(bR.sg.t)+' '+said(bR.sg,1).join(' / ')+' ('+(-bR.sg.dy)+' harm)':'none')+'\nYour best: '+(bY?'round '+rnd(bY.sg.t)+' '+said(bY.sg,0).join(' / ')+' ('+(-bY.sg.dr)+' harm)':'none');
-  return {html,text};};
+  let data=null;try{data={lifeByTurn:H.map(x=>x.l.slice()),decidedRound:(W0==null||W0===-1)?null:dec==null?rnd(S.turn):rnd(H[dec].t),rivalBest:bR?{round:rnd(bR.sg.t),text:said(bR.sg,1).join(' / '),harm:-bR.sg.dy}:null,myBest:bY?{round:rnd(bY.sg.t),text:said(bY.sg,0).join(' / '),harm:-bY.sg.dr}:null};}catch(e){}
+  return {html,text,data};};
 
 
 /* v6: born knowing. Some things arrive already able to do their own work; healers, thieves and binders do not come with strike. */

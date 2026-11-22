@@ -1,3 +1,4 @@
+window.DTVNOSTORE=1;
 /* Duel test (game copy): the game's own saves are kept under their own names, so the main save is never read or written. */
 (function(){
   try{
