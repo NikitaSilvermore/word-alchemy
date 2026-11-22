@@ -339,7 +339,7 @@ const _st=startTurn;startTurn=function(S,i){const r=_st.apply(this,arguments);tr
 /* v12: strike and stand. Might is shown as strike, vigour as stand; strike bottom left, stand bottom right; the verb card strike is shown as hit. Display only. */
 (function(){
 'use strict';
-const V=window.DTV|0;if(!(V>=12))return;
+const V=window.DTV|0;if(!(V>=12)||typeof MutationObserver==='undefined'||typeof document==='undefined')return;
 const RV=/\b([Vv])igour\b/g;
 const RM1=/\b([Mm])ight\b(?=\s*[+×·:(\d%]|\s+(?:while|and|is|of|to)\b)/g;
 const RM2=/((?:\d|\b(?:its|his|her|your|their|plain|half|full|of|the)\b)\s)([Mm])ight\b/g;
