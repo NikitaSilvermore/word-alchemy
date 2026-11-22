@@ -4740,9 +4740,25 @@ onReady(()=>{
  +'.dtv13 .intent{position:relative;z-index:3;max-width:100%}'
  +'.dtv13 .nob13{display:block;margin-top:6px;font-size:13px;color:#e8dcc0}'+'.dtv13 .thing.hid13 .cf>*:not(.c-frame){visibility:hidden}.dtv13 .thing.hid13 .cf{background:radial-gradient(circle at 50% 42%,#3b2a19,#140d08 72%);box-shadow:inset 0 0 0 3px rgba(201,162,74,.45)}.dtv13 .thing.hid13 .mtb,.dtv13 .thing.hid13 .states{display:none}';
  document.head.appendChild(css2);
+
+ /* the hand keeps its places while the pointer is over it, so the next click lands where you aimed */
+ let hk=null,inHand=false;document.addEventListener('pointerover',e=>{const h=document.getElementById('hand');if(!h)return;const now=h.contains(e.target);if(now&&!inHand){inHand=true;hk=null;}else if(!now&&inHand){inHand=false;hk=null;const gs=h.querySelectorAll('.ghost13');if(gs.length){gs.forEach(x=>x.remove());try{fit();}catch(x){}}}},true);
+ window.dtvHand13=function(){try{const h=document.getElementById('hand');if(!h||typeof S==='undefined'||!S)return;const cur=S.players[0].hand.slice();
+  if(!inHand||!hk){hk=cur;return;}
+  let i=0;const holes=[];for(let k=0;k<hk.length;k++){if(i<cur.length&&hk[k]===cur[i])i++;else holes.push(k);}
+  if(i!==cur.length||!holes.length||holes.length>4){hk=cur;return;}
+  const cards=[...h.querySelectorAll(':scope > .card:not(.ghost13)')];if(cards.length!==cur.length)return;
+  for(const k of holes){const g=document.createElement('div');g.className='card ghost13';g.setAttribute('aria-hidden','true');const ref=h.querySelectorAll(':scope > .card')[k];if(ref)h.insertBefore(g,ref);else h.appendChild(g);}
+ }catch(e){}};
+ const css3=document.createElement('style');css3.textContent='#hand .card.ghost13{visibility:hidden;pointer-events:none}.dtv13 .own13{margin:0 0 6px;padding:6px 8px;border-left:3px solid #e07a5f;background:rgba(224,122,95,.12);color:#f3e4c2;font-size:13px}';document.head.appendChild(css3);
+ /* warn when a sentence turns on your own thing */
+ window.dtvOwn13=function(){try{if(typeof ui==='undefined'||typeof S==='undefined'||!S||S.phase!=='play')return;const hand=S.players[0].hand,vw=ui.kverb||(ui.verb!=null?hand[ui.verb]:null);const th=r=>r&&r.k==='thing'?findThing(S,r.id):null,o=th(ui.obj),s=th(ui.subj);
+  const mine=vw&&HARM.includes(vw)&&((o&&o.side===0)||(!ui.obj&&s&&s.side===0&&W[vw]&&W[vw].kind!=='agent'));const host=document.querySelector('.mguide');if(!host)return;let w=host.querySelector('.own13');
+  if(!mine){if(w)w.remove();return;}if(!w){w=document.createElement('p');w.className='own13';host.prepend(w);}w.textContent='Careful: this turns '+vw+' on your own '+((o||s).title||(o||s).w)+'.';}catch(e){}};
  /* last match: record it when the duel ends, not only when the end sheet is clicked through */
  const _rm=window.renderMatch;if(typeof _rm==='function'){renderMatch=function(){const r=_rm.apply(this,arguments);try{if(S&&S.over!=null&&!S.last13&&!S.puz&&typeof PF!=='undefined'){S.last13=1;PF.last={r:S.quit||S.over===1?'loss':S.over===0?'win':'draw',n:(typeof rvName==='function'?rvName():(S.rival&&S.rival.n)||'the rival'),p:(typeof rivalOf==='function'?rivalOf().p:null),gold:(S.paid||{}).gold||0};if(typeof save==='function')save();}}catch(e){}
    try{if(S&&S.phase==='defend'&&S.pending){const bx=document.querySelector('.btns [data-act="def"][data-id=""]');if(bx&&!bx.dataset.sum13){const C=JSON.parse(JSON.stringify(S));C.phase='bot';const L=C.log.length;resolve(C,1,Object.assign({},C.pending,{def:null}));const sm=C.log.slice(L).map(l=>String(l.x||l)).find(x=>/^The sum:/.test(x));bx.dataset.sum13=1;if(sm){const h=document.createElement('span');h.className='nob13';h.textContent='If you take it: '+sm.replace(/^The sum: /,'');bx.parentElement.appendChild(h);}}}}catch(e){}
+   try{window.dtvHand13&&dtvHand13();window.dtvOwn13&&dtvOwn13();}catch(e){}
    return r;};}
 });
 
@@ -6025,7 +6041,7 @@ function renderBench(){
   const can=sp&&ui.verb==null&&!ui.kverb?sp.p.includes('event')?'<div class="hint">'+esc(Cap(sp.w))+' is a single-use spell. Say it alone: it happens once and is spent.</div>':'<div class="hint">'+esc(Cap(sp.w))+' can '+esc(abilities(sp.p,sp.st).join(', '))+'. Verbs in your hand that suit it are marked.'+(known?' It already knows:':'')+'</div>':'';
   b.innerHTML='<h2>'+(S.puz?'A find on the road':'Your sentence')+'</h2>'+(S.puz?'<div class="hint good">'+esc(sNode(S.puz).puz.goal)+((S.stat.said||0)>=2||S.players[0].ink<1||S.left<(sNode(S.puz).puz.turns||1)?' <em>Hint: '+esc(sNode(S.puz).puz.hint)+'</em>':'')+'</div>':'')+'<div class="senrow">'+slotsHtml()+'<div class="sentext"><div class="sentence">'+(text?esc(text):'<span class="ph">Tap words in your hand, and things or people on the table.</span>')+'</div>'
     +'<div class="hint'+((ui.msg||dud||(!v.ok&&!v.empty))?' bad':'')+'">'+esc(ui.msg||(v.ok?(dud?'This would do nothing. '+tr.last:(v.cost?'Costs '+v.cost+' breath.':'Costs no breath.')+(tr&&tr.won?' This finishes the rival.':'')):v.why))+'</div>'+can+known+guideHtml()+'</div></div>'
-    +'<div class="btns acts"><button class="btn" data-act="speak"'+(v.ok?'':' disabled')+'>Speak</button>'+(S.cfg.ramp&&!S.puz&&ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil&&(!(window.DTV>=13)||(window.TRAPA||[]).includes(S.players[0].hand[ui.adjs[0]]))?'<button class="btn ghost" data-act="veil" title="Lay this adjective face down. It springs on the first thing of the rival’s that turns on you.">Lay it face down</button>':'')+'<button class="btn ghost" data-act="clear">Clear</button>'+(S.puz&&(sNode(S.puz).puz.turns||1)>1?'<button class="btn ghost" data-act="pwait"'+(S.left>1?'':' disabled')+'>'+(S.left>1?'Let a turn pass<br><small>'+(S.left-1)+' left</small>':'No turns left')+'</button>':'')+'<button class="btn wax" data-act="end">'+(S.puz?'Start again':ui.endWarn?'End anyway':'End turn')+'</button></div>';
+    +'<div class="btns acts"><button class="btn" data-act="speak"'+(v.ok?'':' disabled')+'>Speak</button>'+(S.cfg.ramp&&!S.puz&&ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil&&(!(window.DTV>=13)||(window.TRAPA||[]).includes(S.players[0].hand[ui.adjs[0]]))?'<button class="btn ghost" data-act="veil" title="Lay this adjective face down. It springs on the first thing of the rival’s that turns on you.">'+(window.DTV>=13?'Lay '+esc(S.players[0].hand[ui.adjs[0]])+' face down as a trap':'Lay it face down')+'</button>':'')+'<button class="btn ghost" data-act="clear">Clear</button>'+(S.puz&&(sNode(S.puz).puz.turns||1)>1?'<button class="btn ghost" data-act="pwait"'+(S.left>1?'':' disabled')+'>'+(S.left>1?'Let a turn pass<br><small>'+(S.left-1)+' left</small>':'No turns left')+'</button>':'')+'<button class="btn wax" data-act="end">'+(S.puz?'Start again':ui.endWarn?'End anyway':'End turn')+'</button></div>';
 }
 
 /* ---- the shop, the deck and the lexicon ---- */
@@ -6763,7 +6779,7 @@ function ask(){
 const css=document.createElement('style');css.textContent='#top,#ttl,.home-menu [data-v=story],.home-menu [data-v=home],#view-home,#view-story{display:none!important}'+
  '#dtv{position:fixed;right:64px;top:20px;z-index:9990;font:600 11px/1 "Alegreya Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e6d3a8;background:rgba(9,7,5,.78);border:1px solid rgba(230,196,94,.45);border-radius:999px;padding:6px 11px;pointer-events:none}'
 +'#dtf{position:fixed;inset:0;z-index:9995;display:grid;place-items:center;background:rgba(6,4,2,.6)}'+'.dsum{margin:8px 0 14px;padding:10px 12px;border:1px solid rgba(138,106,47,.5);border-radius:8px;background:rgba(255,248,230,.45)}.dsh{font:400 20px/1.1 "IM Fell DW Pica",Georgia,serif;color:#23170d}.dsv{display:block;width:100%;height:auto;margin:6px 0}.dsd{margin:2px 0 6px;font-weight:700;color:#23170d}.dsum ul{margin:0;padding-left:18px}.dsum li{margin:2px 0;color:#2b1d10}'
-+'.dtfb{position:relative;width:min(620px,92vw);background:#efe0bd url(assets/parch.jpg) center/cover;color:#23170d;border:3px solid #8a6a2f;border-radius:10px;padding:24px 30px;font:16px/1.45 "Alegreya Sans",sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.8)}'
++'.dtfb{position:relative;width:min(620px,92vw);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;background:#efe0bd url(assets/parch.jpg) center/cover;color:#23170d;border:3px solid #8a6a2f;border-radius:10px;padding:24px 30px;font:16px/1.45 "Alegreya Sans",sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.8)}'
 +'.dtfb small{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#7a2a14;font-weight:700}.dtfb h3{font:400 30px/1.15 "IM Fell DW Pica",serif;margin:4px 0 12px}'
 +'.dts{display:flex;gap:8px;align-items:center}.dts button{width:42px;height:42px;border-radius:50%;border:2px solid #8a6a2f;background:#fffaee;font:20px "IM Fell DW Pica",serif;color:#23170d;cursor:pointer}.dts button.on{background:#8e1d10;color:#fff6e6}.dts span{font-size:13px;color:#5a4128;margin-left:6px}'
 +'.dtfb label{display:block;font-weight:700;margin:12px 0 4px}.dtfb textarea{width:100%;box-sizing:border-box;min-height:56px;border:1px solid #8a6a2f;border-radius:6px;background:#fffaee;color:#23170d;font:inherit;padding:6px}'
@@ -6772,7 +6788,7 @@ const css=document.createElement('style');css.textContent='#top,#ttl,.home-menu 
 document.head.appendChild(css);
 })();
 </script>
-<script>window.DTVBUILD="2026-11-22T16:10Z";
+<script>window.DTVBUILD="2026-11-22T16:12Z";
 /* Duel test: every finished duel is saved to the artifact's db, and a Logs view lists them live.
    Without db (signed out, or not available) nothing here shows and the game runs as before. */
 (function(){

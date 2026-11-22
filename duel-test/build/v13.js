@@ -155,9 +155,25 @@ onReady(()=>{
  +'.dtv13 .intent{position:relative;z-index:3;max-width:100%}'
  +'.dtv13 .nob13{display:block;margin-top:6px;font-size:13px;color:#e8dcc0}'+'.dtv13 .thing.hid13 .cf>*:not(.c-frame){visibility:hidden}.dtv13 .thing.hid13 .cf{background:radial-gradient(circle at 50% 42%,#3b2a19,#140d08 72%);box-shadow:inset 0 0 0 3px rgba(201,162,74,.45)}.dtv13 .thing.hid13 .mtb,.dtv13 .thing.hid13 .states{display:none}';
  document.head.appendChild(css2);
+
+ /* the hand keeps its places while the pointer is over it, so the next click lands where you aimed */
+ let hk=null,inHand=false;document.addEventListener('pointerover',e=>{const h=document.getElementById('hand');if(!h)return;const now=h.contains(e.target);if(now&&!inHand){inHand=true;hk=null;}else if(!now&&inHand){inHand=false;hk=null;const gs=h.querySelectorAll('.ghost13');if(gs.length){gs.forEach(x=>x.remove());try{fit();}catch(x){}}}},true);
+ window.dtvHand13=function(){try{const h=document.getElementById('hand');if(!h||typeof S==='undefined'||!S)return;const cur=S.players[0].hand.slice();
+  if(!inHand||!hk){hk=cur;return;}
+  let i=0;const holes=[];for(let k=0;k<hk.length;k++){if(i<cur.length&&hk[k]===cur[i])i++;else holes.push(k);}
+  if(i!==cur.length||!holes.length||holes.length>4){hk=cur;return;}
+  const cards=[...h.querySelectorAll(':scope > .card:not(.ghost13)')];if(cards.length!==cur.length)return;
+  for(const k of holes){const g=document.createElement('div');g.className='card ghost13';g.setAttribute('aria-hidden','true');const ref=h.querySelectorAll(':scope > .card')[k];if(ref)h.insertBefore(g,ref);else h.appendChild(g);}
+ }catch(e){}};
+ const css3=document.createElement('style');css3.textContent='#hand .card.ghost13{visibility:hidden;pointer-events:none}.dtv13 .own13{margin:0 0 6px;padding:6px 8px;border-left:3px solid #e07a5f;background:rgba(224,122,95,.12);color:#f3e4c2;font-size:13px}';document.head.appendChild(css3);
+ /* warn when a sentence turns on your own thing */
+ window.dtvOwn13=function(){try{if(typeof ui==='undefined'||typeof S==='undefined'||!S||S.phase!=='play')return;const hand=S.players[0].hand,vw=ui.kverb||(ui.verb!=null?hand[ui.verb]:null);const th=r=>r&&r.k==='thing'?findThing(S,r.id):null,o=th(ui.obj),s=th(ui.subj);
+  const mine=vw&&HARM.includes(vw)&&((o&&o.side===0)||(!ui.obj&&s&&s.side===0&&W[vw]&&W[vw].kind!=='agent'));const host=document.querySelector('.mguide');if(!host)return;let w=host.querySelector('.own13');
+  if(!mine){if(w)w.remove();return;}if(!w){w=document.createElement('p');w.className='own13';host.prepend(w);}w.textContent='Careful: this turns '+vw+' on your own '+((o||s).title||(o||s).w)+'.';}catch(e){}};
  /* last match: record it when the duel ends, not only when the end sheet is clicked through */
  const _rm=window.renderMatch;if(typeof _rm==='function'){renderMatch=function(){const r=_rm.apply(this,arguments);try{if(S&&S.over!=null&&!S.last13&&!S.puz&&typeof PF!=='undefined'){S.last13=1;PF.last={r:S.quit||S.over===1?'loss':S.over===0?'win':'draw',n:(typeof rvName==='function'?rvName():(S.rival&&S.rival.n)||'the rival'),p:(typeof rivalOf==='function'?rivalOf().p:null),gold:(S.paid||{}).gold||0};if(typeof save==='function')save();}}catch(e){}
    try{if(S&&S.phase==='defend'&&S.pending){const bx=document.querySelector('.btns [data-act="def"][data-id=""]');if(bx&&!bx.dataset.sum13){const C=JSON.parse(JSON.stringify(S));C.phase='bot';const L=C.log.length;resolve(C,1,Object.assign({},C.pending,{def:null}));const sm=C.log.slice(L).map(l=>String(l.x||l)).find(x=>/^The sum:/.test(x));bx.dataset.sum13=1;if(sm){const h=document.createElement('span');h.className='nob13';h.textContent='If you take it: '+sm.replace(/^The sum: /,'');bx.parentElement.appendChild(h);}}}}catch(e){}
+   try{window.dtvHand13&&dtvHand13();window.dtvOwn13&&dtvOwn13();}catch(e){}
    return r;};}
 });
 

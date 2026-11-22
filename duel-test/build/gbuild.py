@@ -167,6 +167,7 @@ _mat = 'data:image/webp;base64,' + _b.b64encode(open(H + 'mat_duel.webp', 'rb').
 # ---- logs: keep the cloud profile off in the duel test ----
 ui = RP(ui,"async function linkStore(){","async function linkStore(){if(window.DTVNOSTORE)return;")
 # ---- v13: the overnight bug report ----
+ui = RP(ui,">Lay it face down</button>",">'+(window.DTV>=13?'Lay '+esc(S.players[0].hand[ui.adjs[0]])+' face down as a trap':'Lay it face down')+'</button>")
 eng = RP(eng,"if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?","const b13=window.DTV>=13&&direct&&!pre&&c.mult<=1&&window.dtvBase13?dtvBase13(S,n):null;if(direct&&(b||nv||ex||pv||c.mult>1||pre||(b13&&/hurt/.test(b13)))){const m=c.mult,base=n%m===0?n/m:null;let s=b13?b13:pre?")
 ui = RP(ui,"ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil?","ui.adjs.length===1&&!ui.subj&&ui.verb==null&&!ui.kverb&&ui.clime==null&&!S.players[0].veil&&(!(window.DTV>=13)||(window.TRAPA||[]).includes(S.players[0].hand[ui.adjs[0]]))?")
 eng = RP(eng,"one more each turn, up to '+S.cfg.ink+'.');","one more each turn, up to '+S.cfg.ink+(window.DTV>=13?', plus up to '+WELL+' carried from the turn before':'')+'.');")
