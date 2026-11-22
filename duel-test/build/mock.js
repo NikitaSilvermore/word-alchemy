@@ -50,7 +50,7 @@ document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest
 addEventListener('keydown',e=>{if(e.key==='Escape'){const d=$i('mdraw');if(d&&!d.hidden){d.hidden=true;}}});
 /* fit the 1920 x 1080 table to the window */
 const _fit=fit;
-fit=function(){try{document.body.classList.add('mock');document.body.classList.toggle('dtv7',window.DTV>=7);document.body.classList.toggle('dtv9',window.DTV>=9);if(typeof ARTAS!=='undefined')ARTAS.plants='worts';}catch(e){}
+fit=function(){try{document.body.classList.add('mock');document.body.classList.toggle('dtv7',window.DTV>=7);document.body.classList.toggle('dtv9',window.DTV>=9);document.body.classList.toggle('dtv12',window.DTV>=12);if(typeof ARTAS!=='undefined')ARTAS.plants='worts';}catch(e){}
   if(typeof view==='undefined'||view!=='match'){return _fit.apply(this,arguments);}
   document.body.classList.add('induel');const t=document.querySelector('.table');if(!t)return;
   const z=Math.max(.3,Math.min(innerWidth/1920,innerHeight/1080));t.style.zoom=z;

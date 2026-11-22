@@ -223,3 +223,10 @@ body.dtv7 .hud .k-well{display:none!important}
 .dtv9 .c-sch{border:0;animation:schglow 4.2s ease-in-out infinite}
 .dtv9 .c-sch.sc-fire{--g:rgba(255,110,70,.55)}.dtv9 .c-sch.sc-water{--g:rgba(90,160,230,.55)}.dtv9 .c-sch.sc-earth{--g:rgba(230,170,80,.5)}.dtv9 .c-sch.sc-air{--g:rgba(225,235,245,.6)}.dtv9 .c-sch.sc-life{--g:rgba(120,210,100,.5)}.dtv9 .c-sch.sc-rot{--g:rgba(175,120,210,.55)}.dtv9 .c-sch.sc-word{--g:rgba(240,200,110,.6)}
 @media (prefers-reduced-motion:reduce){.dtv9 .c-sch{animation:none;box-shadow:0 0 0 1.5px #e9d8a6,0 0 7px 2px var(--g)}}
+/* v12: strike bottom left, stand bottom right, school sigil above the name */
+.dtv12 .cf.mini .c-seal{left:auto;right:-3%}
+.dtv12 .cf.full .c-seal{left:auto;right:-1%}
+.dtv12 #hand .card .c-sch,.dtv12 #mdraw .card .c-sch,.dtv12 #table .thing .c-sch{right:auto;left:50%;transform:translateX(-50%);bottom:31%}
+.dtv12 .mtb,.dtv12 #hand .card>.mtb,.dtv12 #mdraw .card>.mtb{top:auto;left:-4px;bottom:10%;padding:0 7px 0 22px}
+.dtv12 .cf.mini:has(.c-seal) .c-w{left:21%;width:58%}
+.dtv12 .mtb,.dtv12 #hand .card>.mtb,.dtv12 #mdraw .card>.mtb{bottom:8%;left:-6px}
