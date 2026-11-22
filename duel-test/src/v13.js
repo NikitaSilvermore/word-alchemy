@@ -68,8 +68,9 @@ const keepKind=(t,g,sp)=>{if(g&&!t.props.includes('ground'))t.props.push('ground
 climb=function(){};fall=function(){return false;};
 
 /* ---- a fresh thing cannot attack with any verb the turn it arrives; sealed things say what still reaches them ---- */
-{const _v=validate;validate=function(S,who,sen){const r=_v(S,who,sen);if(!r||!r.ok){if(r&&r.why&&/sealed\. You cannot single it out/.test(r.why))r.why='It is sealed: it cannot be singled out. A category (such as beasts) or something that touches every thing opposite still reaches it.';return r;}
- try{const hand=S.players[who].hand,vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);if(vw&&ATTACKV.includes(vw)&&sen.subj&&sen.subj.k==='thing'){const t=findThing(S,sen.subj.id);if(t&&t.side===who&&t.fresh&&!t.props.includes('swift')&&!t.st.quick)return{ok:false,why:Cap(t.title||t.w)+' has only just arrived. It can attack next turn.',cost:0};}}catch(e){}
+const norm=(S,who,sen)=>{try{const hand=S.players[who].hand,vw=sen&&(sen.kverb||(sen.verb!=null?hand[sen.verb]:null));if(vw==='steal'&&sen.obj&&((sen.obj.k==='player'&&sen.obj.i!==who)||(sen.obj.k==='thing'&&(findThing(S,sen.obj.id)||{}).side!==who))){const c=Object.assign({},sen);delete c.obj;return c;}}catch(e){}return sen;};
+{const _v=validate;validate=function(S,who,sen){sen=norm(S,who,sen);const r=_v(S,who,sen);if(!r||!r.ok){if(r&&r.why&&/sealed\. You cannot single it out/.test(r.why))r.why='It is sealed: it cannot be singled out. A category (such as beasts) or something that touches every thing opposite still reaches it.';return r;}
+ try{const hand=S.players[who].hand,vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);if(vw&&sen.subj&&sen.subj.k==='thing'&&W[vw]&&W[vw].kind==='agent'){const t=findThing(S,sen.subj.id);if(t&&t.side===who){const st=t.st||{},why=st.frozen?'is frozen':st.asleep?'is asleep':st.bound?'is bound fast':st.stone?'has been turned to stone':null;if(why)return{ok:false,why:Cap(t.title||t.w)+' '+why+' and cannot act this turn.',cost:0};}}if(vw&&ATTACKV.includes(vw)&&sen.subj&&sen.subj.k==='thing'){const t=findThing(S,sen.subj.id);if(t&&t.side===who&&t.fresh&&!t.props.includes('swift')&&!t.st.quick)return{ok:false,why:Cap(t.title||t.w)+' has only just arrived. It can attack next turn.',cost:0};}}catch(e){}
  return r;};}
 
 /* ---- every life change appears in the Chronicle ---- */
@@ -82,12 +83,13 @@ function track(S,fn){if(!S||S.quiet||!S.players)return fn();const L=S.log.length
 
 /* ---- a sentence that would not work cannot be spoken; and nothing crashes ---- */
 let depth=0;
+function dig(X){try{return JSON.stringify([X.players.map(p=>[p.life,p.poisoned,p.asleep,p.dazed,p.silence&&p.silence.length,p.coins]),X.things.map(t=>[t.id,t.w,t.side,t.vig,JSON.stringify(t.st||{}),(t.props||[]).length,t.title]),X.clime&&X.clime.w]);}catch(e){return Math.random();}}
 function why(C,from){const ls=C.log.slice(from).map(l=>String(l&&l.x!=null?l.x:l)).filter(x=>!/^(You say|The rival says|The rival says something)/.test(x)&&x!=='Nothing happens.');return ls.length?ls[ls.length-1]:'That would do nothing.';}
-{const _r=resolve;resolve=function(S,who,sen){
+{const _r=resolve;resolve=function(S,who,sen){sen=norm(S,who,sen);
  const run=T=>{try{return _r(T,who,sen);}catch(e){console.error('v13 resolve',e);try{window.dtvReportErr&&dtvReportErr(e);}catch(x){}if(T&&T.log&&!T.quiet)say(T,'The words fizzle.');return{ok:false,why:'Those words fizzle.'};}};
  if(depth||S.quiet){const r=run(S);if(r&&r.ok&&r.effect===false&&sen&&sen.veil==null)return{ok:false,why:'That would do nothing.',cost:0};return r;}
- if(sen&&sen.veil==null){let C=null;try{C=JSON.parse(JSON.stringify(S));}catch(e){}
-  if(C){const L=C.log.length;depth++;let r;try{r=run(C);}finally{depth--;}const sprang=C.log.slice(L).some(l=>/A hidden word springs/.test(String(l&&l.x!=null?l.x:l)));if(r&&r.ok&&r.effect===false&&!sprang)return{ok:false,why:why(C,L)+' (Nothing would happen, so it is not said.)',cost:0};}}
+ if(sen&&sen.veil==null){let C=null,dig0=null;try{C=JSON.parse(JSON.stringify(S));dig0=dig(C);}catch(e){}
+  if(C){const L=C.log.length;depth++;let r;try{r=run(C);}finally{depth--;}const sprang=C.log.slice(L).some(l=>/A hidden word springs/.test(String(l&&l.x!=null?l.x:l)));if(r&&r.ok&&r.effect===false&&!sprang&&sen.clime==null&&dig(C)===dig0)return{ok:false,why:why(C,L)+' (Nothing would happen, so it is not said.)',cost:0};}}
  return track(S,()=>run(S));};}
 
 /* ---- attuned things carry a visible mark ---- */
@@ -131,12 +133,13 @@ const HARM=['strike','bite','crush','cut','sting','poison','bind','drench','diss
 
 /* ---- blocks: say why an attack can't be blocked ---- */
 function noBlockWhy(S,who,sen){try{if(!sen.obj||sen.obj.k!=='player'||sen.obj.i===who||sen.clime!=null)return null;const hand=S.players[who].hand,vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);if(!vw||!BLOCKABLE.includes(vw))return null;
- if(brave(S,who))return 'Courage: it cannot be blocked.';const att=attackerOf(S,who,sen);if(!att)return null;const n=Cap(att.title||att.w);
+ if(brave(S,who))return 'Courage: it cannot be blocked.';if((sen.adjs||[]).some(i=>['occult','masked'].includes(hand[i])))return 'It is hidden as it strikes: it cannot be blocked.';const att=attackerOf(S,who,sen);if(!att)return null;const n=Cap(att.title||att.w);
  if(att.st.occult)return n+' is hidden: it cannot be blocked.';if(att.props.includes('stealth'))return n+' moves unseen: it cannot be blocked.';if(att.props.includes('spirit')&&!att.props.includes('allthings'))return n+' is a spirit: nothing can block it.';
  const fly=(att.props.includes('bird')||att.props.includes('flying'))&&!att.st.sodden&&!att.st.grounded;const ds=1-who;
  if(S.things.some(t=>t.side===ds&&t.st.guarding&&takes(t,vw)&&!inert(t)&&(!fly||flies(t))))return 'A thing on guard steps in by itself.';
  if(!side(S,ds).some(t=>!isG(t)))return null;const el=eligibleDef(S,ds,att);if(!el.length)return fly?n+' flies: only a flier could block it, and '+(ds===0?'you have':'they have')+' none ready.':'Nothing '+(ds===0?'of yours':'of theirs')+' can block it.';return null;}catch(e){return null;}}
 window.dtvNoBlockWhy=noBlockWhy;
+{const _nd=needsDefence;needsDefence=function(S,who,sen){try{const hand=S.players[who].hand;if((sen.adjs||[]).some(i=>['occult','masked'].includes(hand[i])))return false;}catch(e){}return _nd.apply(this,arguments);};}
 {const _r2=resolve;resolve=function(S,who,sen){if(S&&!S.quiet&&sen&&sen.def===undefined&&S.phase!=='defend'){const w=noBlockWhy(S,who,sen);if(w&&validate(S,who,sen).ok){const r=_r2(S,who,sen);if(r&&r.ok)say(S,'No block: '+w);return r;}}return _r2(S,who,sen);};}
 
 /* ---- the interface ---- */
@@ -165,15 +168,16 @@ onReady(()=>{
   const cards=[...h.querySelectorAll(':scope > .card:not(.ghost13)')];if(cards.length!==cur.length)return;
   for(const k of holes){const g=document.createElement('div');g.className='card ghost13';g.setAttribute('aria-hidden','true');const ref=h.querySelectorAll(':scope > .card')[k];if(ref)h.insertBefore(g,ref);else h.appendChild(g);}
  }catch(e){}};
- const css3=document.createElement('style');css3.textContent='#hand .card.ghost13{visibility:hidden;pointer-events:none}.dtv13 .own13{margin:0 0 6px;padding:6px 8px;border-left:3px solid #e07a5f;background:rgba(224,122,95,.12);color:#f3e4c2;font-size:13px}';document.head.appendChild(css3);
+ const css3=document.createElement('style');css3.textContent='#hand .card.ghost13{visibility:hidden;pointer-events:none}.dtv13 .thing.idle13 .cf{filter:grayscale(.75) brightness(.62);transition:filter .3s}.dtv13 .thing.idle13:hover .cf{filter:grayscale(.4) brightness(.85)}.dtv13 .own13{margin:0 0 6px;padding:6px 8px;border-left:3px solid #e07a5f;background:rgba(224,122,95,.12);color:#f3e4c2;font-size:13px}';document.head.appendChild(css3);
  /* warn when a sentence turns on your own thing */
+ window.dtvIdle13=function(){try{const on=typeof S!=='undefined'&&S&&S.phase==='play'&&S.active===0&&typeof readyVerbs==='function';document.querySelectorAll('#table .thing[data-id]').forEach(el=>{const t=on?S.things.find(x=>String(x.id)===el.dataset.id):null;el.classList.toggle('idle13',!!(t&&t.side===0&&!(t.props||[]).includes('ground')&&!readyVerbs(t).length));});}catch(e){}};
  window.dtvOwn13=function(){try{if(typeof ui==='undefined'||typeof S==='undefined'||!S||S.phase!=='play')return;const hand=S.players[0].hand,vw=ui.kverb||(ui.verb!=null?hand[ui.verb]:null);const th=r=>r&&r.k==='thing'?findThing(S,r.id):null,o=th(ui.obj),s=th(ui.subj);
   const mine=vw&&HARM.includes(vw)&&((o&&o.side===0)||(!ui.obj&&s&&s.side===0&&W[vw]&&W[vw].kind!=='agent'));const host=document.querySelector('.mguide');if(!host)return;let w=host.querySelector('.own13');
   if(!mine){if(w)w.remove();return;}if(!w){w=document.createElement('p');w.className='own13';host.prepend(w);}w.textContent='Careful: this turns '+vw+' on your own '+((o||s).title||(o||s).w)+'.';}catch(e){}};
  /* last match: record it when the duel ends, not only when the end sheet is clicked through */
  const _rm=window.renderMatch;if(typeof _rm==='function'){renderMatch=function(){const r=_rm.apply(this,arguments);try{if(S&&S.over!=null&&!S.last13&&!S.puz&&typeof PF!=='undefined'){S.last13=1;PF.last={r:S.quit||S.over===1?'loss':S.over===0?'win':'draw',n:(typeof rvName==='function'?rvName():(S.rival&&S.rival.n)||'the rival'),p:(typeof rivalOf==='function'?rivalOf().p:null),gold:(S.paid||{}).gold||0};if(typeof save==='function')save();}}catch(e){}
    try{if(S&&S.phase==='defend'&&S.pending){const bx=document.querySelector('.btns [data-act="def"][data-id=""]');if(bx&&!bx.dataset.sum13){const C=JSON.parse(JSON.stringify(S));C.phase='bot';const L=C.log.length;resolve(C,1,Object.assign({},C.pending,{def:null}));const sm=C.log.slice(L).map(l=>String(l.x||l)).find(x=>/^The sum:/.test(x));bx.dataset.sum13=1;if(sm){const h=document.createElement('span');h.className='nob13';h.textContent='If you take it: '+sm.replace(/^The sum: /,'');bx.parentElement.appendChild(h);}}}}catch(e){}
-   try{window.dtvHand13&&dtvHand13();window.dtvOwn13&&dtvOwn13();}catch(e){}
+   try{window.dtvHand13&&dtvHand13();window.dtvOwn13&&dtvOwn13();window.dtvIdle13&&dtvIdle13();}catch(e){}
    return r;};}
 });
 
