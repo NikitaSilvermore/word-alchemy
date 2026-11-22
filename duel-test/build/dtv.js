@@ -31,7 +31,7 @@ window.dtvTrait=function(bs,x,ins){if(V<5||!x)return;const t=S.things.find(q=>!b
   t.inh=(t.inh||[]).concat(got);if(V>=13){const same=(ins||[]).find(q=>q.w===t.w),oth=(ins||[]).find(q=>q!==same);if(same&&oth)say(S,Cap(oth.w)+' feeds the '+t.w+': it grows to '+t.vig+'.');}
   /* made from something already on the table: it has not just arrived, and can act at once */
   if((ins||[]).some(q=>q.board)){t.fresh=V>=13?0:(V>=8&&!(ins||[]).some(q=>q.ready)?1:0);t.acted=false;if(bodyStrikes(t.props)&&!t.verbs.includes('strike')){t.verbs.unshift('strike');}t.inn=1;}};
-window.dtvDeck=function(d,me){if(me===1)window.DTVRAND=null;if(V>=6&&me){const r=dtvRand();if(me===1)window.DTVRAND=r;else window.DTVRIVAL=r;return r;}return V>=4?d.filter(w=>!['vessel','fuse','conjoin'].includes(w)):d;};
+window.dtvDeck=function(d,me){if(window.DTVMAIN)return V>=4?d.filter(w=>!['vessel','fuse','conjoin'].includes(w)):d;if(me===1)window.DTVRAND=null;if(V>=6&&me){const r=dtvRand();if(me===1)window.DTVRAND=r;else window.DTVRIVAL=r;return r;}return V>=4?d.filter(w=>!['vessel','fuse','conjoin'].includes(w)):d;};
 /* v6: a fresh random deck every duel, built to a shape so it can always fight */
 function dtvRand(){const NO=['vessel','fuse','conjoin','be'],P=w=>W[w].props||[],ok=w=>W[w]&&!W[w].token&&!NO.includes(w),T=w=>tierOf(w);
   const all=ALLWORDS.filter(w=>ok(w)&&!(V>=7&&DTVX7.includes(w))),pk=(arr,n,out)=>{arr=arr.filter(w=>!out.includes(w));for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr.slice(0,n);};
@@ -110,7 +110,7 @@ function candRef(){const p=S.players[0],s=ui.subj;if(!s)return null;
   if(s.k==='thing'){const t=findThing(S,s.id);return t&&t.side===0?{k:'thing',id:t.id,w:t.w}:null;}return null;}
 function vatAdd(r){const p=S.players[0];p.vat=p.vat||[];if(!r||r.bad||p.vat.length>=2||p.vat.some(q=>sameRef(q,r)))return false;p.vat.push(r);return true;}
 function inhChips(){if(V<5)return;for(const t of S.things){if(!t.inh||!t.inh.length)continue;const el=document.querySelector('.thing[data-id="'+t.id+'"] .states');if(!el||el.querySelector('.dinh'))continue;const by={};for(const g of t.inh){const [w,p]=g.split(':');(by[w]=by[w]||[]).push(p);}for(const w in by){const i=document.createElement('i');i.className='good dinh';i.title='Kept from '+w+': '+by[w].join(', ');i.textContent='from '+w;el.appendChild(i);}}}
-window.dtvPanel=function(){if(V<4)return;try{inhChips();}catch(e){}try{const bn=document.getElementById('bench');if(bn)bn.classList.toggle('dempty',!(ui.subj||ui.obj||ui.verb!=null||ui.kverb||(ui.adjs&&ui.adjs.length)||ui.clime!=null||ui.msg));}catch(e){}
+window.dtvPanel=function(){if(V<4)return;if(window.DTVMAIN){try{inhChips();}catch(e){}return;}try{inhChips();}catch(e){}try{const bn=document.getElementById('bench');if(bn)bn.classList.toggle('dempty',!(ui.subj||ui.obj||ui.verb!=null||ui.kverb||(ui.adjs&&ui.adjs.length)||ui.clime!=null||ui.msg));}catch(e){}
   const tb=document.getElementById('table');if(!tb)return;let e=document.getElementById('dfz');
   if(!S||view!=='match'||!S.live||S.over!=null){if(e)e.remove();return;}
   if(!e){e=document.createElement('div');e.id='dfz';tb.appendChild(e);}

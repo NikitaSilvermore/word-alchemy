@@ -8,15 +8,15 @@ const VN=()=>window.DTVNAME||'v0';
 /* straight to the duelling bench: skip the title */
 const toBench=()=>{try{const t=document.getElementById('ttl');if(t)t.remove();ttlUp=false;}catch(e){}
   try{if(!S||!S.live||S.over!=null||S.story||S.puz){fresh();}view='match';renderAll();}catch(e){}};
-addEventListener('load',()=>setTimeout(()=>{toBench();},400));
+if(!window.DTVMAIN)addEventListener('load',()=>setTimeout(()=>{toBench();},400));
 /* a quiet badge so testers know which version they are on */
-document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.id='dtv';b.textContent='Duel test';document.body.appendChild(b);});
+document.addEventListener('DOMContentLoaded',()=>{if(window.DTVMAIN)return;const b=document.createElement('div');b.id='dtv';b.textContent='Duel test';document.body.appendChild(b);});
 let seen=null;
 try{const _rm=renderMatch;renderMatch=function(){_rm.apply(this,arguments);try{if(typeof dtvPanel==='function')dtvPanel();}catch(e){}};}catch(e){}
 if((window.DTV|0)>=4){try{PF.hints=0;}catch(e){}}
-setInterval(()=>{try{if(typeof view!=='undefined'&&view!=='match'&&!document.getElementById('set'))toBench();}catch(e){}},500);
+if(!window.DTVMAIN)setInterval(()=>{try{if(typeof view!=='undefined'&&view!=='match'&&!document.getElementById('set'))toBench();}catch(e){}},500);
 setInterval(()=>{try{
-  if(typeof S==='undefined'||!S||view!=='match'||S.phase!=='over'||S.over==null)return;
+  if(typeof S==='undefined'||!S||view!=='match'||S.phase!=='over'||S.over==null)return;if(window.DTVMAIN&&(S.story||S.puz))return;
   const id=(S.seed||'')+':'+S.turn+':'+S.over;if(seen===id)return;seen=id;
   setTimeout(()=>ask(),2600);
 }catch(e){}},700);
@@ -42,7 +42,7 @@ function ask(){
     const bl=new Blob([full()],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();};
   e.querySelector('[data-k=mail]').onclick=()=>{location.href='mailto:?subject='+encodeURIComponent('Word Alchemy duel test')+'&body='+encodeURIComponent(full().slice(0,1800));};
 }
-const css=document.createElement('style');css.textContent='#top,#ttl,.home-menu [data-v=story],.home-menu [data-v=home],#view-home,#view-story{display:none!important}'+
+const css=document.createElement('style');css.textContent=(window.DTVMAIN?'':'#top,#ttl,.home-menu [data-v=story],.home-menu [data-v=home],#view-home,#view-story{display:none!important}')+
  '#dtv{position:fixed;right:64px;top:20px;z-index:9990;font:600 11px/1 "Alegreya Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e6d3a8;background:rgba(9,7,5,.78);border:1px solid rgba(230,196,94,.45);border-radius:999px;padding:6px 11px;pointer-events:none}'
 +'#dtf{position:fixed;inset:0;z-index:9995;display:grid;place-items:center;background:rgba(6,4,2,.6)}'+'.dsum{margin:8px 0 14px;padding:10px 12px;border:1px solid rgba(138,106,47,.5);border-radius:8px;background:rgba(255,248,230,.45)}.dsh{font:400 20px/1.1 "IM Fell DW Pica",Georgia,serif;color:#23170d}.dsv{display:block;width:100%;height:auto;margin:6px 0}.dsd{margin:2px 0 6px;font-weight:700;color:#23170d}.dsum ul{margin:0;padding-left:18px}.dsum li{margin:2px 0;color:#2b1d10}'
 +'.dtfb{position:relative;width:min(620px,92vw);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;background:#efe0bd url(assets/parch.jpg) center/cover;color:#23170d;border:3px solid #8a6a2f;border-radius:10px;padding:24px 30px;font:16px/1.45 "Alegreya Sans",sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.8)}'
