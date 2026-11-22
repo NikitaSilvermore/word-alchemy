@@ -10,7 +10,7 @@ Snapshot of the published "Word Alchemy: Duel Test" artifact. Art packs (`assets
 | `src/engine.js` | **The duel engine and every card definition** (`n_`, `v_`, `a_`, `c_`, `s_` calls build `W`), as it runs in the page, with all duel-test patches applied. Version switches read `window.DTV`. |
 | `src/web21.js` | The fusion web (`window.WEB21`): every fusion recipe and the extra web cards. |
 | `src/dtv.js` | Duel-test layer for v0–v7: versions, random decks, born-knowing verbs, fusion on the row, end-of-game summary, the v7 fizzle check. |
-| `src/v8.js` | v8–v10 layer: the verbs round (percentages, seep, toxify, spells), v9 colour pie (schools, weather by school, evolve, in tune) v10 might, v11 balance and v12 strike and stand (a display-only rename: might shows as strike, vigour as stand; the engine still uses `vig` and `MT()`). **The current card text (glosses) for v8+ is set here** and overrides `engine.js`. |
+| `src/v8.js` | v8–v10 layer: the verbs round (percentages, seep, toxify, spells), v9 colour pie (schools, weather by school, evolve, in tune) v10 might, v11 balance and v12 strike and stand (a display-only rename: might shows as strike, vigour as stand, and the verb card `strike` as hit; the engine still uses `vig`, `MT()` and the key `strike`). **The current card text (glosses) for v8+ is set here** and overrides `engine.js`. |
 | `src/ui.js` | The game UI as served (inline images removed from this copy). |
 | `src/gguard.js`, `src/gfeed.js`, `src/mock.js` | Save isolation and version pick, feedback form, board layout and card inspector. |
 | `build/` | The raw sources and `gbuild.py` that produce `index.html` (`build/base/` holds the main game's `engine.js`, `ui.js`, `head.html`, `story.js` that the build patches). |

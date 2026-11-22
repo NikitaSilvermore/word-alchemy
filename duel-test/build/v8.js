@@ -336,19 +336,20 @@ if(W.bind)W.bind.gloss='Hold a thing still for a turn and squeeze it for half yo
 const _st=startTurn;startTurn=function(S,i){const r=_st.apply(this,arguments);try{if(S.over==null&&S.things.some(t=>t.side===i&&t.w==='ink')){S.players[i].ink+=1;}}catch(e){}return r;};
 })();
 
-/* v12: strike and stand. Might is shown as strike, vigour as stand; strike bottom left, stand bottom right. Display only. */
+/* v12: strike and stand. Might is shown as strike, vigour as stand; strike bottom left, stand bottom right; the verb card strike is shown as hit. Display only. */
 (function(){
 'use strict';
 const V=window.DTV|0;if(!(V>=12))return;
 const RV=/\b([Vv])igour\b/g;
 const RM1=/\b([Mm])ight\b(?=\s*[+×·:(\d%]|\s+(?:while|and|is|of|to)\b)/g;
 const RM2=/((?:\d|\b(?:its|his|her|your|their|plain|half|full|of|the)\b)\s)([Mm])ight\b/g;
-const fix=s=>{if(!s||!/[Vv]igour|[Mm]ight/.test(s))return s;
- return s.replace(/\bfor (its|plain) vigour\b/g,'for $1 strike').replace(RV,(a,c)=>c==='V'?'Stand':'stand').replace(RM1,(a,c)=>c==='M'?'Strike':'strike').replace(RM2,(a,p,c)=>p+(c==='M'?'Strike':'strike'));};
+const fix=s=>{if(!s||!/[Vv]igour|[Mm]ight|[Ss]trike/.test(s))return s;
+ return s.replace(/\bstrikes the rival for its (vigour|might)\b/g,'hits the rival for its $1').replace(/(?<!blow you )\bstrike\b(?![-\w])/g,'hit').replace(/\bStrike\b(?![-\w])/g,'Hit').replace(/\bfor (its|plain) vigour\b/g,'for $1 strike').replace(RV,(a,c)=>c==='V'?'Stand':'stand').replace(RM1,(a,c)=>c==='M'?'Strike':'strike').replace(RM2,(a,p,c)=>p+(c==='M'?'Strike':'strike'));};
 window.DTVFIX=fix;
 const SKIP={SCRIPT:1,STYLE:1,TEXTAREA:1,INPUT:1};
-const doText=n=>{const p=n.parentNode;if(!p||SKIP[p.nodeName]||(p.closest&&p.closest('.dtvp')))return;const v=n.nodeValue,f=fix(v);if(f!==v)n.nodeValue=f;};
-const doEl=el=>{if(SKIP[el.nodeName]||(el.closest&&el.closest('.dtvp')))return;for(const a of ['title','aria-label']){const v=el.getAttribute&&el.getAttribute(a);if(v){const f=fix(v);if(f!==v)el.setAttribute(a,f);}}};
+const DONE=new WeakMap();
+const doText=n=>{const p=n.parentNode;if(!p||SKIP[p.nodeName]||(p.closest&&p.closest('.dtvp')))return;const v=n.nodeValue;if(DONE.get(n)===v)return;const f=fix(v);DONE.set(n,f);if(f!==v)n.nodeValue=f;};
+const doEl=el=>{if(SKIP[el.nodeName]||(el.closest&&el.closest('.dtvp')))return;for(const a of ['title','aria-label']){const v=el.getAttribute&&el.getAttribute(a);if(v){let m=DONE.get(el);if(!m){m={};DONE.set(el,m);}if(m[a]===v)continue;const f=fix(v);m[a]=f;if(f!==v)el.setAttribute(a,f);}}};
 const walk=root=>{if(root.nodeType===3){doText(root);return;}if(root.nodeType!==1)return;doEl(root);
  const tw=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);let n;while((n=tw.nextNode()))n.nodeType===3?doText(n):doEl(n);};
 const start=()=>{walk(document.body);new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')doText(m.target);else if(m.type==='attributes')doEl(m.target);else m.addedNodes.forEach(walk);}})
