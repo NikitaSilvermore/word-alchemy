@@ -306,7 +306,7 @@ if(W.obsidian){W.obsidian.vig=6;W.obsidian.gloss='Volcanic glass: the keenest ed
 if(W.word)W.word.vig=5;if(W.silence)W.silence.syl=1;if(W.dew)W.dew.vig=4;if(W.brine)W.brine.vig=5;if(W.pitch)W.pitch.vig=4;if(W.flint)W.flint.vig=4;
 if(W.protect)W.protect.gloss='Spell. A thing gains 20% and is protected: it can’t be stolen, lured, tamed, summoned or haunted. Clay wakes as a golem.';
 if(W.lure)W.lure.gloss='Spell. A rival thing of 5 or less, not a beast, comes to your side.';
-const _el=ADJF.eternal;ADJF.eternal=(S,who,e)=>{const r=_el(S,who,e);if(r&&e.t.side===who){const n=pc(e.t.vig,.3);e.t.vig+=n;say(S,'Eternal, it stands '+n+' stronger.');}return r;};
+const _el=ADJF.eternal;ADJF.eternal=(S,who,e)=>{const v0=e.k==='t'?e.t.vig:0;const r=_el(S,who,e);if(r&&e.t.side===who){const n=pc(e.t.vig,.3);e.t.vig+=n;say(S,window.DTV>=13?'Eternal, it stands '+(e.t.vig-v0)+' stronger: +2 as a blessing, then +30%, '+v0+' to '+e.t.vig+'.':'Eternal, it stands '+n+' stronger.');}return r;};
 if(W.eternal)W.eternal.gloss='Destroyed, it returns to its keeper’s hand. On your own thing it also gives +30% vigour.';
 EVENT.omen=function(S,who,c){const o=S.players[1-who];if(who===0)say(S,'The omen shows the rival’s hand: '+(o.hand.join(', ')||'nothing')+'.');else say(S,'The rival reads an omen of your hand.');const p=S.players[who];for(let k=0;k<2;k++){if(!p.deck.length&&p.discard.length){p.deck=shuffle(S,p.discard);p.discard=[];}if(p.deck.length)p.hand.push(p.deck.pop());}c.effect=true;};
 if(W.omen)W.omen.gloss='Said alone, then spent. You read the rival’s hand and draw two words.';

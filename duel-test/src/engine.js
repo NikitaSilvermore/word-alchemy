@@ -1,4 +1,3 @@
-
 "use strict";
 const NOUN='noun',VERB='verb',ADJ='adj',CAT='cat',CLIME='clime';
 const ORIGIN={X:'Every tongue',OE:'Old English',N:'Norse',F:'French',L:'Latin',G:'Greek',A:'Arabic',H:'Hebrew'};
@@ -308,7 +307,7 @@ function react(S,who,sen,c){
   if(x.r&&W[x.r].t===CLIME){say(S,Cap(A.w)+' and '+B.w+' become '+x.r+'.');if(S.clime&&!S.clime.made)S.players[S.clime.owner].discard.push(S.clime.w);S.clime={w:x.r,owner:who,made:true};say(S,Cap(x.r)+' settles over the board.');climeArrive(S);return;}
   if(x.r==='rust'){say(S,'Steam and iron: rust takes every metal on the other side.');for(const t of foe())if(t.props.includes('metal')&&!t.props.includes('incorruptible'))damage(S,T(t),3,'rust');return;}
   if(x.r&&W[x.r]&&(W[x.r].props||[]).includes('potion')){say(S,Cap(A.w)+' and '+B.w+' steep into '+x.r+', poured at once.');EVENT[x.r](S,who,c);anoint(S,who,x.r);if(!full(S,who,'flask')){const f=addThing(S,'flask',who,who,true);f.pw=x.r;f.title=x.r+' flask';say(S,'A flask of '+x.r+' is set on the shelf.');}S.potions=S.potions||[0,0];S.potions[who]++;return;}
-  if(x.r){const t=addThing(S,x.r,who,who,true);t.vig=Math.max(t.vig,A.vig+B.vig);t.made=true;t.parts=[A.w,B.w];t.setT=S.turn;
+  if(x.r){const t=addThing(S,x.r,(window.DTV>=13&&W[x.r]&&(W[x.r].props||[]).includes('burden'))?1-who:who,who,true);t.vig=Math.max(t.vig,A.vig+B.vig);t.made=true;t.parts=[A.w,B.w];t.setT=S.turn;
     if(S.cfg.gw2&&!(window.DTV>=7)&&!['fire','water','earth','air','wind'].includes(x.r)&&t.props.includes('ground')){t.props=t.props.filter(q=>q!=='ground'&&q!=='fleeting');t.pl=placeFor(S,who);t.vig=Math.max(1,t.vig+MADEPLUS);if(!t.verbs.includes('strike')&&bodyStrikes(t.props)){t.verbs.unshift('strike');t.inn=1;}t.fresh=1;}
     else if(S.cfg.gw2&&!t.props.includes('ground'))t.vig=Math.max(1,t.vig+MADEPLUS);t.col=Math.max(A.t&&A.t.col||0,B.t&&B.t.col||0);if(!isG(t))stageUp(S,t);t.forms=t.forms||[];
     const keep=['toxic','corrosive','bright','sacred','flying','thorny','eternal','frost','damp','lull','stealth','swift','potent','incorruptible','hoard','sting','sharp','metal','named'];
@@ -424,7 +423,7 @@ function newGame(seed,o){
   for(let i=0;i<2;i++)S.players.push({life:life[i],coins:0,ink:0,well:0,silence:[],claims:0,deck:shuffle(S,decks[i].slice()),hand:[],discard:[],asleep:0,rested:0,poisoned:0,sodden:0,dazed:0,earned:0,echoed:false});
   S.shop=[];S.supply=shuffle(S,(o.market||ALLWORDS).filter(w=>W[w]&&!W[w].token&&!(window.DTV>=6&&TIER4.includes(w))&&!(window.DTV>=7&&(window.DTVX7||[]).includes(w))));refillShop(S);
   if(S.cfg.gw2)for(let i=0;i<2;i++){S.players[i].attune=attuneOf(decks[i]);}
-  draw(S,1);startTurn(S,0);opening(S,0);opening(S,1);S.players[1].coins=(window.DTV>=6?0:1);if(!(window.DTV>=4)&&S.cfg.vessel&&!S.players[0].hand.includes('vessel'))S.players[0].hand.push('vessel');if(S.cfg.ramp)say(S,'Breath grows as the duel goes on: '+S.players[0].ink+' now, one more each turn, up to '+S.cfg.ink+'.');else{S.players[0].ink=Math.ceil(S.cfg.ink/2);say(S,'You go first, so you begin with '+S.players[0].ink+' breath. Your opponent begins with 1 ink.');}
+  draw(S,1);startTurn(S,0);opening(S,0);opening(S,1);S.players[1].coins=(window.DTV>=6?0:1);if(!(window.DTV>=4)&&S.cfg.vessel&&!S.players[0].hand.includes('vessel'))S.players[0].hand.push('vessel');if(S.cfg.ramp)say(S,'Breath grows as the duel goes on: '+S.players[0].ink+' now, one more each turn, up to '+S.cfg.ink+(window.DTV>=13?', plus up to '+WELL+' carried from the turn before':'')+'.');else{S.players[0].ink=Math.ceil(S.cfg.ink/2);say(S,'You go first, so you begin with '+S.players[0].ink+' breath. Your opponent begins with 1 ink.');}
   return S;
 }
 function opening(S,i){const p=S.players[i],isA=w=>ATTACKV.includes(w),isN=w=>W[w].t===NOUN&&!W[w].props.includes('concept');
@@ -477,8 +476,8 @@ function destroy(S,t,cause){
   else if(amber){S.players[t.owner].hand.push(t.card);say(S,label+' '+(CAUSE[cause]||'is destroyed')+', but the amber keeps it. It returns to hand.');destroy(S,amber,'spent');}
   else{if(!t.token)S.players[t.owner].discard.push(t.card);say(S,label+' '+(CAUSE[cause]||'is destroyed')+'.');}
   if((cause==='fire'||cause==='calcine'||cause==='flame')&&(S.cfg.gw2||t.props.includes('flammable'))&&t.w!=='ash'&&!S.things.some(x=>x.w==='ash'&&x.side===t.side)){addThing(S,'ash',t.side,t.side,true);say(S,'Ash is left behind.');}
-  if(S.cfg.gw2&&t.props.includes('metal')&&t.w!=='slag'&&t.w!=='gold'&&!S.things.some(x=>x.w==='slag'&&x.side===t.side)&&!full(S,t.side,'slag')){addThing(S,'slag',t.side,t.side,true);say(S,'Slag is left: a metal that can climb the ladder again.');}
-  if(S.cfg.gw2&&t.props.includes('living')&&!t.token&&S.things.some(x=>x.side===t.side&&x.props.includes('burden'))&&!full(S,1-t.side,'carrion')){addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}
+  if(S.cfg.gw2&&!(window.DTV>=13)&&t.props.includes('metal')&&t.w!=='slag'&&t.w!=='gold'&&!S.things.some(x=>x.w==='slag'&&x.side===t.side)&&!full(S,t.side,'slag')){addThing(S,'slag',t.side,t.side,true);say(S,'Slag is left: a metal that can climb the ladder again.');}
+  if(S.cfg.gw2&&t.props.includes('living')&&!t.token&&S.things.some(x=>x.side===t.side&&x.props.includes('burden'))&&!full(S,1-t.side,'carrion')){if(window.DTV>=13){addThing(S,'carrion',t.side,t.side,true);say(S,'Carrion is left behind.');}else{addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}}
   if(living)for(const c of S.things)if(c.props.includes('carrion')){c.vig++;say(S,Cap(nm(S,T(c)))+' feeds on the death and grows to '+c.vig+'.');}
   if(ruined!=null&&!S.inRuin&&!(window.DTV>=7)){S.inRuin=true;say(S,'Its ruin is felt.');damage(S,P(ruined),RUIN,'ruin');S.inRuin=false;}
   if(S.cfg&&S.cfg.gw2&&!t.token&&S.players[1-t.side]&&S.players[1-t.side].attune==='rot'&&!S.inRot){S.inRot=true;say(S,'Rot feeds on it.');damage(S,P(t.side),2,'rot');S.inRot=false;}
@@ -486,7 +485,7 @@ function destroy(S,t,cause){
 function damage(S,e,n,cause){if(S.cfg&&S.cfg.gw2&&e.k==='p'&&n>0&&['fire','flame','burn','heat','blast'].includes(cause)&&S.players[1-e.i]&&S.players[1-e.i].attune==='fire')n+=2;
   if(n<=0||!alive(S,e))return;
   {const c=S.cx,direct=c&&!S.inRuin&&!S.nem&&S.atk;let b=0,nv=0,ex=0;if(e.k==='p'&&S.atk&&S.atkWho===1-e.i&&!S.inIns){if(!S.insDone&&!(window.DTV>=7)){b=insight(S,S.atkWho);if(b)S.insDone=true;}if(!S.novDone&&c&&c.nov&&!S.inRuin&&!S.nem){nv=c.nov;S.novDone=true;}if(c&&c.ex&&!(window.DTV>=7)&&!S.exDone&&!S.inRuin&&!S.nem){ex=c.ex;S.exDone=true;}}const pre=direct&&c.pre?c.pre:null;if(c)c.pre=null;const pv=direct&&c.pot&&window.DTV>=7?Math.max(1,Math.round(n/3)):0;
-   if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?pre+(m>1?' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':''):base!=null&&m>1?base+' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':String(n);if(b)s+=' + '+b+' ('+(S.atkWho===0?'your':'the rival’s')+' '+(b/INSIGHT===1?'discovery':b/INSIGHT+' discoveries')+')';if(nv)s+=nv>0?' + '+nv+' (said for the first time)':' \u2212 '+(-nv)+' (said before)';if(ex)s+=' + '+ex+' (an exalted verb)';if(pv)s+=' + '+pv+' (potent: a third more)';say(S,'The sum: '+s+' = '+Math.max(1,n+b+nv+ex+pv)+'.','q');}
+   if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?pre+(m>1?' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':''):base!=null&&m>1?base+' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':String(n);if(b)s+=' + '+b+' ('+(S.atkWho===0?'your':'the rival’s')+' '+(b/INSIGHT===1?'discovery':b/INSIGHT+' discoveries')+')';if(nv)s+=nv>0?' + '+nv+' (said for the first time)':' \u2212 '+(-nv)+' (said before)';if(ex)s+=' + '+ex+' (an exalted verb)';if(pv)s+=' + '+pv+' (potent: a third more)';{const raw=n+b+nv+ex+pv;say(S,'The sum: '+s+' = '+((window.DTV>=13)&&raw<1?raw+', at least 1':Math.max(1,raw))+'.','q');}}
    n=Math.max(1,n+b+nv+ex+pv);}
   if(e.k==='p'){S.players[e.i].life-=n;say(S,Cap(nm(S,e))+' '+vb(e,'lose','loses')+' '+n+' life.');
     if(!S.nem){const k=S.things.filter(t=>t.side===e.i&&t.props.includes('nemesis')).length;if(k){S.nem=true;say(S,'Nemesis answers.');damage(S,P(1-e.i),2*k,'nemesis');S.nem=false;}}
@@ -1001,7 +1000,7 @@ function matchCat(S,cat){const m=W[cat].match;
 function validate(S,who,sen){const r=validate0(S,who,sen);if(brave(S,who)){if(r.cost!=null)r.cost=0;if(!r.ok&&/^That needs \d+ breath/.test(r.why||''))return{ok:true,cost:0};}return r;}
 function validate0(S,who,sen){
   const p=S.players[who],hand=p.hand,idx=[];
-  if(sen.veil!=null){const w=hand[sen.veil];if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if(p.veil)return{ok:false,why:'You already have a word face down.'};const cost=costOf(S,who,w);return cost>p.ink?{ok:false,why:'That needs '+cost+' breath.',cost}:{ok:true,cost};}
+  if(sen.veil!=null){const w=hand[sen.veil];if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if(window.DTV>=13&&!(window.TRAPA||[]).includes(w))return{ok:false,why:'Only a curse can be laid face down: '+(window.TRAPA||[]).join(', ')+'.'};if(p.veil)return{ok:false,why:'You already have a word face down.'};const cost=costOf(S,who,w);return cost>p.ink?{ok:false,why:'That needs '+cost+' breath.',cost}:{ok:true,cost};}
   const add=i=>{if(i==null)return true;if(i<0||i>=hand.length||idx.includes(i))return false;idx.push(i);return true;};
   for(const i of sen.adjs||[])if(!add(i)||W[hand[i]].t!==ADJ)return{ok:false,why:'That is not an adjective.'};
   if(!add(sen.verb)||!add(sen.clime))return{ok:false,why:'Choose different words.'};
@@ -1082,7 +1081,7 @@ function resolve(S,who,sen){
   if(sen.veil!=null){const w=hand[sen.veil];hand.splice(sen.veil,1);p.ink-=v.cost;p.veil=w;say(S,(who===0?'You lay a word face down.':'The rival lays a word face down.'),'s');return{ok:true,effect:true};}
   S.sec=secretSay(S,who,sen);say(S,S.sec?'The rival says something you cannot make out.':(who===0?'You say: ':'The rival says: ')+describe(S,who,sen),'s');
   {const q=S.players[1-who],o=sen.obj,sT0=sen.subj&&sen.subj.k==='thing'?findThing(S,sen.subj.id):null;const hostile=o&&((o.k==='player'&&o.i!==who)||(o.k==='thing'&&(findThing(S,o.id)||{}).side===1-who));
-   if(q.veil&&hostile&&sT0&&sT0.side===who){const w=q.veil;q.veil=null;q.discard.push(w);say(S,'A hidden word springs: '+w+'!','s');ADJF[w](S,1-who,T(sT0),{mult:1,effect:false});}}
+   if(q.veil&&hostile&&sT0&&sT0.side===who&&(!(window.DTV>=13)||(()=>{const vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);return vw&&ATTACKV.includes(vw)&&!sT0.fresh&&!sT0.st.asleep&&!sT0.st.frozen&&!sT0.st.bound&&(window.TRAPA||[]).includes(q.veil);})())){const w=q.veil;q.veil=null;q.discard.push(w);say(S,'A hidden word springs: '+w+'!','s');ADJF[w](S,1-who,T(sT0),{mult:1,effect:false});}}
   if(bz){p.braved=true;S.braveNow=true;say(S,'Courage. With so little left, this costs '+(who===0?'you':'the rival')+' nothing, and nothing can stand in its way.');}
   if(sen.verb!=null&&FUSEW.includes(hand[sen.verb])){const c={mult:1,effect:false};spend(S,who,sen,v.cost);const vi=sen.verb,fw=hand[vi],fix=r=>r&&r.k==='card'?{k:'card',i:r.i-(r.i>vi?1:0)}:r;hand.splice(vi,1);if(fw!=='vessel')p.discard.push(fw);else p.vesselUsed=true;
     react(S,who,{subj:fix(sen.subj),obj:fix(sen.obj)},c);if(p.earned<3){p.earned++;p.coins++;}S.braveNow=false;settleS(S);checkOver(S);return{ok:true};}
@@ -1119,7 +1118,7 @@ function resolve(S,who,sen){
     else if(sCard&&W[sCard].t===NOUN){const d=W[sCard],sd=d.props.includes('burden')?1-who:who;S.wantPl=sd===who?sen.pl:null;const t=addThing(S,sCard,sd,who,false);S.wantPl=null;
       say(S,sd!==who?Cap(sCard)+' settles on '+nm(S,P(sd))+'.':(who===0?'You bring forth '+sCard+'.':(t.st.occult||S.sec?'The rival brings forth something unseen.':'The rival brings forth '+sCard+'.')));
       subs=[T(t)];c.effect=true;keeper=t;
-      if(sd===who&&p.dross&&!isG(t)){const n=Math.min(4,p.dross);p.dross-=n;t.vig+=n;say(S,'It rises out of the black matter with '+n+' more vigour.');}
+      if(sd===who&&p.dross&&!isG(t)){const n=Math.min(4,p.dross);p.dross-=n;t.vig+=n;say(S,window.DTV>=13?'It rises from the black matter your fallen things left behind: '+n+' more vigour.':'It rises out of the black matter with '+n+' more vigour.');}
       if(S.clime&&S.clime.adjs&&weatherAdj(S,[t]))say(S,'The '+S.clime.adjs.join(' ')+' '+S.clime.w+' takes it too.');
       if(clime(S,'noon')&&t.props.includes('dark')){destroy(S,t,'light');subs=[];}}
     else if(sCard){subs=matchCat(S,sCard);if(S.cfg.gw2&&W[sCard].t===CAT&&!verbW&&!adjW.length){RALLY(S,who,sCard,subs,c);subs=[];}if(S.cfg.gw2&&verbW&&verbW!=='be'){subs=subs.filter(e=>e.k==='t'?e.t.side===who:e.i===who);if(!subs.length){say(S,'Nothing of yours answers to '+sCard+'.');drawN(S,who,1);}}}
@@ -1223,7 +1222,7 @@ function startTurn(S,i){
 }
 function endTurn(S,i,dump){
   S.atk=false;S.cx=null;
-  const p=S.players[i];if(p.rested>0)p.rested--;p.ban=null;p.gnosis=0;if(window.DTV>=7){const k=Math.min(WELL,Math.max(0,p.ink));p.carry=k;p.well=0;if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn.');}else if(S.cfg.ramp&&S.cfg.well>0){const k=Math.min(S.cfg.well,(p.well||0)+Math.max(0,p.ink));if(k>(p.well||0)&&p.ink>0)say(S,(i===0?'You keep ':'The rival keeps ')+(k-(p.well||0))+' unspent breath in the well.');p.well=k;}p.ink=0;
+  const p=S.players[i];if(p.rested>0)p.rested--;p.ban=null;p.gnosis=0;if(window.DTV>=7){const k=Math.min(WELL,Math.max(0,p.ink));p.carry=k;p.well=0;if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn'+(window.DTV>=13?' (up to '+WELL+' carries over).':'.'));}else if(S.cfg.ramp&&S.cfg.well>0){const k=Math.min(S.cfg.well,(p.well||0)+Math.max(0,p.ink));if(k>(p.well||0)&&p.ink>0)say(S,(i===0?'You keep ':'The rival keeps ')+(k-(p.well||0))+' unspent breath in the well.');p.well=k;}p.ink=0;
   if(S.cfg.gw2)gw2End(S,i);
   if(dump&&!S.cfg.draw2){p.discard.push(...p.hand);p.hand=[];}
   {const k=p.hand.indexOf('vessel');if(k>=0)p.hand.splice(k,1);}
@@ -1340,7 +1339,7 @@ const WXB={
 {const _ca=climeArrive;climeArrive=function(S){_ca(S);const w=S.clime&&S.clime.w,o=S.clime&&S.clime.owner;if(S.cfg&&S.cfg.gw2&&w&&WXB[w]&&!S.wxDone){S.wxDone=1;WXB[w](S,o);drawN(S,o,1);S.wxDone=0;}};}
 // adjectives: blessings give +2 on your own things; curses bite on rival things
 const BLESS=['eternal','fixed','hermetic','quick','resonant','thorny'],CURSEA=['feeble','brittle','torpid','frozen'];
-for(const a of BLESS)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;return true;}return r;};}
+for(const a of BLESS)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;if(window.DTV>=13&&a!=='eternal')say(S,'A blessing: '+e.t.w+' gains 2.');return true;}return r;};}
 for(const a of CURSEA)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side!==who){damage(S,e,2,'curse');return true;}return r;};}
 // verbs: keep the old effect, add a floor every time
 function _ents(subs,objs){return subs.concat(objs);}
@@ -1363,7 +1362,7 @@ const VX={
  sculpt:(S,w,s,o)=>_own(S,w,s,2),
  wake:(S,w,s,o)=>{const k=_own(S,w,_ents(s,o),2);for(const e of _ents(s,o))if(e.k==='t'&&e.t.side===w)e.t.acted=false;drawN(S,w,1);},
 };
-for(const v in VX)if(VERBF[v]){const f=VERBF[v];VERBF[v]=(S,who,subs,objs,c,ho)=>{f(S,who,subs,objs,c,ho);if(S.cfg.gw2&&S.fromHand!==false){VX[v](S,who,subs,objs);c.effect=true;}};}
+for(const v in VX)if(VERBF[v]){const f=VERBF[v];VERBF[v]=(S,who,subs,objs,c,ho)=>{const e0=c.effect,n13=window.DTV>=13;if(n13)c.effect=false;f(S,who,subs,objs,c,ho);const did=c.effect;if(n13)c.effect=e0||did;if(S.cfg.gw2&&S.fromHand!==false&&(!n13||did)){VX[v](S,who,subs,objs);c.effect=true;}};}
 // events
 const EVX={
  amnesty:(S,w)=>{S.players[w].life+=3;damage(S,P(1-w),3,'word');},
@@ -1385,7 +1384,7 @@ const ARRIVE={
  saltpetre:(S,t)=>{damage(S,P(1-t.side),3,'blast');},
  tower:(S,t)=>{S.players[t.side].life+=3;drawN(S,t.side,1);},
 };
-{const _at=addThing;addThing=function(S,w,sd,owner,token,card){const t=_at(S,w,sd,owner,token,card);if(t&&!token&&S.cfg&&S.cfg.gw2&&S.players[sd]&&S.players[sd].attune&&typeof schoolOf==='function'&&schoolOf(w)===S.players[sd].attune&&!isG(t)){t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;}if(t&&!token&&S.cfg&&S.cfg.gw2&&ARRIVE[w]&&!S.quietArrive)ARRIVE[w](S,t);return t;};}
+{const _at=addThing;addThing=function(S,w,sd,owner,token,card){const t=_at(S,w,sd,owner,token,card);if(t&&!token&&S.cfg&&S.cfg.gw2&&S.players[sd]&&S.players[sd].attune&&typeof schoolOf==='function'&&schoolOf(w)===S.players[sd].attune&&!isG(t)){if(window.DTV>=13){t.vig+=ATTUNEB;t.att=1;say(S,Cap(w)+' is attuned to '+(sd===0?'your':'the rival’s')+' '+S.players[sd].attune+' deck: it arrives 2 stronger.');}else{t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;}}if(t&&!token&&S.cfg&&S.cfg.gw2&&ARRIVE[w]&&!S.quietArrive)ARRIVE[w](S,t);return t;};}
 W.attractor.syl=2;W.salamander.syl=3;W.oak.vig=5;W.amnesty.syl=1;W.memory.syl=2;W.erosion.syl=2;W.sculpt.syl=1;W.petrify.syl=2;W.saltpetre.vig+=2;W.saltpetre.props=W.saltpetre.props.filter(p=>p!=='flammable'&&p!=='explosive');W.temper.syl=1;W.amnesty.gloss='A single-use spell: say it alone and it is spent. Every spell the rival has standing, and every burden on you, fades. You gain 3 life; the rival loses 3.';
 
 {const GX={"bind": "The bound thing also takes 2.", "blow": "The rival also takes 3.", "distil": "Any of your things gains 3; liquids gain double.", "ripen": "Any of your things gains 3; plants gain double.", "temper": "Any of your things gains 4.", "doubt": "Draw a word; the target (or the rival) takes 2.", "guard": "The guard gains 3, and you draw a word.", "haunt": "The haunted also takes 2.", "lure": "If it cannot be taken, it takes 3.", "petrify": "The object also takes 5.", "rust": "Any rival thing takes 2; metals take 4.", "wither": "Any rival thing takes 3.", "scream": "Everything opposite takes 1; the rival takes 2.", "sculpt": "The sculptor also gains 2.", "wake": "It gains 2, may act again, and you draw a word.", "dream": "The rival also takes 3.", "gnosis": "Your things gain 2; the rival takes 2.", "loan": "No debt is left behind, and you gain 2 life.", "lullaby": "The rival has 2 less breath next turn and takes 2.", "memory": "You also gain 4 life.", "reckoning": "Only the rival’s side: their things of vigour 4 or less fall, and the rival takes 2.", "attractor": "On arrival, draw 2 and your things gain 1.", "erosion": "On arrival, you take 4.", "phosphorus": "On arrival, the rival takes 3.", "salamander": "On arrival, it lights a rival thing.", "saltpetre": "On arrival, the rival takes 3.", "tower": "On arrival, +3 life and draw a word. Each turn, +1 ink and +1 life.", "rain": "Its speaker gains 3 life and their things gain 1; draw a word.", "desert": "The rival takes 3 when it falls; draw a word.", "drought": "When it falls the rival takes 2 and their plants and liquids take 2; draw a word.", "flux": "When it falls every state on the rival’s side falls away and they take 2; draw a word.", "fog": "Its speaker gains 4 life; draw a word.", "harvest": "Its speaker gains 2 ink and their things gain 1; draw a word.", "night": "Its speaker’s things gain 1 and the rival takes 2; draw a word.", "storm": "Lightning strikes the rival’s tallest thing for 4 (or the rival for 3); draw a word.", "eternal": "On your own thing it also gives +2 vigour.", "fixed": "On your own thing it also gives +2 vigour.", "hermetic": "On your own thing it also gives +2 vigour.", "quick": "On your own thing it also gives +2 vigour.", "resonant": "On your own thing it also gives +2 vigour.", "thorny": "On your own thing it also gives +2 vigour.", "feeble": "No extra breath on a rival thing, and the target takes 2.", "brittle": "No extra breath on a rival thing, and the target takes 2.", "torpid": "No extra breath on a rival thing, and the target takes 2.", "frozen": "No extra breath on a rival thing, and the target takes 2."};for(const w in GX)if(W[w]){W[w].gx=GX[w];W[w].gloss=W[w].gloss+" "+GX[w];}}
@@ -1441,8 +1440,8 @@ function gw2Tick(S,i,t){const h=p=>t.props.includes(p);
   if(h('spore')&&(t.age=(t.age||0)+1)>=2){const op=S.things.find(x=>x.side!==i&&x.pl===t.pl&&!isG(x));destroy(S,t,'gone');if(op){poison(S,T(op),1);if(op.st.poisoned&&op.st.poisoned<3)op.st.poisoned++;}damage(S,P(1-i),2,'poison');}
   if(t.w==='flask'&&POTN[t.pw])POTN[t.pw](S,i,t);}
 function gw2Start(S,i){const p=S.players[i],mine=side(S,i);
-  if(mine.some(t=>t.props.includes('foundry'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(a)-rungOf(b))[0];if(m){say(S,'The foundry works.');climb(S,m,1);}}
-  if(mine.some(t=>t.props.includes('erosion'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(b)-rungOf(a))[0];if(m){say(S,'Erosion wears at the ladder.');fall(S,m);}}
+  if(mine.some(t=>t.props.includes('foundry'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(a)-rungOf(b))[0];if(m&&!(window.DTV>=13)){say(S,'The foundry works.');climb(S,m,1);}}
+  if(mine.some(t=>t.props.includes('erosion'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(b)-rungOf(a))[0];if(m&&!(window.DTV>=13)){say(S,'Erosion wears at the ladder.');fall(S,m);}}
   const gold=mine.filter(t=>t.w==='gold').length;if(gold>=GOLDWIN&&!(window.DTV>=4)){S.over=i;S.how='work';S.phase='over';say(S,(i===0?'You hold':'The rival holds')+' '+gold+' gold. The Great Work is done.');return;}
   if(S.places&&S.claim&&S.claim.every(c=>c===i)){S.over=i;S.how='hold';S.phase='over';say(S,(i===0?'You hold':'The rival holds')+' all three places. The table is '+(i===0?'yours':'theirs')+'.');return;}}
 function gw2End(S,i){for(const t of side(S,i))t.st.kindle=0;if(!S.places)return;S.claim=S.claim||[null,null,null];

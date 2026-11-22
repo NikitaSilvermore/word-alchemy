@@ -164,11 +164,27 @@ assert gd in eng
 eng = eng.replace(gd, "if(att.riddle)return false;if(S.things.some(t=>t.side===1-who&&t.st.guarding&&!(window.DTV>=5&&t.props.includes('fleeting'))&&")
 import base64 as _b
 _mat = 'data:image/webp;base64,' + _b.b64encode(open(H + 'mat_duel.webp', 'rb').read()).decode()
+# ---- v13: the overnight bug report ----
+eng = RP(eng,"one more each turn, up to '+S.cfg.ink+'.');","one more each turn, up to '+S.cfg.ink+(window.DTV>=13?', plus up to '+WELL+' carried from the turn before':'')+'.');")
+D13 = "window.DTV>=13"
+eng = RP(eng,"if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};","if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if("+D13+"&&!(window.TRAPA||[]).includes(w))return{ok:false,why:'Only a curse can be laid face down: '+(window.TRAPA||[]).join(', ')+'.'};")
+eng = RP(eng,"if(q.veil&&hostile&&sT0&&sT0.side===who){","if(q.veil&&hostile&&sT0&&sT0.side===who&&(!("+D13+")||(()=>{const vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);return vw&&ATTACKV.includes(vw)&&!sT0.fresh&&!sT0.st.asleep&&!sT0.st.frozen&&!sT0.st.bound&&(window.TRAPA||[]).includes(q.veil);})())){")
+eng = RP(eng,"if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;return true;}return r;};}","if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;if("+D13+"&&a!=='eternal')say(S,'A blessing: '+e.t.w+' gains 2.');return true;}return r;};}")
+eng = RP(eng,"VERBF[v]=(S,who,subs,objs,c,ho)=>{f(S,who,subs,objs,c,ho);if(S.cfg.gw2&&S.fromHand!==false){VX[v](S,who,subs,objs);c.effect=true;}};}","VERBF[v]=(S,who,subs,objs,c,ho)=>{const e0=c.effect,n13="+D13+";if(n13)c.effect=false;f(S,who,subs,objs,c,ho);const did=c.effect;if(n13)c.effect=e0||did;if(S.cfg.gw2&&S.fromHand!==false&&(!n13||did)){VX[v](S,who,subs,objs);c.effect=true;}};}")
+eng = RP(eng,"if(x.r){const t=addThing(S,x.r,who,who,true);","if(x.r){const t=addThing(S,x.r,("+D13+"&&W[x.r]&&(W[x.r].props||[]).includes('burden'))?1-who:who,who,true);")
+eng = RP(eng,"if(S.cfg.gw2&&t.props.includes('metal')&&t.w!=='slag'","if(S.cfg.gw2&&!("+D13+")&&t.props.includes('metal')&&t.w!=='slag'")
+eng = RP(eng,"addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');","if("+D13+"){addThing(S,'carrion',t.side,t.side,true);say(S,'Carrion is left behind.');}else{addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}")
+eng = RP(eng,"say(S,'The sum: '+s+' = '+Math.max(1,n+b+nv+ex+pv)+'.','q');","{const raw=n+b+nv+ex+pv;say(S,'The sum: '+s+' = '+(("+D13+")&&raw<1?raw+', at least 1':Math.max(1,raw))+'.','q');}")
+eng = RP(eng,"if(m){say(S,'The foundry works.');climb(S,m,1);}","if(m&&!("+D13+")){say(S,'The foundry works.');climb(S,m,1);}")
+eng = RP(eng,"if(m){say(S,'Erosion wears at the ladder.');fall(S,m);}","if(m&&!("+D13+")){say(S,'Erosion wears at the ladder.');fall(S,m);}")
+eng = RP(eng,"say(S,'It rises out of the black matter with '+n+' more vigour.');","say(S,"+D13+"?'It rises from the black matter your fallen things left behind: '+n+' more vigour.':'It rises out of the black matter with '+n+' more vigour.');")
+eng = RP(eng,"t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;","if("+D13+"){t.vig+=ATTUNEB;t.att=1;say(S,Cap(w)+' is attuned to '+(sd===0?'your':'the rival’s')+' '+S.players[sd].attune+' deck: it arrives 2 stronger.');}else{t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;}")
+eng = RP(eng,"if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn.');","if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn'+("+D13+"?' (up to '+WELL+' carries over).':'.'));")
 dtv = r(H + 'dtv.js').replace('var(--dmat)', 'url(' + _mat + ')')
 head = head.replace('<title>Word Alchemy Prototype</title>', '<title>Word Alchemy: Duel Test</title>')
 i = head.index('<head>') + len('<head>'); head = head[:i] + '\n<script>' + r(H + 'gguard.js') + '</script>\n' + head[i:]
 g = {}; exec(r('/home/claude/wgtest/build.py').split('inlset=set(fs)')[0], g); inl = g['inl']
-tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n</body>\n</html>\n'
+tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n</body>\n</html>\n'
 open(P + 'duel.html', 'w', encoding='utf8').write(head + '<script id="engine">\n' + eng + '</script>\n\n' + tail)
 pm = {}
 for pk in ['art0', 'art1', 'art2', 'art3', 'art4', 'art5', 'art6', 'art7', 'ui', 'misc']:

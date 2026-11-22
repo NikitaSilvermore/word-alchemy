@@ -12,9 +12,9 @@
     P.clear=function(){};
   }catch(e){}
   window.DUELTEST_GAME=true;
-  try{var ver=parseInt(g.call(localStorage,'wa-duel-test-ver'),10);if(ver===5&&!g.call(localStorage,'wa-dtv6')){ver=6;s.call(localStorage,'wa-duel-test-ver','6');s.call(localStorage,'wa-dtv6','1');}if(ver===6&&!g.call(localStorage,'wa-dtv7')){ver=7;s.call(localStorage,'wa-duel-test-ver','7');s.call(localStorage,'wa-dtv7','1');}if(ver===7&&!g.call(localStorage,'wa-dtv8')){ver=8;s.call(localStorage,'wa-duel-test-ver','8');s.call(localStorage,'wa-dtv8','1');}if(ver===8&&!g.call(localStorage,'wa-dtv9')){ver=9;s.call(localStorage,'wa-duel-test-ver','9');s.call(localStorage,'wa-dtv9','1');}if(ver===9&&!g.call(localStorage,'wa-dtv10')){ver=10;s.call(localStorage,'wa-duel-test-ver','10');s.call(localStorage,'wa-dtv10','1');}if(ver===10&&!g.call(localStorage,'wa-dtv11')){ver=11;s.call(localStorage,'wa-duel-test-ver','11');s.call(localStorage,'wa-dtv11','1');}if(ver===11&&!g.call(localStorage,'wa-dtv12')){ver=12;s.call(localStorage,'wa-duel-test-ver','12');s.call(localStorage,'wa-dtv12','1');}ver=isNaN(ver)?12:ver;var m=JSON.parse(g.call(localStorage,NS+'word-alchemy-match')||'null');
+  try{var ver=parseInt(g.call(localStorage,'wa-duel-test-ver'),10);if(ver===5&&!g.call(localStorage,'wa-dtv6')){ver=6;s.call(localStorage,'wa-duel-test-ver','6');s.call(localStorage,'wa-dtv6','1');}if(ver===6&&!g.call(localStorage,'wa-dtv7')){ver=7;s.call(localStorage,'wa-duel-test-ver','7');s.call(localStorage,'wa-dtv7','1');}if(ver===7&&!g.call(localStorage,'wa-dtv8')){ver=8;s.call(localStorage,'wa-duel-test-ver','8');s.call(localStorage,'wa-dtv8','1');}if(ver===8&&!g.call(localStorage,'wa-dtv9')){ver=9;s.call(localStorage,'wa-duel-test-ver','9');s.call(localStorage,'wa-dtv9','1');}if(ver===9&&!g.call(localStorage,'wa-dtv10')){ver=10;s.call(localStorage,'wa-duel-test-ver','10');s.call(localStorage,'wa-dtv10','1');}if(ver===10&&!g.call(localStorage,'wa-dtv11')){ver=11;s.call(localStorage,'wa-duel-test-ver','11');s.call(localStorage,'wa-dtv11','1');}if(ver===11&&!g.call(localStorage,'wa-dtv12')){ver=12;s.call(localStorage,'wa-duel-test-ver','12');s.call(localStorage,'wa-dtv12','1');}if(ver===12&&!g.call(localStorage,'wa-dtv13')){ver=13;s.call(localStorage,'wa-duel-test-ver','13');s.call(localStorage,'wa-dtv13','1');}ver=isNaN(ver)?13:ver;var m=JSON.parse(g.call(localStorage,NS+'word-alchemy-match')||'null');
     if(m&&m.dtv!==ver)r.call(localStorage,NS+'word-alchemy-match');}catch(e){}
-  try{var v=parseInt(localStorage.getItem('wa-duel-test-ver'),10);window.DTV=isNaN(v)?12:v;}catch(e){window.DTV=12;}
+  try{var v=parseInt(localStorage.getItem('wa-duel-test-ver'),10);window.DTV=isNaN(v)?13:v;}catch(e){window.DTV=13;}
 })();
 </script>
 
@@ -2813,7 +2813,7 @@ function react(S,who,sen,c){
   if(x.r&&W[x.r].t===CLIME){say(S,Cap(A.w)+' and '+B.w+' become '+x.r+'.');if(S.clime&&!S.clime.made)S.players[S.clime.owner].discard.push(S.clime.w);S.clime={w:x.r,owner:who,made:true};say(S,Cap(x.r)+' settles over the board.');climeArrive(S);return;}
   if(x.r==='rust'){say(S,'Steam and iron: rust takes every metal on the other side.');for(const t of foe())if(t.props.includes('metal')&&!t.props.includes('incorruptible'))damage(S,T(t),3,'rust');return;}
   if(x.r&&W[x.r]&&(W[x.r].props||[]).includes('potion')){say(S,Cap(A.w)+' and '+B.w+' steep into '+x.r+', poured at once.');EVENT[x.r](S,who,c);anoint(S,who,x.r);if(!full(S,who,'flask')){const f=addThing(S,'flask',who,who,true);f.pw=x.r;f.title=x.r+' flask';say(S,'A flask of '+x.r+' is set on the shelf.');}S.potions=S.potions||[0,0];S.potions[who]++;return;}
-  if(x.r){const t=addThing(S,x.r,who,who,true);t.vig=Math.max(t.vig,A.vig+B.vig);t.made=true;t.parts=[A.w,B.w];t.setT=S.turn;
+  if(x.r){const t=addThing(S,x.r,(window.DTV>=13&&W[x.r]&&(W[x.r].props||[]).includes('burden'))?1-who:who,who,true);t.vig=Math.max(t.vig,A.vig+B.vig);t.made=true;t.parts=[A.w,B.w];t.setT=S.turn;
     if(S.cfg.gw2&&!(window.DTV>=7)&&!['fire','water','earth','air','wind'].includes(x.r)&&t.props.includes('ground')){t.props=t.props.filter(q=>q!=='ground'&&q!=='fleeting');t.pl=placeFor(S,who);t.vig=Math.max(1,t.vig+MADEPLUS);if(!t.verbs.includes('strike')&&bodyStrikes(t.props)){t.verbs.unshift('strike');t.inn=1;}t.fresh=1;}
     else if(S.cfg.gw2&&!t.props.includes('ground'))t.vig=Math.max(1,t.vig+MADEPLUS);t.col=Math.max(A.t&&A.t.col||0,B.t&&B.t.col||0);if(!isG(t))stageUp(S,t);t.forms=t.forms||[];
     const keep=['toxic','corrosive','bright','sacred','flying','thorny','eternal','frost','damp','lull','stealth','swift','potent','incorruptible','hoard','sting','sharp','metal','named'];
@@ -2929,7 +2929,7 @@ function newGame(seed,o){
   for(let i=0;i<2;i++)S.players.push({life:life[i],coins:0,ink:0,well:0,silence:[],claims:0,deck:shuffle(S,decks[i].slice()),hand:[],discard:[],asleep:0,rested:0,poisoned:0,sodden:0,dazed:0,earned:0,echoed:false});
   S.shop=[];S.supply=shuffle(S,(o.market||ALLWORDS).filter(w=>W[w]&&!W[w].token&&!(window.DTV>=6&&TIER4.includes(w))&&!(window.DTV>=7&&(window.DTVX7||[]).includes(w))));refillShop(S);
   if(S.cfg.gw2)for(let i=0;i<2;i++){S.players[i].attune=attuneOf(decks[i]);}
-  draw(S,1);startTurn(S,0);opening(S,0);opening(S,1);S.players[1].coins=(window.DTV>=6?0:1);if(!(window.DTV>=4)&&S.cfg.vessel&&!S.players[0].hand.includes('vessel'))S.players[0].hand.push('vessel');if(S.cfg.ramp)say(S,'Breath grows as the duel goes on: '+S.players[0].ink+' now, one more each turn, up to '+S.cfg.ink+'.');else{S.players[0].ink=Math.ceil(S.cfg.ink/2);say(S,'You go first, so you begin with '+S.players[0].ink+' breath. Your opponent begins with 1 ink.');}
+  draw(S,1);startTurn(S,0);opening(S,0);opening(S,1);S.players[1].coins=(window.DTV>=6?0:1);if(!(window.DTV>=4)&&S.cfg.vessel&&!S.players[0].hand.includes('vessel'))S.players[0].hand.push('vessel');if(S.cfg.ramp)say(S,'Breath grows as the duel goes on: '+S.players[0].ink+' now, one more each turn, up to '+S.cfg.ink+(window.DTV>=13?', plus up to '+WELL+' carried from the turn before':'')+'.');else{S.players[0].ink=Math.ceil(S.cfg.ink/2);say(S,'You go first, so you begin with '+S.players[0].ink+' breath. Your opponent begins with 1 ink.');}
   return S;
 }
 function opening(S,i){const p=S.players[i],isA=w=>ATTACKV.includes(w),isN=w=>W[w].t===NOUN&&!W[w].props.includes('concept');
@@ -2982,8 +2982,8 @@ function destroy(S,t,cause){
   else if(amber){S.players[t.owner].hand.push(t.card);say(S,label+' '+(CAUSE[cause]||'is destroyed')+', but the amber keeps it. It returns to hand.');destroy(S,amber,'spent');}
   else{if(!t.token)S.players[t.owner].discard.push(t.card);say(S,label+' '+(CAUSE[cause]||'is destroyed')+'.');}
   if((cause==='fire'||cause==='calcine'||cause==='flame')&&(S.cfg.gw2||t.props.includes('flammable'))&&t.w!=='ash'&&!S.things.some(x=>x.w==='ash'&&x.side===t.side)){addThing(S,'ash',t.side,t.side,true);say(S,'Ash is left behind.');}
-  if(S.cfg.gw2&&t.props.includes('metal')&&t.w!=='slag'&&t.w!=='gold'&&!S.things.some(x=>x.w==='slag'&&x.side===t.side)&&!full(S,t.side,'slag')){addThing(S,'slag',t.side,t.side,true);say(S,'Slag is left: a metal that can climb the ladder again.');}
-  if(S.cfg.gw2&&t.props.includes('living')&&!t.token&&S.things.some(x=>x.side===t.side&&x.props.includes('burden'))&&!full(S,1-t.side,'carrion')){addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}
+  if(S.cfg.gw2&&!(window.DTV>=13)&&t.props.includes('metal')&&t.w!=='slag'&&t.w!=='gold'&&!S.things.some(x=>x.w==='slag'&&x.side===t.side)&&!full(S,t.side,'slag')){addThing(S,'slag',t.side,t.side,true);say(S,'Slag is left: a metal that can climb the ladder again.');}
+  if(S.cfg.gw2&&t.props.includes('living')&&!t.token&&S.things.some(x=>x.side===t.side&&x.props.includes('burden'))&&!full(S,1-t.side,'carrion')){if(window.DTV>=13){addThing(S,'carrion',t.side,t.side,true);say(S,'Carrion is left behind.');}else{addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}}
   if(living)for(const c of S.things)if(c.props.includes('carrion')){c.vig++;say(S,Cap(nm(S,T(c)))+' feeds on the death and grows to '+c.vig+'.');}
   if(ruined!=null&&!S.inRuin&&!(window.DTV>=7)){S.inRuin=true;say(S,'Its ruin is felt.');damage(S,P(ruined),RUIN,'ruin');S.inRuin=false;}
   if(S.cfg&&S.cfg.gw2&&!t.token&&S.players[1-t.side]&&S.players[1-t.side].attune==='rot'&&!S.inRot){S.inRot=true;say(S,'Rot feeds on it.');damage(S,P(t.side),2,'rot');S.inRot=false;}
@@ -2991,7 +2991,7 @@ function destroy(S,t,cause){
 function damage(S,e,n,cause){if(S.cfg&&S.cfg.gw2&&e.k==='p'&&n>0&&['fire','flame','burn','heat','blast'].includes(cause)&&S.players[1-e.i]&&S.players[1-e.i].attune==='fire')n+=2;
   if(n<=0||!alive(S,e))return;
   {const c=S.cx,direct=c&&!S.inRuin&&!S.nem&&S.atk;let b=0,nv=0,ex=0;if(e.k==='p'&&S.atk&&S.atkWho===1-e.i&&!S.inIns){if(!S.insDone&&!(window.DTV>=7)){b=insight(S,S.atkWho);if(b)S.insDone=true;}if(!S.novDone&&c&&c.nov&&!S.inRuin&&!S.nem){nv=c.nov;S.novDone=true;}if(c&&c.ex&&!(window.DTV>=7)&&!S.exDone&&!S.inRuin&&!S.nem){ex=c.ex;S.exDone=true;}}const pre=direct&&c.pre?c.pre:null;if(c)c.pre=null;const pv=direct&&c.pot&&window.DTV>=7?Math.max(1,Math.round(n/3)):0;
-   if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?pre+(m>1?' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':''):base!=null&&m>1?base+' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':String(n);if(b)s+=' + '+b+' ('+(S.atkWho===0?'your':'the rival’s')+' '+(b/INSIGHT===1?'discovery':b/INSIGHT+' discoveries')+')';if(nv)s+=nv>0?' + '+nv+' (said for the first time)':' \u2212 '+(-nv)+' (said before)';if(ex)s+=' + '+ex+' (an exalted verb)';if(pv)s+=' + '+pv+' (potent: a third more)';say(S,'The sum: '+s+' = '+Math.max(1,n+b+nv+ex+pv)+'.','q');}
+   if(direct&&(b||nv||ex||pv||c.mult>1||pre)){const m=c.mult,base=n%m===0?n/m:null;let s=pre?pre+(m>1?' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':''):base!=null&&m>1?base+' × '+m+' ('+((c.why&&c.why.join(', '))||'multiplied')+')':String(n);if(b)s+=' + '+b+' ('+(S.atkWho===0?'your':'the rival’s')+' '+(b/INSIGHT===1?'discovery':b/INSIGHT+' discoveries')+')';if(nv)s+=nv>0?' + '+nv+' (said for the first time)':' \u2212 '+(-nv)+' (said before)';if(ex)s+=' + '+ex+' (an exalted verb)';if(pv)s+=' + '+pv+' (potent: a third more)';{const raw=n+b+nv+ex+pv;say(S,'The sum: '+s+' = '+((window.DTV>=13)&&raw<1?raw+', at least 1':Math.max(1,raw))+'.','q');}}
    n=Math.max(1,n+b+nv+ex+pv);}
   if(e.k==='p'){S.players[e.i].life-=n;say(S,Cap(nm(S,e))+' '+vb(e,'lose','loses')+' '+n+' life.');
     if(!S.nem){const k=S.things.filter(t=>t.side===e.i&&t.props.includes('nemesis')).length;if(k){S.nem=true;say(S,'Nemesis answers.');damage(S,P(1-e.i),2*k,'nemesis');S.nem=false;}}
@@ -3506,7 +3506,7 @@ function matchCat(S,cat){const m=W[cat].match;
 function validate(S,who,sen){const r=validate0(S,who,sen);if(brave(S,who)){if(r.cost!=null)r.cost=0;if(!r.ok&&/^That needs \d+ breath/.test(r.why||''))return{ok:true,cost:0};}return r;}
 function validate0(S,who,sen){
   const p=S.players[who],hand=p.hand,idx=[];
-  if(sen.veil!=null){const w=hand[sen.veil];if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if(p.veil)return{ok:false,why:'You already have a word face down.'};const cost=costOf(S,who,w);return cost>p.ink?{ok:false,why:'That needs '+cost+' breath.',cost}:{ok:true,cost};}
+  if(sen.veil!=null){const w=hand[sen.veil];if(!w||W[w].t!==ADJ)return{ok:false,why:'Only an adjective can be laid face down.'};if(window.DTV>=13&&!(window.TRAPA||[]).includes(w))return{ok:false,why:'Only a curse can be laid face down: '+(window.TRAPA||[]).join(', ')+'.'};if(p.veil)return{ok:false,why:'You already have a word face down.'};const cost=costOf(S,who,w);return cost>p.ink?{ok:false,why:'That needs '+cost+' breath.',cost}:{ok:true,cost};}
   const add=i=>{if(i==null)return true;if(i<0||i>=hand.length||idx.includes(i))return false;idx.push(i);return true;};
   for(const i of sen.adjs||[])if(!add(i)||W[hand[i]].t!==ADJ)return{ok:false,why:'That is not an adjective.'};
   if(!add(sen.verb)||!add(sen.clime))return{ok:false,why:'Choose different words.'};
@@ -3587,7 +3587,7 @@ function resolve(S,who,sen){
   if(sen.veil!=null){const w=hand[sen.veil];hand.splice(sen.veil,1);p.ink-=v.cost;p.veil=w;say(S,(who===0?'You lay a word face down.':'The rival lays a word face down.'),'s');return{ok:true,effect:true};}
   S.sec=secretSay(S,who,sen);say(S,S.sec?'The rival says something you cannot make out.':(who===0?'You say: ':'The rival says: ')+describe(S,who,sen),'s');
   {const q=S.players[1-who],o=sen.obj,sT0=sen.subj&&sen.subj.k==='thing'?findThing(S,sen.subj.id):null;const hostile=o&&((o.k==='player'&&o.i!==who)||(o.k==='thing'&&(findThing(S,o.id)||{}).side===1-who));
-   if(q.veil&&hostile&&sT0&&sT0.side===who){const w=q.veil;q.veil=null;q.discard.push(w);say(S,'A hidden word springs: '+w+'!','s');ADJF[w](S,1-who,T(sT0),{mult:1,effect:false});}}
+   if(q.veil&&hostile&&sT0&&sT0.side===who&&(!(window.DTV>=13)||(()=>{const vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);return vw&&ATTACKV.includes(vw)&&!sT0.fresh&&!sT0.st.asleep&&!sT0.st.frozen&&!sT0.st.bound&&(window.TRAPA||[]).includes(q.veil);})())){const w=q.veil;q.veil=null;q.discard.push(w);say(S,'A hidden word springs: '+w+'!','s');ADJF[w](S,1-who,T(sT0),{mult:1,effect:false});}}
   if(bz){p.braved=true;S.braveNow=true;say(S,'Courage. With so little left, this costs '+(who===0?'you':'the rival')+' nothing, and nothing can stand in its way.');}
   if(sen.verb!=null&&FUSEW.includes(hand[sen.verb])){const c={mult:1,effect:false};spend(S,who,sen,v.cost);const vi=sen.verb,fw=hand[vi],fix=r=>r&&r.k==='card'?{k:'card',i:r.i-(r.i>vi?1:0)}:r;hand.splice(vi,1);if(fw!=='vessel')p.discard.push(fw);else p.vesselUsed=true;
     react(S,who,{subj:fix(sen.subj),obj:fix(sen.obj)},c);if(p.earned<3){p.earned++;p.coins++;}S.braveNow=false;settleS(S);checkOver(S);return{ok:true};}
@@ -3624,7 +3624,7 @@ function resolve(S,who,sen){
     else if(sCard&&W[sCard].t===NOUN){const d=W[sCard],sd=d.props.includes('burden')?1-who:who;S.wantPl=sd===who?sen.pl:null;const t=addThing(S,sCard,sd,who,false);S.wantPl=null;
       say(S,sd!==who?Cap(sCard)+' settles on '+nm(S,P(sd))+'.':(who===0?'You bring forth '+sCard+'.':(t.st.occult||S.sec?'The rival brings forth something unseen.':'The rival brings forth '+sCard+'.')));
       subs=[T(t)];c.effect=true;keeper=t;
-      if(sd===who&&p.dross&&!isG(t)){const n=Math.min(4,p.dross);p.dross-=n;t.vig+=n;say(S,'It rises out of the black matter with '+n+' more vigour.');}
+      if(sd===who&&p.dross&&!isG(t)){const n=Math.min(4,p.dross);p.dross-=n;t.vig+=n;say(S,window.DTV>=13?'It rises from the black matter your fallen things left behind: '+n+' more vigour.':'It rises out of the black matter with '+n+' more vigour.');}
       if(S.clime&&S.clime.adjs&&weatherAdj(S,[t]))say(S,'The '+S.clime.adjs.join(' ')+' '+S.clime.w+' takes it too.');
       if(clime(S,'noon')&&t.props.includes('dark')){destroy(S,t,'light');subs=[];}}
     else if(sCard){subs=matchCat(S,sCard);if(S.cfg.gw2&&W[sCard].t===CAT&&!verbW&&!adjW.length){RALLY(S,who,sCard,subs,c);subs=[];}if(S.cfg.gw2&&verbW&&verbW!=='be'){subs=subs.filter(e=>e.k==='t'?e.t.side===who:e.i===who);if(!subs.length){say(S,'Nothing of yours answers to '+sCard+'.');drawN(S,who,1);}}}
@@ -3728,7 +3728,7 @@ function startTurn(S,i){
 }
 function endTurn(S,i,dump){
   S.atk=false;S.cx=null;
-  const p=S.players[i];if(p.rested>0)p.rested--;p.ban=null;p.gnosis=0;if(window.DTV>=7){const k=Math.min(WELL,Math.max(0,p.ink));p.carry=k;p.well=0;if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn.');}else if(S.cfg.ramp&&S.cfg.well>0){const k=Math.min(S.cfg.well,(p.well||0)+Math.max(0,p.ink));if(k>(p.well||0)&&p.ink>0)say(S,(i===0?'You keep ':'The rival keeps ')+(k-(p.well||0))+' unspent breath in the well.');p.well=k;}p.ink=0;
+  const p=S.players[i];if(p.rested>0)p.rested--;p.ban=null;p.gnosis=0;if(window.DTV>=7){const k=Math.min(WELL,Math.max(0,p.ink));p.carry=k;p.well=0;if(k)say(S,(i===0?'You carry ':'The rival carries ')+k+' unspent breath into '+(i===0?'your':'their')+' next turn'+(window.DTV>=13?' (up to '+WELL+' carries over).':'.'));}else if(S.cfg.ramp&&S.cfg.well>0){const k=Math.min(S.cfg.well,(p.well||0)+Math.max(0,p.ink));if(k>(p.well||0)&&p.ink>0)say(S,(i===0?'You keep ':'The rival keeps ')+(k-(p.well||0))+' unspent breath in the well.');p.well=k;}p.ink=0;
   if(S.cfg.gw2)gw2End(S,i);
   if(dump&&!S.cfg.draw2){p.discard.push(...p.hand);p.hand=[];}
   {const k=p.hand.indexOf('vessel');if(k>=0)p.hand.splice(k,1);}
@@ -3845,7 +3845,7 @@ const WXB={
 {const _ca=climeArrive;climeArrive=function(S){_ca(S);const w=S.clime&&S.clime.w,o=S.clime&&S.clime.owner;if(S.cfg&&S.cfg.gw2&&w&&WXB[w]&&!S.wxDone){S.wxDone=1;WXB[w](S,o);drawN(S,o,1);S.wxDone=0;}};}
 // adjectives: blessings give +2 on your own things; curses bite on rival things
 const BLESS=['eternal','fixed','hermetic','quick','resonant','thorny'],CURSEA=['feeble','brittle','torpid','frozen'];
-for(const a of BLESS)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;return true;}return r;};}
+for(const a of BLESS)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side===who){e.t.vig+=2;if(window.DTV>=13&&a!=='eternal')say(S,'A blessing: '+e.t.w+' gains 2.');return true;}return r;};}
 for(const a of CURSEA)if(ADJF[a]){const f=ADJF[a];ADJF[a]=(S,who,e,c)=>{const r=f(S,who,e,c);if(S.cfg.gw2&&e.k==='t'&&alive(S,e)&&e.t.side!==who){damage(S,e,2,'curse');return true;}return r;};}
 // verbs: keep the old effect, add a floor every time
 function _ents(subs,objs){return subs.concat(objs);}
@@ -3868,7 +3868,7 @@ const VX={
  sculpt:(S,w,s,o)=>_own(S,w,s,2),
  wake:(S,w,s,o)=>{const k=_own(S,w,_ents(s,o),2);for(const e of _ents(s,o))if(e.k==='t'&&e.t.side===w)e.t.acted=false;drawN(S,w,1);},
 };
-for(const v in VX)if(VERBF[v]){const f=VERBF[v];VERBF[v]=(S,who,subs,objs,c,ho)=>{f(S,who,subs,objs,c,ho);if(S.cfg.gw2&&S.fromHand!==false){VX[v](S,who,subs,objs);c.effect=true;}};}
+for(const v in VX)if(VERBF[v]){const f=VERBF[v];VERBF[v]=(S,who,subs,objs,c,ho)=>{const e0=c.effect,n13=window.DTV>=13;if(n13)c.effect=false;f(S,who,subs,objs,c,ho);const did=c.effect;if(n13)c.effect=e0||did;if(S.cfg.gw2&&S.fromHand!==false&&(!n13||did)){VX[v](S,who,subs,objs);c.effect=true;}};}
 // events
 const EVX={
  amnesty:(S,w)=>{S.players[w].life+=3;damage(S,P(1-w),3,'word');},
@@ -3890,7 +3890,7 @@ const ARRIVE={
  saltpetre:(S,t)=>{damage(S,P(1-t.side),3,'blast');},
  tower:(S,t)=>{S.players[t.side].life+=3;drawN(S,t.side,1);},
 };
-{const _at=addThing;addThing=function(S,w,sd,owner,token,card){const t=_at(S,w,sd,owner,token,card);if(t&&!token&&S.cfg&&S.cfg.gw2&&S.players[sd]&&S.players[sd].attune&&typeof schoolOf==='function'&&schoolOf(w)===S.players[sd].attune&&!isG(t)){t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;}if(t&&!token&&S.cfg&&S.cfg.gw2&&ARRIVE[w]&&!S.quietArrive)ARRIVE[w](S,t);return t;};}
+{const _at=addThing;addThing=function(S,w,sd,owner,token,card){const t=_at(S,w,sd,owner,token,card);if(t&&!token&&S.cfg&&S.cfg.gw2&&S.players[sd]&&S.players[sd].attune&&typeof schoolOf==='function'&&schoolOf(w)===S.players[sd].attune&&!isG(t)){if(window.DTV>=13){t.vig+=ATTUNEB;t.att=1;say(S,Cap(w)+' is attuned to '+(sd===0?'your':'the rival’s')+' '+S.players[sd].attune+' deck: it arrives 2 stronger.');}else{t.vig+=sd===0?ATTUNEV:2;t.att=1;if(S.players[sd].attune==='air')t.st.quick=1;}}if(t&&!token&&S.cfg&&S.cfg.gw2&&ARRIVE[w]&&!S.quietArrive)ARRIVE[w](S,t);return t;};}
 W.attractor.syl=2;W.salamander.syl=3;W.oak.vig=5;W.amnesty.syl=1;W.memory.syl=2;W.erosion.syl=2;W.sculpt.syl=1;W.petrify.syl=2;W.saltpetre.vig+=2;W.saltpetre.props=W.saltpetre.props.filter(p=>p!=='flammable'&&p!=='explosive');W.temper.syl=1;W.amnesty.gloss='A single-use spell: say it alone and it is spent. Every spell the rival has standing, and every burden on you, fades. You gain 3 life; the rival loses 3.';
 
 {const GX={"bind": "The bound thing also takes 2.", "blow": "The rival also takes 3.", "distil": "Any of your things gains 3; liquids gain double.", "ripen": "Any of your things gains 3; plants gain double.", "temper": "Any of your things gains 4.", "doubt": "Draw a word; the target (or the rival) takes 2.", "guard": "The guard gains 3, and you draw a word.", "haunt": "The haunted also takes 2.", "lure": "If it cannot be taken, it takes 3.", "petrify": "The object also takes 5.", "rust": "Any rival thing takes 2; metals take 4.", "wither": "Any rival thing takes 3.", "scream": "Everything opposite takes 1; the rival takes 2.", "sculpt": "The sculptor also gains 2.", "wake": "It gains 2, may act again, and you draw a word.", "dream": "The rival also takes 3.", "gnosis": "Your things gain 2; the rival takes 2.", "loan": "No debt is left behind, and you gain 2 life.", "lullaby": "The rival has 2 less breath next turn and takes 2.", "memory": "You also gain 4 life.", "reckoning": "Only the rival’s side: their things of vigour 4 or less fall, and the rival takes 2.", "attractor": "On arrival, draw 2 and your things gain 1.", "erosion": "On arrival, you take 4.", "phosphorus": "On arrival, the rival takes 3.", "salamander": "On arrival, it lights a rival thing.", "saltpetre": "On arrival, the rival takes 3.", "tower": "On arrival, +3 life and draw a word. Each turn, +1 ink and +1 life.", "rain": "Its speaker gains 3 life and their things gain 1; draw a word.", "desert": "The rival takes 3 when it falls; draw a word.", "drought": "When it falls the rival takes 2 and their plants and liquids take 2; draw a word.", "flux": "When it falls every state on the rival’s side falls away and they take 2; draw a word.", "fog": "Its speaker gains 4 life; draw a word.", "harvest": "Its speaker gains 2 ink and their things gain 1; draw a word.", "night": "Its speaker’s things gain 1 and the rival takes 2; draw a word.", "storm": "Lightning strikes the rival’s tallest thing for 4 (or the rival for 3); draw a word.", "eternal": "On your own thing it also gives +2 vigour.", "fixed": "On your own thing it also gives +2 vigour.", "hermetic": "On your own thing it also gives +2 vigour.", "quick": "On your own thing it also gives +2 vigour.", "resonant": "On your own thing it also gives +2 vigour.", "thorny": "On your own thing it also gives +2 vigour.", "feeble": "No extra breath on a rival thing, and the target takes 2.", "brittle": "No extra breath on a rival thing, and the target takes 2.", "torpid": "No extra breath on a rival thing, and the target takes 2.", "frozen": "No extra breath on a rival thing, and the target takes 2."};for(const w in GX)if(W[w]){W[w].gx=GX[w];W[w].gloss=W[w].gloss+" "+GX[w];}}
@@ -3946,8 +3946,8 @@ function gw2Tick(S,i,t){const h=p=>t.props.includes(p);
   if(h('spore')&&(t.age=(t.age||0)+1)>=2){const op=S.things.find(x=>x.side!==i&&x.pl===t.pl&&!isG(x));destroy(S,t,'gone');if(op){poison(S,T(op),1);if(op.st.poisoned&&op.st.poisoned<3)op.st.poisoned++;}damage(S,P(1-i),2,'poison');}
   if(t.w==='flask'&&POTN[t.pw])POTN[t.pw](S,i,t);}
 function gw2Start(S,i){const p=S.players[i],mine=side(S,i);
-  if(mine.some(t=>t.props.includes('foundry'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(a)-rungOf(b))[0];if(m){say(S,'The foundry works.');climb(S,m,1);}}
-  if(mine.some(t=>t.props.includes('erosion'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(b)-rungOf(a))[0];if(m){say(S,'Erosion wears at the ladder.');fall(S,m);}}
+  if(mine.some(t=>t.props.includes('foundry'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(a)-rungOf(b))[0];if(m&&!(window.DTV>=13)){say(S,'The foundry works.');climb(S,m,1);}}
+  if(mine.some(t=>t.props.includes('erosion'))){const m=mine.filter(t=>t.props.includes('metal')&&t.w!=='gold').sort((a,b)=>rungOf(b)-rungOf(a))[0];if(m&&!(window.DTV>=13)){say(S,'Erosion wears at the ladder.');fall(S,m);}}
   const gold=mine.filter(t=>t.w==='gold').length;if(gold>=GOLDWIN&&!(window.DTV>=4)){S.over=i;S.how='work';S.phase='over';say(S,(i===0?'You hold':'The rival holds')+' '+gold+' gold. The Great Work is done.');return;}
   if(S.places&&S.claim&&S.claim.every(c=>c===i)){S.over=i;S.how='hold';S.phase='over';say(S,(i===0?'You hold':'The rival holds')+' all three places. The table is '+(i===0?'yours':'theirs')+'.');return;}}
 function gw2End(S,i){for(const t of side(S,i))t.st.kindle=0;if(!S.places)return;S.claim=S.claim||[null,null,null];
@@ -3983,8 +3983,8 @@ if(typeof module!=='undefined'){Object.assign(module.exports,{SCHOOLS,schoolOf,r
 (function(){
 'use strict';
 const V=window.DTV|0;
-const NAMES=['v0 · the live game','v1 · one row of five','v2 · + fusion on the row','v3 · + who goes first','v4 · lab board, one win, fusing for breath','v5 · + the fusion web v2.1','v6 · + the new board layout','v7 · + simpler rules','v8 · + the verbs round','v9 · + the colour pie','v10 · + might and vigour','v11 · + balanced by simulation','v12 · + strike and stand'];
-const DESC=['The live game, unchanged.','The board as one row of five a side, with the weather and a live caption between. No places.','Drag one of your things onto another of yours to fuse them, once a turn, if they react. Costs 1 breath (2 for a potent result, 3 for a great one); breath in the well pays first.','A coin decides who goes first. The second player gets +1 breath on their first turn, +2 in the well and one extra card.','The Duel Lab board. The only way to win is to bring the rival to 0 life. No vessel, fuse or conjoin cards: put two cards from your hand in the fusion panel and fuse them for breath (or drag one of your things onto another). One fusion a turn.','The fusion web v2.1 replaces the old reactions: about 18,500 pairs, 65 new cards (dragons, gnomes, sylphs, the Rebis and the rest), traits such as rooted or haunted, and catalysts: some pairs make something greater when the right weather is up or the right thing stands on your row. Fusion costs 1 breath for a rare result, 2 potent, 3 Great, 4 Wonder. A thing made from something already on the table can act at once. Owl and crow make an eagle. Fleeting things (spores) cannot step in front of an attack.','The board mock-up layout: rails left, rows in the centre with Sky, sentence and Market between, one Ground per side, hand along the bottom, Chronicle, fuse and End turn on the right. The market opens any time in your turn; End turn goes straight to the rival.','Simpler rules: unspent breath carries over (no well); a sentence that would not work cannot be spoken; no opposites, ruin, curse, retorts or hidden bonuses; potent is a third more harm; one action per thing per turn; alchemy colours are flavour only; no laws, claim or rune; categories are beasts, birds, metals and plants.','Verbs simplified: amounts are percentages; bite, crush and cut +30%, sting +50%; seep (liquids, unblockable); toxify spreads; drench, dissolve, haunt, eat, scream reworked; guard 30% stronger; spell-like verbs are spells; summon and sacrifice; protect and dispel; transmute climbs 12 ladders.','Schools are colours: a sigil on every card. The Word is emptied into the six. Each weather raises one school 20% and lowers its opposite 20%. Ladders: evolve a thing for breath (1, then 2, then 3…); the transmute card is gone. A word of a thing’s own school is 20% stronger; of the opposite school, 20% weaker.','Things have two numbers: might (how hard they hit) and vigour (how much they can take). The split follows what the thing is: a knife is all edge, an oak all endurance. Hurt things hit softer.','Tuned from 6,000 simulated duels: vast, eat, ferment and obsidian toned down; The Word and Water lifted (word, silence, omen, dream, ink, eternal, protect, lure, and sturdier liquids).','Might is now strike (how hard a thing hits) and vigour is now stand (how much it can take before it falls). Strike sits bottom left, stand bottom right. The verb card strike is now called hit. Names and places only: the game plays exactly as v11.'];
+const NAMES=['v0 · the live game','v1 · one row of five','v2 · + fusion on the row','v3 · + who goes first','v4 · lab board, one win, fusing for breath','v5 · + the fusion web v2.1','v6 · + the new board layout','v7 · + simpler rules','v8 · + the verbs round','v9 · + the colour pie','v10 · + might and vigour','v11 · + balanced by simulation','v12 · + strike and stand','v13 · + the bug report fixes'];
+const DESC=['The live game, unchanged.','The board as one row of five a side, with the weather and a live caption between. No places.','Drag one of your things onto another of yours to fuse them, once a turn, if they react. Costs 1 breath (2 for a potent result, 3 for a great one); breath in the well pays first.','A coin decides who goes first. The second player gets +1 breath on their first turn, +2 in the well and one extra card.','The Duel Lab board. The only way to win is to bring the rival to 0 life. No vessel, fuse or conjoin cards: put two cards from your hand in the fusion panel and fuse them for breath (or drag one of your things onto another). One fusion a turn.','The fusion web v2.1 replaces the old reactions: about 18,500 pairs, 65 new cards (dragons, gnomes, sylphs, the Rebis and the rest), traits such as rooted or haunted, and catalysts: some pairs make something greater when the right weather is up or the right thing stands on your row. Fusion costs 1 breath for a rare result, 2 potent, 3 Great, 4 Wonder. A thing made from something already on the table can act at once. Owl and crow make an eagle. Fleeting things (spores) cannot step in front of an attack.','The board mock-up layout: rails left, rows in the centre with Sky, sentence and Market between, one Ground per side, hand along the bottom, Chronicle, fuse and End turn on the right. The market opens any time in your turn; End turn goes straight to the rival.','Simpler rules: unspent breath carries over (no well); a sentence that would not work cannot be spoken; no opposites, ruin, curse, retorts or hidden bonuses; potent is a third more harm; one action per thing per turn; alchemy colours are flavour only; no laws, claim or rune; categories are beasts, birds, metals and plants.','Verbs simplified: amounts are percentages; bite, crush and cut +30%, sting +50%; seep (liquids, unblockable); toxify spreads; drench, dissolve, haunt, eat, scream reworked; guard 30% stronger; spell-like verbs are spells; summon and sacrifice; protect and dispel; transmute climbs 12 ladders.','Schools are colours: a sigil on every card. The Word is emptied into the six. Each weather raises one school 20% and lowers its opposite 20%. Ladders: evolve a thing for breath (1, then 2, then 3…); the transmute card is gone. A word of a thing’s own school is 20% stronger; of the opposite school, 20% weaker.','Things have two numbers: might (how hard they hit) and vigour (how much they can take). The split follows what the thing is: a knife is all edge, an oak all endurance. Hurt things hit softer.','Tuned from 6,000 simulated duels: vast, eat, ferment and obsidian toned down; The Word and Water lifted (word, silence, omen, dream, ink, eternal, protect, lure, and sturdier liquids).','Might is now strike (how hard a thing hits) and vigour is now stand (how much it can take before it falls). Strike sits bottom left, stand bottom right. The verb card strike is now called hit. Names and places only: the game plays exactly as v11.','Fixes from the overnight bug report: every hidden extra is printed on its card and logged; attunement is equal for both sides; only curses can be laid face down, and they spring only when an attack lands; a sentence that would do nothing cannot be said; fusing from the board can strike at once, from hand next turn; ground stays ground and spells stay spells; remnants stay with their owner; the old metal ladder is gone; every life change is logged.'];
 window.DTVNAME=NAMES[V]||('v'+V);
 /* ---- v5: the fusion web v2.1 ---- */
 const WEB=window.WEB21||null;window.DTVSIDE=0;
@@ -4007,10 +4007,10 @@ window.dtvIn=function(who,refs){return refs.map(r=>{if(r.k==='thing'){const t=fi
 window.dtvTrait=function(bs,x,ins){if(V<5||!x)return;const t=S.things.find(q=>!bs.things[q.id]&&q.w===x.r);if(!t)return;
   const tr=[];for(const q of ins||[])for(const k of q.traits)if(!tr.includes(k))tr.push(k);if(x.trait&&x.trait!=='grown'&&!tr.includes(x.trait))tr.push(x.trait);
   t.traits=tr;if(tr.length)t.title=tr.join(' ')+' '+t.w;
-  const got=[];for(const q of ins||[])for(const p of q.props)if(!KINDP.includes(p)&&!t.props.includes(p)){t.props.push(p);got.push(q.w+':'+p);}
-  t.inh=(t.inh||[]).concat(got);
+  const got=[];for(const q of ins||[])for(const p of q.props)if(!KINDP.includes(p)&&!(V>=13&&['egg','burden'].includes(p))&&!t.props.includes(p)){t.props.push(p);got.push(q.w+':'+p);}
+  t.inh=(t.inh||[]).concat(got);if(V>=13){const same=(ins||[]).find(q=>q.w===t.w),oth=(ins||[]).find(q=>q!==same);if(same&&oth)say(S,Cap(oth.w)+' feeds the '+t.w+': it grows to '+t.vig+'.');}
   /* made from something already on the table: it has not just arrived, and can act at once */
-  if((ins||[]).some(q=>q.board)){t.fresh=V>=8&&!(ins||[]).some(q=>q.ready)?1:0;t.acted=false;if(bodyStrikes(t.props)&&!t.verbs.includes('strike')){t.verbs.unshift('strike');}t.inn=1;}};
+  if((ins||[]).some(q=>q.board)){t.fresh=V>=13?0:(V>=8&&!(ins||[]).some(q=>q.ready)?1:0);t.acted=false;if(bodyStrikes(t.props)&&!t.verbs.includes('strike')){t.verbs.unshift('strike');}t.inn=1;}};
 window.dtvDeck=function(d,me){if(me===1)window.DTVRAND=null;if(V>=6&&me){const r=dtvRand();if(me===1)window.DTVRAND=r;else window.DTVRIVAL=r;return r;}return V>=4?d.filter(w=>!['vessel','fuse','conjoin'].includes(w)):d;};
 /* v6: a fresh random deck every duel, built to a shape so it can always fight */
 function dtvRand(){const NO=['vessel','fuse','conjoin','be'],P=w=>W[w].props||[],ok=w=>W[w]&&!W[w].token&&!NO.includes(w),T=w=>tierOf(w);
@@ -4530,7 +4530,7 @@ if(W.obsidian){W.obsidian.vig=6;W.obsidian.gloss='Volcanic glass: the keenest ed
 if(W.word)W.word.vig=5;if(W.silence)W.silence.syl=1;if(W.dew)W.dew.vig=4;if(W.brine)W.brine.vig=5;if(W.pitch)W.pitch.vig=4;if(W.flint)W.flint.vig=4;
 if(W.protect)W.protect.gloss='Spell. A thing gains 20% and is protected: it can’t be stolen, lured, tamed, summoned or haunted. Clay wakes as a golem.';
 if(W.lure)W.lure.gloss='Spell. A rival thing of 5 or less, not a beast, comes to your side.';
-const _el=ADJF.eternal;ADJF.eternal=(S,who,e)=>{const r=_el(S,who,e);if(r&&e.t.side===who){const n=pc(e.t.vig,.3);e.t.vig+=n;say(S,'Eternal, it stands '+n+' stronger.');}return r;};
+const _el=ADJF.eternal;ADJF.eternal=(S,who,e)=>{const v0=e.k==='t'?e.t.vig:0;const r=_el(S,who,e);if(r&&e.t.side===who){const n=pc(e.t.vig,.3);e.t.vig+=n;say(S,window.DTV>=13?'Eternal, it stands '+(e.t.vig-v0)+' stronger: +2 as a blessing, then +30%, '+v0+' to '+e.t.vig+'.':'Eternal, it stands '+n+' stronger.');}return r;};
 if(W.eternal)W.eternal.gloss='Destroyed, it returns to its keeper’s hand. On your own thing it also gives +30% vigour.';
 EVENT.omen=function(S,who,c){const o=S.players[1-who];if(who===0)say(S,'The omen shows the rival’s hand: '+(o.hand.join(', ')||'nothing')+'.');else say(S,'The rival reads an omen of your hand.');const p=S.players[who];for(let k=0;k<2;k++){if(!p.deck.length&&p.discard.length){p.deck=shuffle(S,p.discard);p.discard=[];}if(p.deck.length)p.hand.push(p.deck.pop());}c.effect=true;};
 if(W.omen)W.omen.gloss='Said alone, then spent. You read the rival’s hand and draw two words.';
@@ -4579,6 +4579,104 @@ const walk=root=>{if(root.nodeType===3){doText(root);return;}if(root.nodeType!==
 const start=()=>{walk(document.body);new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')doText(m.target);else if(m.type==='attributes')doEl(m.target);else m.addedNodes.forEach(walk);}})
  .observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label']});};
 if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
+</script>
+<script>/* v13: the overnight bug report, fixed as decided with Nikita (22 Nov).
+   Everything here is gated on DTV>=13; older versions play exactly as before. */
+(function(){
+'use strict';
+const V=window.DTV|0;if(!(V>=13))return;
+const Y=i=>i===0?'You':'The rival',yr=i=>i===0?'your':'the rival’s',gains=i=>i===0?'gain':'gains',other=i=>i===0?'the rival':'you';
+
+/* ---- requirements (pelican needs water, locust and bat need air): off for now ---- */
+{const _ng=newGame;newGame=function(seed,cfg){const S=_ng(seed,cfg);if(S&&S.cfg)S.cfg.aspect=false;return S;};}
+
+/* ---- traps: only curses can be laid face down ---- */
+window.TRAPA=['burning','frozen','sodden','torpid','brittle','feeble','leaden','volatile'];
+
+/* ---- the hidden layer, kept but printed and logged ---- */
+const WXL={
+ rain:o=>Y(o)+' '+gains(o)+' 3 life from the rain, and '+yr(o)+' things gain 1.',
+ fog:o=>Y(o)+' '+gains(o)+' 4 life in the fog.',
+ desert:o=>'The desert burns '+other(o)+' for 3.',
+ drought:o=>'The drought burns '+other(o)+' for 2, and every plant and liquid opposite for 2.',
+ flux:o=>'Flux strips every condition from the things opposite, and burns '+other(o)+' for 2.',
+ harvest:o=>'Harvest: '+(o===0?'you get':'the rival gets')+' 2 coins, and '+yr(o)+' things gain 1.',
+ night:o=>'Night: '+yr(o)+' things gain 1, and the dark takes 2 from '+other(o)+'.',
+ storm:o=>'The storm’s first bolt strikes the strongest thing opposite for 4 (or '+other(o)+' for 3).'};
+for(const k in WXL)if(WXB[k]){const f=WXB[k];WXB[k]=(S,o)=>{say(S,WXL[k](o)+' '+Y(o)+' '+(o===0?'draw':'draws')+' a word.');f(S,o);};}
+const VXL={bind:'The bind also deals 2.',blow:'The blow also costs the rival 3.',distil:'Distil: the thing gains 3.',ripen:'Ripen: the thing gains 3.',temper:'Temper: the thing gains 4.',
+ doubt:'Doubt: a word is drawn, and 2 harm.',guard:'Guard: +3, and a word is drawn.',haunt:'The haunting also deals 2.',lure:'The lure also deals 3.',petrify:'Petrify also deals 5.',
+ rust:'Rust also deals 2.',wither:'Wither also deals 3.',scream:'The scream: 1 to every thing opposite, and 2 to the person.',sculpt:'Sculpt: +2.',wake:'Wake: +2, it may act again, and a word is drawn.'};
+for(const k in VXL)if(VX[k]){const f=VX[k];VX[k]=(S,w,s,o)=>{say(S,VXL[k]);f(S,w,s,o);};}
+const EXL={amnesty:w=>Y(w)+' '+gains(w)+' 3 life, and '+other(w)+' '+(w===0?'loses':'lose')+' 3.',dream:w=>'The dream takes 3 more from '+other(w)+'.',gnosis:w=>Y(w).replace('The rival','The rival’s')+' things gain 2; '+other(w)+' '+(w===0?'takes':'take')+' 2.',
+ loan:w=>Y(w)+' '+gains(w)+' 2 life.',lullaby:w=>'The lullaby dazes '+other(w)+' for 2 turns and deals 2.',memory:w=>Y(w)+' '+gains(w)+' 4 life.',reckoning:w=>'Reckoning: every rival thing of 4 or less is destroyed, and 2 harm.'};
+for(const k in EXL)if(EVX[k]){const f=EVX[k];EVX[k]=(S,w)=>{say(S,EXL[k](w));f(S,w);};}
+const ARL={attractor:t=>'The attractor draws 2 words, and '+yr(t.side)+' other things gain 1.',erosion:t=>'Erosion arrives: '+(t.side===0?'you take':'the rival takes')+' 4.',phosphorus:t=>'Phosphorus flares: 3 to '+other(t.side)+'.',
+ salamander:t=>'The salamander arrives 2 stronger and sets the first thing opposite alight.',saltpetre:t=>'Saltpetre blasts '+other(t.side)+' for 3.',tower:t=>'The tower rises: '+(t.side===0?'you gain':'the rival gains')+' 3 life and draw'+(t.side===0?'':'s')+' a word.'};
+for(const k in ARL)if(ARRIVE[k]){const f=ARRIVE[k];ARRIVE[k]=(S,t)=>{say(S,ARL[k](t));f(S,t);};}
+
+/* ---- card text: print the extras, and fix the ones that said the wrong thing ---- */
+const G=(w,s)=>{if(W[w])W[w].gloss=s;},ADD=(w,s)=>{if(W[w]&&W[w].gloss&&!W[w].gloss.includes(s))W[w].gloss=W[w].gloss.replace(/\s*$/,'')+' '+s;};
+const WXG={rain:'When it arrives, its caller gains 3 life, their things gain 1, and they draw a word. It falls only on the other side.',fog:'When it arrives, its caller gains 4 life and draws a word.',desert:'When it arrives, the other side takes 3, and its caller draws a word.',
+ drought:'When it arrives, the other side takes 2, every plant and liquid opposite takes 2, and its caller draws a word.',flux:'When it arrives, every condition opposite falls away, the other side takes 2, and its caller draws a word.',
+ harvest:'When it arrives, its caller gets 2 coins, their things gain 1, and they draw a word.',night:'When it arrives, its caller’s things gain 1, the other side takes 2, and its caller draws a word.',storm:'When it arrives, the strongest thing opposite takes 4 (or the other side takes 3), and its caller draws a word.'};
+for(const k in WXG)ADD(k,WXG[k]);
+const VXG={bind:'It also deals 2.',blow:'The rival also takes 3.',distil:'Your thing also gains 3.',ripen:'Your thing also gains 3.',temper:'Your thing also gains 4.',doubt:'Draw a word; the target (or the rival) also takes 2.',
+ guard:'The guard also gains 3, and you draw a word.',haunt:'The haunted also takes 2.',lure:'If it cannot be taken, it takes 3.',petrify:'The target also takes 5.',rust:'Any rival thing it touches also takes 2.',wither:'Any rival thing it touches also takes 3.',
+ sculpt:'The sculptor also gains 2.',wake:'It also gains 2, may act again, and you draw a word.'};
+for(const k in VXG)ADD(k,VXG[k]);
+if(W.scream)G('scream',(W.scream.gloss||'').replace(/Everything opposite takes 1, and so does the rival\.?/,'').trim()+' Everything opposite takes 1, and the rival takes 2.');
+G('silence','Said alone, then spent. The rival forgets two words from their hand into the Silence. You draw a word.');
+{const _si=EVENT.silence;EVENT.silence=function(S,who,c){const f=window.silence;silence=(S2,i,n)=>f(S2,i,Math.min(n,2));try{_si.apply(this,arguments);}finally{silence=f;}};}
+ADD('memory','You gain 4 life.');ADD('loan','You also gain 2 life.');ADD('dream','The rival also takes 3.');
+G('eternal','Destroyed, it returns to its keeper’s hand. On your own thing it also gains 2 as a blessing, then 30% more.');
+for(const b of ['fixed','hermetic','quick','resonant','thorny'])if(W[b]&&!/\+2/.test(W[b].gloss||''))ADD(b,'On your own thing it also gives +2.');
+G('tower','A grain tower. When it arrives you gain 3 life and draw a word. Each of your turns while it stands, you gain 1 life and 2 ink.');
+G('rumour','Lands on your rival for 4 turns. While it stands, their sentences earn no ink.');
+G('erosion',(W.erosion&&W.erosion.gloss||'').replace(/ladder/g,'metal'));
+G('slag','What a destroyed metal leaves.');
+/* attack verbs hit with strike, not stand */
+for(const w in W){const d=W[w];if(d&&typeof d.gloss==='string'&&/for (its|plain) vigour/.test(d.gloss))d.gloss=d.gloss.replace(/for (its|plain) vigour/g,'for $1 might');}
+
+/* ---- rumour fades after 4 of its keeper's turns ---- */
+{const _st=startTurn;startTurn=function(S,i){const r=_st.apply(this,arguments);try{for(const t of S.things.slice())if(t.props.includes('rumour')&&t.side===i){t.rl=(t.rl==null?4:t.rl)-1;if(t.rl<=0){S.things.splice(S.things.indexOf(t),1);say(S,'The rumour on '+(i===0?'you':'the rival')+' dies away.');}}}catch(e){}return r;};}
+
+/* ---- ground stays ground, spells stay spells ---- */
+const keepKind=(t,g,sp)=>{if(g&&!t.props.includes('ground'))t.props.push('ground');if(sp&&!t.props.includes('spell'))t.props.push('spell');};
+{const _ti=turnInto;turnInto=function(S,t,w){const g=isG(t),sp=t.props.includes('spell');_ti(S,t,w);keepKind(t,g,sp);};}
+{const _be=become;become=function(S,t,w){const g=isG(t),sp=t.props.includes('spell');_be(S,t,w);keepKind(t,g,sp);};}
+
+/* ---- the old metal ladder is gone; only the breath ladder remains ---- */
+climb=function(){};fall=function(){return false;};
+
+/* ---- a fresh thing cannot attack with any verb the turn it arrives; sealed things say what still reaches them ---- */
+{const _v=validate;validate=function(S,who,sen){const r=_v(S,who,sen);if(!r||!r.ok){if(r&&r.why&&/sealed\. You cannot single it out/.test(r.why))r.why='It is sealed: it cannot be singled out. A category (such as beasts) or something that touches every thing opposite still reaches it.';return r;}
+ try{const hand=S.players[who].hand,vw=sen.kverb||(sen.verb!=null?hand[sen.verb]:null);if(vw&&ATTACKV.includes(vw)&&sen.subj&&sen.subj.k==='thing'){const t=findThing(S,sen.subj.id);if(t&&t.side===who&&t.fresh&&!t.props.includes('swift')&&!t.st.quick)return{ok:false,why:Cap(t.title||t.w)+' has only just arrived. It can attack next turn.',cost:0};}}catch(e){}
+ return r;};}
+
+/* ---- every life change appears in the Chronicle ---- */
+const LIFE_RE=/(You|The rival) (lose|loses|gain|gains) (\d+) life/g;
+function logged(S,from,i){let d=0;for(const l of S.log.slice(from)){const x=String(l&&l.x!=null?l.x:l);let m;LIFE_RE.lastIndex=0;while((m=LIFE_RE.exec(x))){const who=m[1]==='You'?0:1;if(who!==i)continue;d+=(m[2][0]==='g'?1:-1)*(+m[3]);}}return d;}
+function track(S,fn){if(!S||S.quiet||!S.players)return fn();const L=S.log.length,l0=[S.players[0].life,S.players[1].life];const r=fn();
+ for(const i of [0,1]){const d=S.players[i].life-l0[i],rest=d-logged(S,L,i);if(rest)say(S,(i===0?(rest>0?'You gain ':'You lose '):(rest>0?'The rival gains ':'The rival loses '))+Math.abs(rest)+' life.');}return r;}
+{const _st=startTurn;startTurn=function(S,i){return track(S,()=>_st.apply(this,arguments));};}
+{const _et=endTurn;endTurn=function(S){return track(S,()=>_et.apply(this,arguments));};}
+
+/* ---- a sentence that would not work cannot be spoken; and nothing crashes ---- */
+let depth=0;
+function why(C,from){const ls=C.log.slice(from).map(l=>String(l&&l.x!=null?l.x:l)).filter(x=>!/^(You say|The rival says|The rival says something)/.test(x)&&x!=='Nothing happens.');return ls.length?ls[ls.length-1]:'That would do nothing.';}
+{const _r=resolve;resolve=function(S,who,sen){
+ const run=T=>{try{return _r(T,who,sen);}catch(e){console.error('v13 resolve',e);if(T&&T.log&&!T.quiet)say(T,'The words fizzle.');return{ok:false,why:'Those words fizzle.'};}};
+ if(depth||S.quiet){const r=run(S);if(r&&r.ok&&r.effect===false&&sen&&sen.veil==null)return{ok:false,why:'That would do nothing.',cost:0};return r;}
+ if(sen&&sen.veil==null){let C=null;try{C=JSON.parse(JSON.stringify(S));}catch(e){}
+  if(C){const L=C.log.length;depth++;let r;try{r=run(C);}finally{depth--;}const sprang=C.log.slice(L).some(l=>/A hidden word springs/.test(String(l&&l.x!=null?l.x:l)));if(r&&r.ok&&r.effect===false&&!sprang)return{ok:false,why:why(C,L)+' (Nothing would happen, so it is not said.)',cost:0};}}
+ return track(S,()=>run(S));};}
+
+/* ---- attuned things carry a visible mark ---- */
+const css=document.createElement('style');css.textContent='.dtv13 .thing.att13::after{content:"attuned";position:absolute;left:50%;top:-9px;transform:translateX(-50%);font:600 9px/1 "Alegreya Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#f3e4c2;background:rgba(20,14,8,.9);border:1px solid rgba(230,196,94,.6);border-radius:8px;padding:2px 5px;pointer-events:none;z-index:7}';
+document.head.appendChild(css);
+const _dec=window.dtvDecorate;window.dtvDecorate=function(){if(_dec)_dec();try{document.body.classList.add('dtv13');document.querySelectorAll('#table .thing[data-id]').forEach(el=>{const t=S.things.find(x=>String(x.id)===el.dataset.id);el.classList.toggle('att13',!!(t&&t.att));});}catch(e){}};
 })();
 </script>
 <script>
