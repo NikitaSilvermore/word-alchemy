@@ -51,6 +51,7 @@ G('eternal','Destroyed, it returns to its keeper’s hand. On your own thing it 
 for(const b of ['fixed','hermetic','quick','resonant','thorny'])if(W[b]&&!/\+2/.test(W[b].gloss||''))ADD(b,'On your own thing it also gives +2.');
 G('tower','A grain tower. When it arrives you gain 3 life and draw a word. Each of your turns while it stands, you gain 1 life and 2 ink.');
 G('rumour','Lands on your rival for 4 turns. While it stands, their sentences earn no ink.');
+if(W.hunger&&!W.hunger.props.includes('burden')){W.hunger.props.push('burden');G('hunger','Lands on your rival for 4 turns. While it stands, every beast on their side loses 1 at the start of their turn.');}
 G('erosion',(W.erosion&&W.erosion.gloss||'').replace(/ladder/g,'metal'));
 G('slag','What a destroyed metal leaves.');
 /* attack verbs hit with strike, not stand */
