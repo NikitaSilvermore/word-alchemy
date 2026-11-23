@@ -7887,7 +7887,7 @@ function check(S,pre,c0,act,r){
   const c1=[cards(S,0),cards(S,1)];
   for(const x of pre.things)if(x.inN&&!S.things.some(t=>t.id===x.id))c0[x.owner]-=x.inN;
   if(c1[0]!==c0[0]||c1[1]!==c0[1]){const d=[c1[0]-c0[0],c1[1]-c0[1]];const v=act.verb,ws=act.words||[];
-    const steal=act.kind==='say'&&(v==='steal')&&d[act.who]===1&&d[1-act.who]===-1;
+    const steal=act.kind==='say'&&(v==='steal')&&d[act.who]>0&&d[act.who]===-d[1-act.who];
     const take=act.kind==='say'&&(TAKERS.includes(v))&&d[act.who]+d[1-act.who]===0;
     if(!steal&&!take)flag(S,'cardCount',act.card,'Cards changed: you '+(d[0]>=0?'+':'')+d[0]+', rival '+(d[1]>=0?'+':'')+d[1]+'.');}
 }
