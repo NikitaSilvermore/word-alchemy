@@ -36,7 +36,7 @@ T('strike sum on a guard',()=>{const a=A.put('iron',ME),g=A.put('boulder',RV);A.
 T('player poison doses',()=>{const l0=life(RV);poison(S,P(RV),1);const p1=S.players[RV].poisoned;return ok(p1===2,'one dose = '+p1+' turns');});
 T('haunt (card text matches)',()=>ok(!/also takes 2/.test(W.haunt.gloss),'card promises 2 harm that can never land'));
 T('lure (fail: takes 3)',()=>{const b=A.put('iron',RV,{vig:9});A.say(ME,{s:b,v:'lure'});return ok(b.vig===6,'too-strong target took '+(9-b.vig)+L());});
-T('reckoning (only small rival things)',()=>{const a=A.put('stag',RV,{vig:4});const r=A.say(ME,{s:'reckoning'});return ok(r.ok&&!A.T(a),'refused or rival 4 stayed: '+(r.why||'')+L());});
+T('reckoning (only small rival things)',()=>{const m=A.put('hare',ME,{vig:2});const a=A.put('stag',RV,{vig:4});const r=A.say(ME,{s:'reckoning'});return ok(r.ok&&!A.T(a)&&A.T(m),'refused, rival 4 stayed or own 2 fell: '+(r.why||'')+L());});
 T('blow (no touch effect)',()=>{const w=A.put('hawk',ME),a=A.put('stag',ME);const l0=life(RV);const r=A.say(ME,{s:w,v:'blow',o:a});return ok(r.ok&&l0-life(RV)>=3,'refused or no 3: '+(r.why||'')+L());});
 T('radiant (shadow opposite)',()=>{A.put('shadow',RV);const a=A.put('stag',ME);const r=A.say(ME,{s:a,a:['radiant']});return ok(r.ok,'refused: '+r.why);});
 T('noon (shadow opposite)',()=>{const s=A.put('shadow',RV);const r=A.say(ME,{c:'noon'});return ok(r.ok&&(!A.T(s)||!s.st.occult),'refused: '+(r.why||''));});

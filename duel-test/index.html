@@ -7707,9 +7707,9 @@ after('scream',(S,w,s,o,c)=>{const k=s.some(e=>e&&e.k==='t'&&e.t.w==='mandrake')
 if(EVENT.dream){const f=EVENT.dream;EVENT.dream=function(S,who,c){f.apply(this,arguments);if(S.over==null){say(S,'The dream takes 3 more from '+(who===0?'the rival':'you')+'.');damage(S,P(1-who),3,'dream');}c.effect=true;};}
 if(EVENT.loan){const f=EVENT.loan;EVENT.loan=function(S,who,c){f.apply(this,arguments);S.players[who].life+=2;say(S,(who===0?'You gain':'The rival gains')+' 2 life.');c.effect=true;};}
 /* reckoning works whenever the rival is there to take its 2 */
-if(EVENT.reckoning)EVENT.reckoning=function(S,who,c){const l=S.things.filter(t=>!isG(t)&&(t.vig<=2||(t.side!==who&&t.vig<=4)));say(S,l.length?'The reckoning. Everything of vigour 2 or less, and every rival thing of 4 or less, is weighed and found wanting.':'The reckoning finds nothing small enough to fall.');
+if(EVENT.reckoning)EVENT.reckoning=function(S,who,c){const l=S.things.filter(t=>!isG(t)&&t.side!==who&&t.vig<=4);say(S,l.length?'The reckoning. Every rival thing of vigour 4 or less is weighed and found wanting.':'The reckoning finds nothing small enough to fall.');
   for(const t of l)if(S.things.includes(t))destroy(S,t,'reckoning');damage(S,P(1-who),2,'word');c.effect=true;};
-G('reckoning','A single-use spell: say it alone and it is spent. Everything of vigour 2 or less, on either side, is destroyed; on the rival’s side everything of 4 or less falls too. The rival takes 2.');
+G('reckoning','A single-use spell: say it alone and it is spent. Every rival thing of vigour 4 or less is destroyed, and the rival takes 2. Your own side is untouched.');
 /* blow: the rival always takes 3 when a thing is carried across */
 if(VERBF.blow){const f=VERBF.blow;VERBF.blow=function(S,who,subs,objs,c){objs=(objs||[]).filter(o=>{if(o&&o.k==='t'&&o.t.side!==who){say(S,'The wind carries only your own things across.');return false;}return true;});arguments[3]=objs;const l0=S.players[1-who].life,e0=c.effect;c.effect=false;const r=f.apply(this,arguments);const did=c.effect;c.effect=e0||did;
   const carried=S.log.slice(-8).some(l=>/carries .* across/.test(String(l.x||'')));if(!did&&carried&&S.over==null){say(S,'The rival also takes 3.');damage(S,P(1-who),3,'wind');c.effect=true;}return r;};}
@@ -7739,9 +7739,9 @@ if(VERBF.drench){const f=VERBF.drench;VERBF.drench=function(S,who,subs,objs,c){c
   for(const h of hits){const o=h.o,a=h.a;if(!a||!alive(S,o))continue;const ap=a.props;
     if(ap.includes('flammable')&&o.k==='t'&&!ghost(o.t)){addProp(o.t,'flammable');say(S,Cap(nm(S,o))+' is soaked in '+a.w+' and will burn.');}
     if(ap.includes('pure')){if(o.k==='p'){if(S.players[o.i].poisoned){S.players[o.i].poisoned=0;say(S,'The poison is washed out.');}}else if(o.t.st.poisoned){o.t.st.poisoned=0;say(S,'The poison is washed out.');}}
-    if(ap.includes('salty')&&o.k==='t'&&o.t.props.includes('plant')){say(S,'Salt kills the root.');damage(S,o,2,'wither');}
+    if(ap.includes('salty')&&o.k==='t'&&o.t.props.includes('plant')&&!isG(o.t)){say(S,'Salt kills the root.');destroy(S,o.t,'wither');}
     if(ap.includes('corrosive')&&alive(S,o)){say(S,'The acid bites.');damage(S,o,2,'acid');}}}return r;};}
-G('brine','Salt water. A plant it drenches takes 2 more.');
+G('brine','Salt water. Kills the plants it drenches.');
 
 /* 10. healing never takes life away (mend, drink and eat capped life at 60 even when you stood above it) */
 for(const v of ['mend','drink','eat'])if(VERBF[v]){const f=VERBF[v];VERBF[v]=function(S){const ex=S.players.map(p=>Math.max(0,p.life-LIFE));S.players.forEach((p,i)=>p.life-=ex[i]);try{return f.apply(this,arguments);}finally{S.players.forEach((p,i)=>p.life+=ex[i]);}};}
@@ -7766,11 +7766,13 @@ if(VERBF.crush){const f=VERBF.crush;VERBF.crush=function(S,who,subs,objs,c){cons
   return r;};}
 
 /* 13. fusion: a made thing keeps the qualities its inputs were given (sealed, fixed, masked, a firebrand, its titles) */
-{const _in=window.dtvIn;window.dtvIn=function(who,refs){const out=_in.apply(this,arguments);try{let k=0;for(const r of refs){const t=r&&r.k==='thing'?findThing(S,r.id):null;const o=out[k];if(r&&o&&(r.k!=='thing'||t)){if(t){o.q={hermetic:!!t.st.hermetic,fixed:!!t.st.fixed,masked:!!t.st.masked,brand:!!t.brand,forms:(t.forms||[]).slice(),vasted:!!t.vasted};}k++;}}}catch(e){}return out;};}
+{const _in=window.dtvIn;window.dtvIn=function(who,refs){const out=_in.apply(this,arguments);try{let k=0;for(const r of refs){const t=r&&r.k==='thing'?findThing(S,r.id):null;const o=out[k];if(r&&o&&(r.k!=='thing'||t)){if(t){o.q={verbs:(t.verbs||[]).filter(v=>!(v==='strike'&&t.inn)&&!(t.innv||[]).includes(v)),hermetic:!!t.st.hermetic,fixed:!!t.st.fixed,masked:!!t.st.masked,brand:!!t.brand,forms:(t.forms||[]).slice(),vasted:!!t.vasted};}k++;}}}catch(e){}return out;};}
 {const _tr=window.dtvTrait;window.dtvTrait=function(bs,x,ins){_tr.apply(this,arguments);try{if(!x||!x.r)return;const t=S.things.find(q=>!bs.things[q.id]&&q.w===x.r);if(!t)return;
   const kept=[];for(const q of ins||[]){const k=q.q;if(!k)continue;for(const s of ['hermetic','fixed','masked'])if(k[s]&&!t.st[s]){t.st[s]=1;kept.push(s==='hermetic'?'sealed':s);}
     if(k.brand&&!t.brand){t.brand=1;addProp(t,'spark');kept.push('firebrand');}if(k.vasted)t.vasted=1;
-    for(const f of k.forms||[]){t.forms=t.forms||[];if(!t.forms.includes(f)&&f!=='tame')t.forms.push(f);}}
+    for(const f of k.forms||[]){t.forms=t.forms||[];if(!t.forms.includes(f)&&f!=='tame')t.forms.push(f);}
+    for(const v of k.verbs||[]){t.verbs=t.verbs||[];if(!t.verbs.includes(v)){t.verbs.push(v);kept.push('knows '+v);}}}
+  {const mx=(S.cfg&&S.cfg.maxVerbs)||2;const own=()=>(t.verbs||[]).filter(v=>!(v==='strike'&&t.inn)&&!(t.innv||[]).includes(v));while(own().length>mx){const v=own()[0];t.verbs.splice(t.verbs.indexOf(v),1);}}
   if(t.forms&&t.forms.length){const tr=(t.traits||[]).filter(a=>!t.forms.includes(a));t.title=tr.concat(t.forms).join(' ')+' '+t.w;}
   if(kept.length)say(S,Cap(t.title||t.w)+' keeps what its parts were given: '+kept.join(', ')+'.');}catch(e){console.error(e);}};}
 

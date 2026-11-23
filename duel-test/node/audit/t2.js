@@ -55,7 +55,7 @@ T('mandrake',()=>{const a=A.put('mandrake',ME);const l0=life(RV);A.say(ME,{s:a,v
 T('pelican',()=>{const p=A.put('pelican',ME),b=A.put('stag',ME,{vig:2});const v=p.vig;A.say(ME,{s:p,v:'mend',o:b});return all(ok(b.vig>2,'not mended'+L()),ok(p.vig===v-1,'pelican paid '+(v-p.vig)));});
 T('naphtha',()=>{const n=A.put('naphtha',ME),b=A.put('stag',RV,{vig:20});const l0=life(RV);heat(S,{k:'t',t:n},1);return all(ok(b.vig<=17,'stag took '+(20-b.vig)),ok(l0-life(RV)>=3,'rival took '+(l0-life(RV))));});
 T('quicklime',()=>{const q=A.put('quicklime',ME),b=A.put('stag',ME,{vig:20});wet(S,{k:'t',t:q});return ok(b.vig<20,'nothing beside it scalded');});
-T('brine',()=>{const a=A.put('brine',ME),b=A.put('oak',RV,{vig:20});A.say(ME,{s:a,v:'drench',o:b});return ok(b.vig<=18,'plant not hurt by salt'+L());});
+T('brine',()=>{const a=A.put('brine',ME),b=A.put('oak',RV,{vig:20});A.say(ME,{s:a,v:'drench',o:b});return ok(!A.T(b),'plant not killed by salt'+L());});
 T('dew',()=>{const a=A.put('dew',ME),b=A.put('owl',ME,{st:{poisoned:2},vig:20});A.say(ME,{s:a,v:'drench',o:b});return ok(!b.st.poisoned,'poison not cured'+L());});
 T('elixir',()=>{const a=A.put('elixir',ME);const b=A.put('stag',ME,{vig:2});A.say(ME,{s:b,v:'drink',o:a});return ok(b.vig>=8,'drinker restored to '+b.vig+L());});
 T('pitch',()=>{const a=A.put('pitch',ME),b=A.put('iron',RV);A.say(ME,{s:a,v:'drench',o:b});return ok(b.props.includes('flammable'),'not made to burn'+L());});
@@ -98,7 +98,7 @@ T('dream',()=>{const a=A.put('iron',RV,{vig:20}),b=A.put('stag',RV,{vig:20,st:{a
 T('omen',()=>{deck(ME);S.players[RV].hand=['oak'];A.say(ME,{s:'omen'});return ok(S.players[ME].hand.length>=2,'drew '+S.players[ME].hand.length);});
 T('abundance',()=>{const a=A.put('stag',ME,{vig:5}),b=A.put('iron',ME,{vig:5});A.say(ME,{s:'abundance'});return all(ok(a.vig===8,'stag +'+(a.vig-5)),ok(b.vig===5,'iron (not living) changed'));});
 T('lullaby',()=>{const a=A.put('stag',RV,{vig:20});const l0=life(RV);A.say(ME,{s:'lullaby'});return all(ok(a.st.asleep,'beast not asleep'),ok(l0-life(RV)===2,'rival took '+(l0-life(RV))+L()));});
-T('reckoning',()=>{const a=A.put('stag',RV,{vig:4}),b=A.put('iron',RV,{vig:6}),c=A.put('hare',ME,{vig:5});const l0=life(RV);A.say(ME,{s:'reckoning'});return all(ok(!A.T(a),'rival 4 stayed'),ok(A.T(b),'rival 6 fell'),ok(A.T(c),'my 5 fell'+L()));});
+T('reckoning',()=>{const a=A.put('stag',RV,{vig:4}),b=A.put('iron',RV,{vig:6}),c=A.put('hare',ME,{vig:2});const l0=life(RV);A.say(ME,{s:'reckoning'});return all(ok(!A.T(a),'rival 4 stayed'),ok(A.T(b),'rival 6 fell'),ok(A.T(c),'my 5 fell'+L()));});
 T('avalanche',()=>{const a=A.put('stag',RV,{vig:20}),h=A.put('hawk',RV,{vig:20});A.say(ME,{s:'avalanche'});return all(ok(a.vig===18,'stag lost '+(20-a.vig)),ok(h.vig===20,'flyer lost '+(20-h.vig)));});
 T('windfall',()=>{A.say(ME,{s:'windfall',ink:5});const c=S.players[ME].coins;return ok(S.players[ME].ink===5-W.windfall.syl+3,'breath '+S.players[ME].ink);});
 T('amnesty',()=>{A.put('ink',RV);const l0=life(ME),l1=life(RV);A.say(ME,{s:'amnesty'});return all(ok(!find('ink',RV),'rival spell stayed'),ok(life(ME)-l0===3,'+'+(life(ME)-l0)),ok(l1-life(RV)>=3,'rival -'+(l1-life(RV))));});
