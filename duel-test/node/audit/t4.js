@@ -1,0 +1,1 @@
+(()=>{const A=AU,R=[];A.reset();S.said=[new Proxy({},{get:()=>1}),new Proxy({},{get:()=>1})];const a=A.put('stag',0,{props:['drain']});S.players[0].life=20;A.say(0,{s:a,v:'bite',o:'rival'});R.push(['drain bite (Life beast)',Number.isInteger(S.players[0].life)?'pass':'FAIL','life '+S.players[0].life]);return R;})()
