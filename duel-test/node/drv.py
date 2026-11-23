@@ -13,7 +13,7 @@ async def page(b,ver):
     pg=await b.new_page(viewport={'width':1280,'height':720})
     pg.on('pageerror',lambda e:None)
     await pg.route('**/*',lambda r: r.abort() if ('127.0.0.1' not in r.request.url and r.request.url.startswith('http')) else (r.abort() if r.request.resource_type in ('image','media','font') else r.continue_()))
-    await pg.add_init_script("try{localStorage.setItem('wa-duel-test-ver','%s');localStorage.setItem('wa-dtv8','1');localStorage.setItem('wa-dtv9','1');localStorage.setItem('wa-dtv10','1');localStorage.setItem('wa-dtv11','1');}catch(e){}"%ver)
+    await pg.add_init_script("try{localStorage.setItem('wa-duel-test-ver','%s');localStorage.setItem('wa-dtv8','1');localStorage.setItem('wa-dtv9','1');localStorage.setItem('wa-dtv10','1');localStorage.setItem('wa-dtv11','1');for(let k=12;k<=40;k++)localStorage.setItem('wa-dtv'+k,'1');}catch(e){}"%ver)
     await pg.goto('http://127.0.0.1:%d/'%PORT+PAGE,wait_until='domcontentloaded',timeout=120000)
     for _ in range(60):
         ok=await pg.evaluate("typeof SIM!=='undefined'&&typeof fresh==='function'&&typeof PF!=='undefined'&&!!PF")

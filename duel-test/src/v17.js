@@ -98,7 +98,7 @@ for(const w of ['scribe','hermit','miser','alchemist','homunculus','word','unnam
 /* tuning round 2 */
 W.hawk.vig=2;W.otter.vig=2;W.boulder.vig=9;
 let LASTA=null;
-const _da2=didAct;didAct=function(S,who,e,keep){if(e&&e.k==='t')LASTA=e.t;return _da2.apply(this,arguments);};
+const _da2=didAct;didAct=function(S,who,e,keep){if(e&&e.k==='t'){LASTA=e.t;window.LASTA20=e.t;}return _da2.apply(this,arguments);};
 /* Rot: a toxic thing's blows poison what they hit */
 const _hit=hit;hit=function(S,o,n,cause){const a=LASTA;const r=_hit.apply(this,arguments);try{if(a&&a.props.includes('toxic')&&['attack','bite','cut','sting','fight','crush','strike'].includes(cause)&&alive(S,o)&&(o.k==='p'||o.t.props.includes('living'))&&!(o.k==='t'&&o.t.props.includes('toxic')))poison(S,o,1);}catch(x){}return r;};
 /* Life: what grows, outgrows. Each of your turns your Life things gain 1, up to 5 in all */
