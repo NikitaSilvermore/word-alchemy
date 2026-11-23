@@ -28,7 +28,7 @@ function fuse(S,who){S.fz=S.fz||[0,0];if(S.fz[who]===S.turn)return false;const p
  settleS(S);checkOver(S);S.st.fuse[who]++;return true;}
 function evolve(S,who){const p=S.players[who];if(!window.dtvCanEvo)return;const c=S.things.filter(t=>dtvCanEvo(S,who,t)).map(t=>({t,c:dtvEvoCost(S,t)})).filter(x=>p.ink-x.c>=1||x.c===0).sort((a,b)=>a.c-b.c||b.t.vig-a.t.vig)[0];if(c&&dtvEvolve(S,who,c.t))S.st.evo[who]++;}
 function lossOf(S,from){let m=0;for(const l of S.log.slice(from)){const x=String(l.x||l);const r=/(?:You lose|The rival loses) (\d+) life/.exec(x);if(r)m=Math.max(m,+r[1]);}return m;}
-function turn(S,who){evolve(S,who);if(S.over!=null)return;fuse(S,who);
+function turn(S,who){if(who===0&&S.sw===1){S.players[0].ink+=1;S.sw=2;}evolve(S,who);if(S.over!=null)return;fuse(S,who);
  for(let n=0;n<10&&S.over==null;n++){window.DTVDRY=1;let s=null;try{s=botChoose(S,who);}finally{window.DTVDRY=0;}if(!s)break;
   const L=S.log.length;const r=resolve(S,who,s);if(!r||r.ok===false)break;const v=S.log.slice(L).map(l=>String(l.x||l)).join(' ');S.st.said[who]++;
   const vw=s.kverb||(s.verb!=null?null:null);settleS&&settleS(S);checkOver(S);}

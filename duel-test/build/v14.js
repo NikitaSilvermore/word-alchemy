@@ -27,7 +27,8 @@ function inOf(who,r){if(!r)return null;if(r.k==='thing'){const t=findThing(S,r.i
   const w=S.players[who].hand[r.i];if(!w||!W[w])return null;const vig=W[w].vig+2*upOf(S,who,w),p=W[w].props||[],body=!['ground','spell','event','burden','potion'].some(q=>p.includes(q));return {w,vig,mt:body?(MTW(w,vig)||0):0,name:w,traits:[],props:p.slice()};}
 /* what a fusion will make, worked out exactly as it will be made */
 function pred(who,ra,rb){const A=inOf(who,ra),B=inOf(who,rb);if(!A||!B)return null;window.DTVSIDE=who;const x=rxOf(A.w,B.w);if(!x||!x.r||!W[x.r])return null;
-  const cost=rxLevel(A.w,B.w,x),r=x.r,d=W[r],o={A,B,x,r,cost,rule:rule(x)};
+  if(window.dtv15Block&&dtv15Block(who,ra,rb,x))return null;
+  const cost=window.dtv15Cost?Math.max(1,rxLevel(A.w,B.w,x)+dtv15Cost(who,ra,rb,x)):rxLevel(A.w,B.w,x),r=x.r,d=W[r],o={A,B,x,r,cost,rule:rule(x)};
   if(d.t===CLIME){o.kind='clime';o.name=r;o.say='becomes the weather';return o;}
   if((d.props||[]).includes('potion')){o.kind='potion';o.name=r;o.say='poured at once';return o;}
   const tr=[];for(const q of [A,B])for(const k of q.traits)if(!tr.includes(k))tr.push(k);if(x.trait&&x.trait!=='grown'&&!tr.includes(x.trait))tr.push(x.trait);

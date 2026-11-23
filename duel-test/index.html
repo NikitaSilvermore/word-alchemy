@@ -13,9 +13,9 @@
     P.clear=function(){};
   }catch(e){}
   window.DUELTEST_GAME=true;
-  try{var ver=parseInt(g.call(localStorage,'wa-duel-test-ver'),10);if(ver===5&&!g.call(localStorage,'wa-dtv6')){ver=6;s.call(localStorage,'wa-duel-test-ver','6');s.call(localStorage,'wa-dtv6','1');}if(ver===6&&!g.call(localStorage,'wa-dtv7')){ver=7;s.call(localStorage,'wa-duel-test-ver','7');s.call(localStorage,'wa-dtv7','1');}if(ver===7&&!g.call(localStorage,'wa-dtv8')){ver=8;s.call(localStorage,'wa-duel-test-ver','8');s.call(localStorage,'wa-dtv8','1');}if(ver===8&&!g.call(localStorage,'wa-dtv9')){ver=9;s.call(localStorage,'wa-duel-test-ver','9');s.call(localStorage,'wa-dtv9','1');}if(ver===9&&!g.call(localStorage,'wa-dtv10')){ver=10;s.call(localStorage,'wa-duel-test-ver','10');s.call(localStorage,'wa-dtv10','1');}if(ver===10&&!g.call(localStorage,'wa-dtv11')){ver=11;s.call(localStorage,'wa-duel-test-ver','11');s.call(localStorage,'wa-dtv11','1');}if(ver===11&&!g.call(localStorage,'wa-dtv12')){ver=12;s.call(localStorage,'wa-duel-test-ver','12');s.call(localStorage,'wa-dtv12','1');}if(ver===12&&!g.call(localStorage,'wa-dtv13')){ver=13;s.call(localStorage,'wa-duel-test-ver','13');s.call(localStorage,'wa-dtv13','1');}if(ver===13&&!g.call(localStorage,'wa-dtv14')){ver=14;s.call(localStorage,'wa-duel-test-ver','14');s.call(localStorage,'wa-dtv14','1');}ver=isNaN(ver)?14:ver;var m=JSON.parse(g.call(localStorage,NS+'word-alchemy-match')||'null');
+  try{var ver=parseInt(g.call(localStorage,'wa-duel-test-ver'),10);if(ver===5&&!g.call(localStorage,'wa-dtv6')){ver=6;s.call(localStorage,'wa-duel-test-ver','6');s.call(localStorage,'wa-dtv6','1');}if(ver===6&&!g.call(localStorage,'wa-dtv7')){ver=7;s.call(localStorage,'wa-duel-test-ver','7');s.call(localStorage,'wa-dtv7','1');}if(ver===7&&!g.call(localStorage,'wa-dtv8')){ver=8;s.call(localStorage,'wa-duel-test-ver','8');s.call(localStorage,'wa-dtv8','1');}if(ver===8&&!g.call(localStorage,'wa-dtv9')){ver=9;s.call(localStorage,'wa-duel-test-ver','9');s.call(localStorage,'wa-dtv9','1');}if(ver===9&&!g.call(localStorage,'wa-dtv10')){ver=10;s.call(localStorage,'wa-duel-test-ver','10');s.call(localStorage,'wa-dtv10','1');}if(ver===10&&!g.call(localStorage,'wa-dtv11')){ver=11;s.call(localStorage,'wa-duel-test-ver','11');s.call(localStorage,'wa-dtv11','1');}if(ver===11&&!g.call(localStorage,'wa-dtv12')){ver=12;s.call(localStorage,'wa-duel-test-ver','12');s.call(localStorage,'wa-dtv12','1');}if(ver===12&&!g.call(localStorage,'wa-dtv13')){ver=13;s.call(localStorage,'wa-duel-test-ver','13');s.call(localStorage,'wa-dtv13','1');}if(ver===13&&!g.call(localStorage,'wa-dtv14')){ver=14;s.call(localStorage,'wa-duel-test-ver','14');s.call(localStorage,'wa-dtv14','1');}if(ver===14&&!g.call(localStorage,'wa-dtv15')){ver=15;s.call(localStorage,'wa-duel-test-ver','15');s.call(localStorage,'wa-dtv15','1');}ver=isNaN(ver)?15:ver;var m=JSON.parse(g.call(localStorage,NS+'word-alchemy-match')||'null');
     if(m&&m.dtv!==ver)r.call(localStorage,NS+'word-alchemy-match');}catch(e){}
-  try{var v=parseInt(localStorage.getItem('wa-duel-test-ver'),10);window.DTV=isNaN(v)?14:v;}catch(e){window.DTV=14;}
+  try{var v=parseInt(localStorage.getItem('wa-duel-test-ver'),10);window.DTV=isNaN(v)?15:v;}catch(e){window.DTV=15;}
 })();
 </script>
 
@@ -3985,8 +3985,8 @@ if(typeof module!=='undefined'){Object.assign(module.exports,{SCHOOLS,schoolOf,r
 (function(){
 'use strict';
 const V=window.DTV|0;
-const NAMES=['v0 · the live game','v1 · one row of five','v2 · + fusion on the row','v3 · + who goes first','v4 · lab board, one win, fusing for breath','v5 · + the fusion web v2.1','v6 · + the new board layout','v7 · + simpler rules','v8 · + the verbs round','v9 · + the colour pie','v10 · + might and vigour','v11 · + balanced by simulation','v12 · + strike and stand','v13 · + the bug report fixes','v14 · + the fusion law'];
-const DESC=['The live game, unchanged.','The board as one row of five a side, with the weather and a live caption between. No places.','Drag one of your things onto another of yours to fuse them, once a turn, if they react. Costs 1 breath (2 for a potent result, 3 for a great one); breath in the well pays first.','A coin decides who goes first. The second player gets +1 breath on their first turn, +2 in the well and one extra card.','The Duel Lab board. The only way to win is to bring the rival to 0 life. No vessel, fuse or conjoin cards: put two cards from your hand in the fusion panel and fuse them for breath (or drag one of your things onto another). One fusion a turn.','The fusion web v2.1 replaces the old reactions: about 18,500 pairs, 65 new cards (dragons, gnomes, sylphs, the Rebis and the rest), traits such as rooted or haunted, and catalysts: some pairs make something greater when the right weather is up or the right thing stands on your row. Fusion costs 1 breath for a rare result, 2 potent, 3 Great, 4 Wonder. A thing made from something already on the table can act at once. Owl and crow make an eagle. Fleeting things (spores) cannot step in front of an attack.','The board mock-up layout: rails left, rows in the centre with Sky, sentence and Market between, one Ground per side, hand along the bottom, Chronicle, fuse and End turn on the right. The market opens any time in your turn; End turn goes straight to the rival.','Simpler rules: unspent breath carries over (no well); a sentence that would not work cannot be spoken; no opposites, ruin, curse, retorts or hidden bonuses; potent is a third more harm; one action per thing per turn; alchemy colours are flavour only; no laws, claim or rune; categories are beasts, birds, metals and plants.','Verbs simplified: amounts are percentages; bite, crush and cut +30%, sting +50%; seep (liquids, unblockable); toxify spreads; drench, dissolve, haunt, eat, scream reworked; guard 30% stronger; spell-like verbs are spells; summon and sacrifice; protect and dispel; transmute climbs 12 ladders.','Schools are colours: a sigil on every card. The Word is emptied into the six. Each weather raises one school 20% and lowers its opposite 20%. Ladders: evolve a thing for breath (1, then 2, then 3…); the transmute card is gone. A word of a thing’s own school is 20% stronger; of the opposite school, 20% weaker.','Things have two numbers: might (how hard they hit) and vigour (how much they can take). The split follows what the thing is: a knife is all edge, an oak all endurance. Hurt things hit softer.','Tuned from 6,000 simulated duels: vast, eat, ferment and obsidian toned down; The Word and Water lifted (word, silence, omen, dream, ink, eternal, protect, lure, and sturdier liquids).','Might is now strike (how hard a thing hits) and vigour is now stand (how much it can take before it falls). Strike sits bottom left, stand bottom right. The verb card strike is now called hit. Names and places only: the game plays exactly as v11.','Fixes from the overnight bug report: every hidden extra is printed on its card and logged; attunement is equal for both sides; only curses can be laid face down, and they spring only when an attack lands; a sentence that would do nothing cannot be said; fusing from the board can strike at once, from hand next turn; ground stays ground and spells stay spells; remnants stay with their owner; the old metal ladder is gone; every life change is logged.','A clear law for every fusion, shown before you fuse. Named recipes and ladders first. A thing fused with an element, quality or spell keeps its name and takes in a trait (oak and fire make a fireborn oak). Two creatures make a hybrid by their schools; two qualities make a stronger one (fire and water make steam). Pairs that make no sense do not fuse. A fusion is always worth it: the result has at least 2 more stand than both together and strikes harder than either. Words that can fuse wear a flask; pick one and every partner shows what it makes and costs.'];
+const NAMES=['v0 · the live game','v1 · one row of five','v2 · + fusion on the row','v3 · + who goes first','v4 · lab board, one win, fusing for breath','v5 · + the fusion web v2.1','v6 · + the new board layout','v7 · + simpler rules','v8 · + the verbs round','v9 · + the colour pie','v10 · + might and vigour','v11 · + balanced by simulation','v12 · + strike and stand','v13 · + the bug report fixes','v14 · + the fusion law','v15 · + the price of making'];
+const DESC=['The live game, unchanged.','The board as one row of five a side, with the weather and a live caption between. No places.','Drag one of your things onto another of yours to fuse them, once a turn, if they react. Costs 1 breath (2 for a potent result, 3 for a great one); breath in the well pays first.','A coin decides who goes first. The second player gets +1 breath on their first turn, +2 in the well and one extra card.','The Duel Lab board. The only way to win is to bring the rival to 0 life. No vessel, fuse or conjoin cards: put two cards from your hand in the fusion panel and fuse them for breath (or drag one of your things onto another). One fusion a turn.','The fusion web v2.1 replaces the old reactions: about 18,500 pairs, 65 new cards (dragons, gnomes, sylphs, the Rebis and the rest), traits such as rooted or haunted, and catalysts: some pairs make something greater when the right weather is up or the right thing stands on your row. Fusion costs 1 breath for a rare result, 2 potent, 3 Great, 4 Wonder. A thing made from something already on the table can act at once. Owl and crow make an eagle. Fleeting things (spores) cannot step in front of an attack.','The board mock-up layout: rails left, rows in the centre with Sky, sentence and Market between, one Ground per side, hand along the bottom, Chronicle, fuse and End turn on the right. The market opens any time in your turn; End turn goes straight to the rival.','Simpler rules: unspent breath carries over (no well); a sentence that would not work cannot be spoken; no opposites, ruin, curse, retorts or hidden bonuses; potent is a third more harm; one action per thing per turn; alchemy colours are flavour only; no laws, claim or rune; categories are beasts, birds, metals and plants.','Verbs simplified: amounts are percentages; bite, crush and cut +30%, sting +50%; seep (liquids, unblockable); toxify spreads; drench, dissolve, haunt, eat, scream reworked; guard 30% stronger; spell-like verbs are spells; summon and sacrifice; protect and dispel; transmute climbs 12 ladders.','Schools are colours: a sigil on every card. The Word is emptied into the six. Each weather raises one school 20% and lowers its opposite 20%. Ladders: evolve a thing for breath (1, then 2, then 3…); the transmute card is gone. A word of a thing’s own school is 20% stronger; of the opposite school, 20% weaker.','Things have two numbers: might (how hard they hit) and vigour (how much they can take). The split follows what the thing is: a knife is all edge, an oak all endurance. Hurt things hit softer.','Tuned from 6,000 simulated duels: vast, eat, ferment and obsidian toned down; The Word and Water lifted (word, silence, omen, dream, ink, eternal, protect, lure, and sturdier liquids).','Might is now strike (how hard a thing hits) and vigour is now stand (how much it can take before it falls). Strike sits bottom left, stand bottom right. The verb card strike is now called hit. Names and places only: the game plays exactly as v11.','Fixes from the overnight bug report: every hidden extra is printed on its card and logged; attunement is equal for both sides; only curses can be laid face down, and they spring only when an attack lands; a sentence that would do nothing cannot be said; fusing from the board can strike at once, from hand next turn; ground stays ground and spells stay spells; remnants stay with their owner; the old metal ladder is gone; every life change is logged.','A clear law for every fusion, shown before you fuse. Named recipes and ladders first. A thing fused with an element, quality or spell keeps its name and takes in a trait (oak and fire make a fireborn oak). Two creatures make a hybrid by their schools; two qualities make a stronger one (fire and water make steam). Pairs that make no sense do not fuse. A fusion is always worth it: the result has at least 2 more stand than both together and strikes harder than either. Words that can fuse wear a flask; pick one and every partner shows what it makes and costs.','Fusion has a price. A made thing that is destroyed or sent back leaves the match, and what went into it is gone too. Great results are Final and cannot fuse again, except in a named recipe. Each trait a thing already has makes the next taking-in 1 breath dearer. A ladder rung cannot climb on the turn it arrives. The weather lends its school: a fusion with a word of the weather’s school costs 1 less. Cards show what kind of thing they are; burning, wet, frozen and poisoned show on the art; made things wear a gilt frame and their size. Every sentence shows all it will do before you speak. From round 13 the ink fades and both sides lose life each turn; round 20 is a draw. Replace any of your first hand once. Going second gives you a Second Wind to use when you choose. The Grimoire keeps every word you have made. Each rival is marked as a computer rival and has a house rule.'];
 window.DTVNAME=NAMES[V]||('v'+V);
 /* ---- v5: the fusion web v2.1 ---- */
 const WEB=window.WEB21||null;window.DTVSIDE=0;
@@ -4045,7 +4045,8 @@ window.dtvCap=function(){const L=(S.log||[]).filter(l=>l.k!=='t'&&l.x&&!/^(Your 
 /* ---- v2: fusion on the row ---- */
 const fzCost=w=>{const t=tierOf(w);return t>=4?3:t===3?2:1;};
 function fzOk(S,who,a,b){if(!a||!b||a===b||a.side!==who||b.side!==who)return null;window.DTVSIDE=who;const x=rxOf(a.w,b.w);if(!x||!x.r)return null;
-  const p=S.players[who],c=fzCost(x.r);if(S.fz&&S.fz[who]===S.turn)return null;if((p.ink||0)+(p.well||0)<c)return null;return {x,c};}
+  const ra15={k:'thing',id:a.id},rb15={k:'thing',id:b.id};if(V>=15&&window.dtv15Block&&dtv15Block(who,ra15,rb15,x))return null;
+  const p=S.players[who],c=V>=15&&window.dtv15Cost?Math.max(1,rxLevel(a.w,b.w,x)+dtv15Cost(who,ra15,rb15,x)):fzCost(x.r);if(S.fz&&S.fz[who]===S.turn)return null;if((p.ink||0)+(p.well||0)<c)return null;return {x,c};}
 function fzPay(S,who,c){const p=S.players[who],k=Math.min(p.well||0,c);p.well-=k;p.ink-=c-k;}
 function fzDo(who,a,b){const q=fzOk(S,who,a,b);if(!q)return false;
   const bs=snap(),logN=S.log.length;S.fz=S.fz||[0,0];S.fz[who]=S.turn;fzPay(S,who,q.c);
@@ -4079,7 +4080,7 @@ function canPay(who,c){const p=S.players[who];return (p.ink||0)+(p.well||0)>=c;}
 const refW=(who,r)=>r.k==='card'?S.players[who].hand[r.i]:((findThing(S,r.id)||{}).w);
 const refOk=(who,r)=>r&&(r.k==='card'?S.players[who].hand[r.i]===r.w:(()=>{const t=findThing(S,r.id);return !!t&&t.side===who&&t.w===r.w;})());
 const sameRef=(a,b)=>a.k===b.k&&(a.k==='card'?a.i===b.i:a.id===b.id);
-function vatFire(who,ra,rb){window.DTVSIDE=who;const p=S.players[who],a=refW(who,ra),b=refW(who,rb),x=a&&b?rxOf(a,b):null;if(!x||!x.r||!fzLeft(who))return false;const c=rxLevel(a,b,x);if(!canPay(who,c))return false;
+function vatFire(who,ra,rb){window.DTVSIDE=who;const p=S.players[who],a=refW(who,ra),b=refW(who,rb),x=a&&b?rxOf(a,b):null;if(!x||!x.r||!fzLeft(who))return false;if(V>=15&&window.dtv15Block&&dtv15Block(who,ra,rb,x))return false;const c=V>=15&&window.dtv15Cost?Math.max(1,rxLevel(a,b,x)+dtv15Cost(who,ra,rb,x)):rxLevel(a,b,x);if(!canPay(who,c))return false;
   const bs=snap(),logN=S.log.length;S.fz=S.fz||[0,0];S.fz[who]=S.turn;fzPay(S,who,c);
   say(S,(who===0?'You fuse ':'The rival fuses ')+a+' and '+b+' for '+c+' breath.','s');
   const R=r=>r.k==='card'?{k:'card',i:r.i}:{k:'thing',id:r.id};
@@ -4099,13 +4100,13 @@ window.dtvPanel=function(){if(V<4)return;if(window.DTVMAIN){try{inhChips();}catc
   const p=S.players[0];p.vat=(p.vat||[]).filter(r=>r&&r.k&&refOk(0,r));const v=p.vat.map(r=>r.w),play=S.phase==='play'&&S.active===0;
   const cand=play?candRef():null,canPut=!!(cand&&!cand.bad&&p.vat.length<2&&!p.vat.some(q=>sameRef(q,cand)));
   if(S.vatArm!=null&&canPut){vatAdd(cand);S.vatArm=null;clearUi();sfx('page');setTimeout(render,0);return;}
-  window.DTVSIDE=0;const r=v.length===2?rxOf(v[0],v[1]):null,pw=r&&r.r,cost=r?rxLevel(v[0],v[1],r):0,ok=!!pw&&play&&fzLeft(0)&&canPay(0,cost),have=(p.ink||0)+(p.well||0);
+  window.DTVSIDE=0;const r0=v.length===2?rxOf(v[0],v[1]):null,blk=r0&&V>=15&&window.dtv15Block?dtv15Block(0,p.vat[0],p.vat[1],r0):null,r=blk?null:r0,pw=r&&r.r,cost=r?(V>=15&&window.dtv15Cost?Math.max(1,rxLevel(v[0],v[1],r)+dtv15Cost(0,p.vat[0],p.vat[1],r)):rxLevel(v[0],v[1],r)):0,ok=!!pw&&play&&fzLeft(0)&&canPay(0,cost),have=(p.ink||0)+(p.well||0);
   const rvig=q=>{if(!q)return 0;if(q.k==='thing'){const t=findThing(S,q.id);return t?t.vig:0;}const w=p.hand[q.i];return W[w]?W[w].vig+2*upOf(S,0,w):0;},rface=q=>{if(q&&q.k==='thing'){const t=findThing(S,q.id);if(t)return miniFace(t.w,{vig:t.vig,title:t.title||null});}return miniFace(q.w,{vig:rvig(q)});};
   const outV=pw&&W[pw]?(()=>{let x=Math.max(W[pw].vig,rvig(p.vat[0])+rvig(p.vat[1]));const gp=(W[pw].props||[]).includes('ground');if(S.cfg&&S.cfg.gw2&&(!gp||!['fire','water','earth','air','wind'].includes(pw)))x=Math.max(1,x+MADEPLUS);return x;})():null;
   const sock=k=>'<button class="fz-sock'+(v[k]?' on':'')+(S.vatArm===k?' arm':'')+'" data-d="vput"'+(play&&fzLeft(0)?'':' disabled')+' aria-label="'+(v[k]?esc(v[k])+': take it back':'Empty socket')+'">'+(v[k]?rface(p.vat[k]):'<i class="fz-ring"></i>')+(p.vat[k]&&p.vat[k].k==='thing'?'<i class="fz-tag">on the table</i>':'')+'</button>';
   window.DTVOUT=pw?{w:pw,vig:outV,name:previewName(p.vat,r)+pw}:null;
   e.className='fz'+(canPut?' can':v.length===2?(pw?' ready':' dud'):'');
-  const lab=!fzLeft(0)?'You have fused this turn':!play?'Wait for your turn':v.length===2?(pw?(canPay(0,cost)?'They react':'Needs '+cost+' breath · you have '+have):'These two do not react'):canPut?'Tap a socket to put '+esc(cand.w)+' in':(cand&&cand.bad?'Only things can be fused, not '+esc(W[cand.bad]&&W[cand.bad].t==='verb'?'verbs':W[cand.bad]&&W[cand.bad].t==='adj'?'adjectives':'that'):S.vatArm!=null?'Now tap a thing in your hand or on your side':'Tap or drag two things here, from your hand or your side');
+  const lab=!fzLeft(0)?'You have fused this turn':!play?'Wait for your turn':v.length===2?(pw?(canPay(0,cost)?'They react':'Needs '+cost+' breath · you have '+have):(blk?esc(blk):'These two do not react')):canPut?'Tap a socket to put '+esc(cand.w)+' in':(cand&&cand.bad?'Only things can be fused, not '+esc(W[cand.bad]&&W[cand.bad].t==='verb'?'verbs':W[cand.bad]&&W[cand.bad].t==='adj'?'adjectives':'that'):S.vatArm!=null?'Now tap a thing in your hand or on your side':'Tap or drag two things here, from your hand or your side');
   e.innerHTML='<small>'+lab+'</small>'
    +'<div class="fz-row">'+sock(0)+'<i class="fz-plus">+</i>'+sock(1)+'<i class="fz-arrow">→</i><span class="fz-out">'+(pw&&W[pw]?miniFace(pw,{vig:outV}):'<i class="fz-ring q">'+(v.length===2?'✕':'?')+'</i>')+'</span></div>'
    +'<button class="fz-fire" data-d="vfire"'+(ok?'':' disabled')+'>'+(pw?'Fuse into '+esc(previewName(p.vat,r)+pw)+' · '+cost+' breath'+(r.cat?' · catalyst':''):'fuse')+'</button>';};
@@ -4121,7 +4122,7 @@ addEventListener('pointerup',e=>{try{if(V<4||typeof drag==='undefined'||!drag||!
 /* the rival fuses too: from her hand or her row, when it helps */
 const _rf=window.dtvRivalFuse;window.dtvRivalFuse=function(){if(V<4)return _rf();if(!fzLeft(1))return false;window.DTVSIDE=1;const p=S.players[1];let best=null;
   const hn=p.hand.map((w,i)=>({w,i})).filter(o=>W[o.w]&&W[o.w].t===NOUN&&!isEvent(o.w));
-  for(let x=0;x<hn.length;x++)for(let y=x+1;y<hn.length;y++){const r=rxOf(hn[x].w,hn[y].w);if(!r||!r.r)continue;const c=rxLevel(hn[x].w,hn[y].w,r);if(!canPay(1,c))continue;const g=window.DTV14GAIN?DTV14GAIN(1,{k:'card',i:hn[x].i},{k:'card',i:hn[y].i}):(W[r.r]&&W[r.r].vig||0)+tierOf(r.r)*2-c-((W[hn[x].w].vig||0)+(W[hn[y].w].vig||0))/2;if(!best||g>best.g)best={g,a:hn[x].i,b:hn[y].i,w:[hn[x].w,hn[y].w]};}
+  for(let x=0;x<hn.length;x++)for(let y=x+1;y<hn.length;y++){const r=rxOf(hn[x].w,hn[y].w);if(!r||!r.r)continue;const ra15={k:'card',i:hn[x].i},rb15={k:'card',i:hn[y].i};if(V>=15&&window.dtv15Block&&dtv15Block(1,ra15,rb15,r))continue;const c=V>=15&&window.dtv15Cost?Math.max(1,rxLevel(hn[x].w,hn[y].w,r)+dtv15Cost(1,ra15,rb15,r)):rxLevel(hn[x].w,hn[y].w,r);if(!canPay(1,c))continue;const g=window.DTV14GAIN?DTV14GAIN(1,{k:'card',i:hn[x].i},{k:'card',i:hn[y].i}):(W[r.r]&&W[r.r].vig||0)+tierOf(r.r)*2-c-((W[hn[x].w].vig||0)+(W[hn[y].w].vig||0))/2;if(!best||g>best.g)best={g,a:hn[x].i,b:hn[y].i,w:[hn[x].w,hn[y].w]};}
   if(best&&best.g>0){sayBanner((S.rival?S.rival.n.split(' ')[0]:'The rival')+' fuses',best.w.join(' and '));setTimeout(hideBanner,1100);return vatFire(1,{k:'card',i:best.a,w:best.w[0]},{k:'card',i:best.b,w:best.w[1]});}
   return _rf();};
 
@@ -6794,7 +6795,7 @@ const css=document.createElement('style');css.textContent=(window.DTVMAIN?'':'#t
 document.head.appendChild(css);
 })();
 </script>
-<script>window.DTVBUILD="2026-11-23T02:12Z";
+<script>window.DTVBUILD="2026-11-23T02:28Z";
 /* Duel test: every finished duel is saved to the artifact's db, and a Logs view lists them live.
    Without db (signed out, or not available) nothing here shows and the game runs as before. */
 (function(){
@@ -7084,7 +7085,8 @@ function inOf(who,r){if(!r)return null;if(r.k==='thing'){const t=findThing(S,r.i
   const w=S.players[who].hand[r.i];if(!w||!W[w])return null;const vig=W[w].vig+2*upOf(S,who,w),p=W[w].props||[],body=!['ground','spell','event','burden','potion'].some(q=>p.includes(q));return {w,vig,mt:body?(MTW(w,vig)||0):0,name:w,traits:[],props:p.slice()};}
 /* what a fusion will make, worked out exactly as it will be made */
 function pred(who,ra,rb){const A=inOf(who,ra),B=inOf(who,rb);if(!A||!B)return null;window.DTVSIDE=who;const x=rxOf(A.w,B.w);if(!x||!x.r||!W[x.r])return null;
-  const cost=rxLevel(A.w,B.w,x),r=x.r,d=W[r],o={A,B,x,r,cost,rule:rule(x)};
+  if(window.dtv15Block&&dtv15Block(who,ra,rb,x))return null;
+  const cost=window.dtv15Cost?Math.max(1,rxLevel(A.w,B.w,x)+dtv15Cost(who,ra,rb,x)):rxLevel(A.w,B.w,x),r=x.r,d=W[r],o={A,B,x,r,cost,rule:rule(x)};
   if(d.t===CLIME){o.kind='clime';o.name=r;o.say='becomes the weather';return o;}
   if((d.props||[]).includes('potion')){o.kind='potion';o.name=r;o.say='poured at once';return o;}
   const tr=[];for(const q of [A,B])for(const k of q.traits)if(!tr.includes(k))tr.push(k);if(x.trait&&x.trait!=='grown'&&!tr.includes(x.trait))tr.push(x.trait);
@@ -7160,6 +7162,139 @@ const css=document.createElement('style');css.textContent=
 +'#dfz .fz-out{position:relative}#dfz .f14m{position:absolute;left:-6px;bottom:-6px;font:700 13px/1 Cinzel,serif;color:#fff1d0;background:#7a2c1a;border:1px solid #f0b48a;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-style:normal}'
 +'#hand .card,#you .thing{position:relative}'
 +'.f14law{margin-top:1em}.f14law ol{padding-left:1.2em}.f14law li{margin:.3em 0}.f14ch{border-collapse:collapse;margin:.6em 0;font-size:.92em}.f14ch caption{text-align:left;font-style:italic;padding-bottom:.3em}.f14ch th{text-align:left;padding:2px 10px 2px 0;font-weight:600;white-space:nowrap}.f14ch td{padding:2px 8px;border-left:1px solid rgba(128,100,60,.35)}.f14ch td.q{font-style:italic}';
+(document.head||document.documentElement).appendChild(css);
+})();
+</script>
+<script>/* v15: the price of making, cards that say what they are, a bounded match, and the Grimoire.
+   Gated on DTV>=15; older versions play exactly as before. */
+(function(){
+'use strict';
+if(!(window.DTV>=15))return;
+const sch=w=>(typeof SCHOOLOF!=='undefined'&&SCHOOLOF[w])||((window.WEB21.cards[w]||{}).sch)||null;
+const TAKE=['take','element','haunt'],NAMED=['special','named pair'],LADDER=['metal'];
+const ROMAN=['','I','II','III'];
+const thingOf=r=>r&&r.k==='thing'?findThing(S,r.id):null;
+
+/* ---- 1. the price of making ---- */
+/* Final things, and rungs that have only just arrived, cannot fuse */
+window.dtv15Block=function(who,ra,rb,x){const ts=[thingOf(ra),thingOf(rb)].filter(Boolean);
+  const fin=ts.find(t=>t.final);if(fin&&!NAMED.includes(x.layer))return Cap(fin.title||fin.w)+' is Final: it cannot fuse again';
+  const lad=LADDER.includes(x.layer)||(x.layer==='named pair'&&['sapling','oak','willow'].includes(x.r));
+  const nu=ts.find(t=>t.fresh&&!t.made);if(lad&&nu)return Cap(nu.w)+' arrived this turn: a rung cannot climb yet';return null;};
+/* each trait already held makes taking in dearer; the weather lends its school; some rivals fuse cheaply */
+window.dtv15Cost=function(who,ra,rb,x){let d=0;const ts=[thingOf(ra),thingOf(rb)].filter(Boolean);
+  if(TAKE.includes(x.layer))for(const t of ts)d+=(t.traits||[]).length;
+  if(S.clime&&W[S.clime.w]){const cs=sch(S.clime.w);if(cs&&(sch(x.a)===cs||sch(x.b)===cs))d-=1;}
+  if(who===1&&S.house==='fuse'&&!(S.fz&&S.fz[1]===S.turn))d-=1;return d;};
+window.dtv15CostWhy=function(who,ra,rb,x){const o=[];const ts=[thingOf(ra),thingOf(rb)].filter(Boolean);
+  if(TAKE.includes(x.layer)){const n=ts.reduce((s,t)=>s+(t.traits||[]).length,0);if(n)o.push('+'+n+' for the trait'+(n>1?'s':'')+' it already has');}
+  if(S.clime&&W[S.clime.w]){const cs=sch(S.clime.w);if(cs&&(sch(x.a)===cs||sch(x.b)===cs))o.push('−1: '+S.clime.w+' lends its school');}return o.join(' · ');};
+/* made things keep what went into them; when they go, it goes with them */
+const _tr=window.dtvTrait;window.dtvTrait=function(bs,x,ins){_tr(bs,x,ins);try{if(!x||!x.r)return;const t=S.things.find(q=>!bs.things[q.id]&&q.w===x.r);if(!t)return;
+  const who=t.owner!=null?t.owner:t.side,p=S.players[who],gone=[];
+  for(const q of ins||[]){const k=p.discard.lastIndexOf(q.w);if(k>=0){p.discard.splice(k,1);gone.push(q.w);}}
+  t.inCards=(t.inCards||[]).concat(gone);t.made=true;
+  if(!TAKE.includes(x.layer)&&x.layer!=='grown'){t.tier15=Math.max(1,Math.min(3,(x.tier||2)-1));if(x.tier>=4)t.final=1;}
+  else t.tier15=t.tier15||0;
+  if(gone.length)say(S,'What went into '+(t.title||t.w)+' is bound to it: if it is destroyed or sent back, '+gone.join(' and ')+' '+(gone.length>1?'leave':'leaves')+' the match with it.');
+  if(t.final)say(S,Cap(t.title||t.w)+' is Final: it cannot fuse again.');
+  if(who===0&&!TAKE.includes(x.layer)&&x.r!==x.a&&x.r!==x.b){PF.made15=PF.made15||{};const first=!PF.made15[x.r];PF.made15[x.r]=(PF.made15[x.r]||0)+1;
+    if(first){try{multBanner('',['Written in the Grimoire',Cap(x.r)]);}catch(e){}say(S,Cap(x.r)+' is written in your Grimoire.');}try{save();}catch(e){}}
+}catch(e){console.error(e);}};
+
+/* ---- 3. a bounded match: the Fading, a draw at round 20, the Second Wind, one mulligan ---- */
+const _sec=window.dtvSecond;window.dtvSecond=function(S,i){
+  if(S.second===i&&!S.secondDone&&i===0){S.secondDone=1;S.sw=1;say(S,'You go second: you hold a Second Wind, +1 breath on any turn you choose.');}
+  else _sec(S,i);
+  try{if(i===1&&S.house==='breath'&&!S.houseDone){S.houseDone=1;S.players[1].ink+=1;say(S,(S.rival?S.rival.n.split(' ')[0]:'The rival')+'’s house rule: 1 more breath on her first turn.');}
+    const R=Math.ceil(S.turn/2);
+    if(R>20&&S.over==null){S.over=2;S.how='time';S.phase='over';say(S,'Round 20 passes and neither of you has fallen: a draw.');return;}
+    if(R>=13){const n=R-12;say(S,'The Fading: the ink is thinning. '+(i===0?'You lose ':'The rival loses ')+n+' life.');damage(S,P(i),n,'fade');checkOver(S);}}catch(e){console.error(e);}};
+function mullHtml(){const p=S.players[0];return '<div class="m15c" role="dialog" aria-modal="true" aria-labelledby="m15h"><h3 id="m15h">Your first hand</h3><p>Tap any words to send back. They are shuffled into your deck and you draw as many again. You can do this once.</p><div class="m15row">'
+  +p.hand.map((w,i)=>'<button class="m15w'+(S.m15sel&&S.m15sel[i]?' on':'')+'" data-m15="'+i+'" aria-pressed="'+!!(S.m15sel&&S.m15sel[i])+'"><b>'+esc(w)+'</b><small>'+esc(W[w]?(W[w].t==='noun'?'thing':W[w].t==='adj'?'adjective':W[w].t==='clime'?'weather':W[w].t):'')+(sch(w)?' · '+esc(sch(w)):'')+'</small></button>').join('')
+  +'</div><div class="m15b"><button class="btn" data-m15="go">'+(S.m15sel&&Object.values(S.m15sel).some(Boolean)?'Send back and draw':'Keep this hand')+'</button></div></div>';}
+function mull(){let e=document.getElementById('m15');const want=S&&S.live&&S.over==null&&!S.puz&&!S.m15done&&S.phase==='play'&&S.active===0&&S.turn<=2&&typeof view!=='undefined'&&view==='match';
+  if(!want){if(e)e.remove();return;}if(!e){e=document.createElement('div');e.id='m15';document.body.appendChild(e);}const h=mullHtml();if(e.innerHTML!==h)e.innerHTML=h;}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-m15]');if(!b)return;ev.preventDefault();ev.stopPropagation();const p=S.players[0];S.m15sel=S.m15sel||{};
+  if(b.dataset.m15==='go'){const idx=Object.keys(S.m15sel).filter(k=>S.m15sel[k]).map(Number).sort((a,c)=>c-a);const back=idx.map(i=>p.hand.splice(i,1)[0]);
+    for(const w of back)p.deck.push(w);for(let i=p.deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p.deck[i],p.deck[j]]=[p.deck[j],p.deck[i]];}
+    for(let k=0;k<back.length&&p.deck.length;k++)p.hand.push(p.deck.shift());S.m15done=1;S.m15sel=null;if(back.length)say(S,'You send back '+back.length+(back.length>1?' words':' word')+' and draw again.');try{keepMatch();}catch(e){}render();return;}
+  const i=+b.dataset.m15;S.m15sel[i]=!S.m15sel[i];mull();},true);
+
+/* ---- 5. rivals: marked as computer rivals, each with a house rule ---- */
+const HOUSE=[['life','Starts with 3 more life.'],['fuse','Her first fusion each turn costs 1 less breath.'],['stand','Her things arrive with 1 more stand.'],['breath','1 more breath on her first turn.']];
+function houseSet(){if(!S||!S.live||S.house||S.puz)return;const n=(S.rival&&S.rival.n)||'rival';let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;S.house=HOUSE[h%HOUSE.length][0];
+  if(S.house==='life'){S.players[1].life+=3;}say(S,(S.rival?S.rival.n:'The rival')+' is a computer rival. House rule: '+HOUSE.find(x=>x[0]===S.house)[1]);}
+const _add=window.addThing;window.addThing=function(S,w,sd,owner,token,card){const t=_add.apply(this,arguments);try{if(S&&S.house==='stand'&&sd===1&&t&&!isG(t)&&!(t.props||[]).includes('spell'))t.vig+=1;}catch(e){}return t;};
+function rivalTag(){if(!S||!S.rival||S.puz)return;const h=HOUSE.find(x=>x[0]===S.house);const html='<b>Computer rival</b>'+(h?'<span>'+esc(h[1])+'</span>':'');
+  let d=document.getElementById('r15');const bub=[...document.querySelectorAll('#view-match *')].filter(e=>/means to say/.test(e.textContent)&&e.children.length<=3).sort((a,b)=>a.textContent.length-b.textContent.length)[0];
+  if(!d){d=document.createElement('div');d.id='r15';d.className='r15';document.body.appendChild(d);}if(d.innerHTML!==html)d.innerHTML=html;
+  const ref=bub||[...document.querySelectorAll('#view-match *')].find(e=>e.children.length===0&&e.textContent.trim()===S.rival.n);d.style.display=view==='match'&&S.over==null&&ref?'':'none';
+  if(ref){const r=ref.getBoundingClientRect();d.style.left=Math.round(r.left)+'px';d.style.top=Math.round(r.bottom+6)+'px';}}
+
+/* ---- 2. cards that say what they are ---- */
+const KIND=[['human','Person'],['beast','Beast'],['bird','Bird'],['serpent','Serpent'],['insect','Insect'],['fish','Fish'],['spirit','Spirit'],['plant','Plant'],['wood','Wood'],['metal','Metal'],['stone','Stone'],['liquid','Liquid']];
+const PROP=[['flying','Flies'],['fireborn','Fireborn'],['swift','Swift'],['heavy','Heavy'],['toxic','Toxic'],['sharp','Sharp'],['flammable','Flammable'],['living','Living']];
+function pips(props){const o=[];for(const [k,l] of KIND)if(props.includes(k)&&o.length<1)o.push(l);for(const [k,l] of PROP)if(props.includes(k)&&o.length<2&&!(l==='Living'&&o.some(x=>['Person','Beast','Bird','Serpent','Insect','Fish','Plant'].includes(x))))o.push(l);return o;}
+const ST=[['burning','Burning'],['sodden','Wet'],['frozen','Frozen'],['poisoned','Poisoned'],['asleep','Asleep']];
+function put(el,cls,h,tip){let b=el.querySelector(':scope>.'+cls);if(h==null){if(b)b.remove();return;}if(!b){b=document.createElement('span');b.className=cls;el.appendChild(b);}if(b.innerHTML!==h)b.innerHTML=h;if(tip!=null)b.title=tip;}
+function cards(){const p=S.players[0];
+  document.querySelectorAll('#table .thing[data-id]').forEach(el=>{const t=S.things.find(x=>String(x.id)===el.dataset.id);if(!t)return;
+    const pp=isG(t)?[]:pips(t.props||[]);put(el,'p15',pp.length?pp.map(x=>'<i>'+x+'</i>').join(''):null,'What it is');
+    const sts=ST.filter(([k])=>t.st&&t.st[k]).map(x=>x[0]);ST.forEach(([k])=>el.classList.toggle('s15-'+k,sts.includes(k)));
+    el.classList.toggle('m15f',!!t.made&&!isG(t));put(el,'t15',t.made&&t.tier15?ROMAN[t.tier15]+(t.final?' · Final':''):null,t.made?'Made'+(t.final?', Final: it cannot fuse again':'')+(t.inCards&&t.inCards.length?'. Holds '+t.inCards.join(' and '):''):'');});
+  document.querySelectorAll('#hand .card[data-i]').forEach(el=>{const w=p.hand[+el.dataset.i];const d=W[w];if(!d||d.t!=='noun'){put(el,'p15',null);return;}const pp=pips(d.props||[]);put(el,'p15',pp.length?pp.map(x=>'<i>'+x+'</i>').join(''):null,'What it is');});}
+/* every sentence shows all it will do */
+const _trial=window.trial;window.trial=function(s){const r=_trial(s);try{if(r){const C=JSON.parse(JSON.stringify(S));C.quiet=false;C.log=[];C.found=[];const t=Object.assign({},s);if(needsDefence(C,0,t))t.def=botDefend(C,1,0,t);resolve(C,0,t);
+  r.all=C.log.filter(l=>l.k!=='s'&&l.k!=='t'&&l.x).map(l=>l.x).filter(x=>!/^(You say|The sum)/.test(x)).slice(0,5);window.T15=r;}else window.T15=null;}catch(e){window.T15=null;}return r;};
+function bench(){const st=document.querySelector('#bench .sentext');if(!st)return;const old=st.querySelector('.w15');const r=window.T15;
+  const h=r&&r.all&&r.all.length&&!r.same?'<b>What will happen</b><ul>'+r.all.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':null;
+  if(!h){if(old)old.remove();return;}if(old){if(old.innerHTML!==h)old.innerHTML=h;return;}const d=document.createElement('div');d.className='w15';d.innerHTML=h;const hint=st.querySelector('.hint');if(hint)hint.after(d);else st.appendChild(d);}
+/* the Second Wind button */
+function wind(){const a=document.querySelector('#bench .btns.acts');if(!a)return;let b=a.querySelector('.sw15');const ok=S.sw===1&&S.phase==='play'&&S.active===0&&S.over==null;
+  if(!ok){if(b)b.remove();return;}if(!b){b=document.createElement('button');b.className='btn ghost sw15';b.dataset.sw15='1';b.innerHTML='Second Wind<br><small>+1 breath, once</small>';a.insertBefore(b,a.lastElementChild);}}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-sw15]');if(!b)return;ev.preventDefault();ev.stopPropagation();if(S.sw!==1)return;S.sw=2;S.players[0].ink+=1;say(S,'You take your Second Wind: +1 breath.');try{keepMatch();}catch(e){}render();},true);
+/* the vat says why a fusion costs what it does */
+const _pn=window.dtvPanel;window.dtvPanel=function(){_pn();try{const e=document.getElementById('dfz'),p=S.players[0],v=p.vat||[];if(!e||v.length!==2)return;window.DTVSIDE=0;const x=rxOf(v[0].w,v[1].w);if(!x||!x.r)return;
+  const why=dtv15CostWhy(0,v[0],v[1],x),t=e.querySelector('.f14t em');if(why&&t&&!t.querySelector('.c15'))t.insertAdjacentHTML('beforeend','<span class="c15"> Cost: '+esc(why)+'.</span>');
+  if(!['take','element','haunt','grown'].includes(x.layer)&&x.tier>=4&&t&&!t.querySelector('.f15'))t.insertAdjacentHTML('beforeend','<span class="f15"> A great result: it will be Final.</span>');}catch(err){}};
+
+/* ---- 5. the Grimoire: every made word, a silhouette until you make it ---- */
+function madeList(){if(window.M15L)return window.M15L;const B=window.WEB21.base,s=new Set();for(const k in B){const v=B[k],[a,b]=k.split('|');if(['take','element','haunt','grown','potion'].includes(v[2]))continue;if(v[0]===a||v[0]===b||!W[v[0]])continue;s.add(v[0]);}
+  for(const k in window.WEB21.cat)for(const c of window.WEB21.cat[k])if(W[c[1]])s.add(c[1]);
+  return window.M15L=[...s].sort((a,b)=>(sch(a)||'').localeCompare(sch(b)||'')||a.localeCompare(b));}
+function grim(){try{if(typeof bkS==='undefined'||bkS.tab!=='rx')return;const host=document.getElementById('bk-book');if(!host||host.dataset.g15==='1')return;
+  const L=madeList(),f=PF.made15||{},n=L.filter(w=>f[w]).length,SN={life:'Life',rot:'Rot',fire:'Fire',water:'Water',earth:'Earth',air:'Air',word:'The Word'};
+  const how=w=>{const B=window.WEB21.base;for(const k in B)if(B[k][0]===w&&!['take','element','haunt','grown'].includes(B[k][2])){const [a,b]=k.split('|');if(a!==w&&b!==w)return a+' + '+b;}return '';};
+  const cell=w=>f[w]?'<div class="g15c on" data-pv="'+esc(w)+'"'+(typeof ART!=='undefined'&&ART[w]!=null?' style="--a:url(assets/art/'+w+'.jpg)"':'')+'><b>'+esc(w)+'</b><small>'+esc(how(w))+(f[w]>1?' · made '+f[w]+' times':'')+'</small></div>':'<div class="g15c"><b>?</b><small>'+esc(SN[sch(w)]||'')+'</small></div>';
+  host.innerHTML='<div class="g15"><header><h3>The Grimoire</h3><span>'+n+' of '+L.length+' made words found</span></header><p>Every word you make is written here. The rest wait as silhouettes; the law in How to play says how each school pair fuses.</p><div class="g15g">'+L.map(cell).join('')+'</div></div>';host.dataset.g15='1';
+  const ctr=document.getElementById('bk-ctr');if(ctr)ctr.innerHTML='<b>'+n+'/'+L.length+'</b><small>made words found</small>';}catch(e){console.error(e);}}
+const _rl=window.renderLex;if(_rl)window.renderLex=function(){const h=document.getElementById('bk-book');if(h)h.dataset.g15='';_rl.apply(this,arguments);grim();};
+
+/* ---- run with every render ---- */
+const _dec=window.dtvDecorate;window.dtvDecorate=function(){if(_dec)_dec();try{houseSet();cards();bench();wind();mull();rivalTag();}catch(e){console.error(e);}};
+setInterval(()=>{try{if(typeof view!=='undefined'&&view==='book')grim();}catch(e){}},600);
+
+const css=document.createElement('style');css.textContent=
+ '.p15{position:absolute;left:4px;right:4px;bottom:31%;z-index:5;display:flex;flex-wrap:nowrap;gap:2px;justify-content:center;pointer-events:none}'
++'.p15 i{font:600 9px/1 Cinzel,serif;white-space:nowrap;font-style:normal;letter-spacing:.03em;color:#f6ead0;background:rgba(18,13,9,.86);border:1px solid rgba(214,180,110,.55);border-radius:2px;padding:2px 3px}'
++'.thing.m15f{box-shadow:0 0 0 2px #c9a04a,0 0 10px rgba(240,200,110,.55)!important}'
++'.t15{position:absolute;right:4px;top:4px;z-index:6;font:700 10px/1 Cinzel,serif;color:#1b1208;background:linear-gradient(#f4dc9a,#c9a04a);border-radius:2px;padding:2px 4px;pointer-events:auto}'
++'.thing.s15-burning::after,.thing.s15-sodden::after,.thing.s15-frozen::after,.thing.s15-poisoned::after,.thing.s15-asleep::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;border-radius:inherit;mix-blend-mode:screen}'
++'.thing.s15-burning::after{background:radial-gradient(ellipse at 50% 100%,rgba(255,120,30,.55),transparent 65%)}'
++'.thing.s15-sodden::after{background:linear-gradient(180deg,rgba(60,140,230,.05),rgba(60,140,230,.45))}'
++'.thing.s15-frozen::after{background:linear-gradient(135deg,rgba(220,240,255,.55),rgba(160,210,255,.15));mix-blend-mode:normal;opacity:.6}'
++'.thing.s15-poisoned::after{background:radial-gradient(ellipse at 50% 60%,rgba(110,200,60,.45),transparent 70%)}'
++'.thing.s15-asleep::after{background:rgba(40,40,90,.35);mix-blend-mode:multiply}'
++'.w15{margin-top:6px;font-size:13px;line-height:1.35;color:#f1e6cc}.w15 b{font:600 11px/1 Cinzel,serif;letter-spacing:.06em;color:#e8c987;text-transform:uppercase}.w15 ul{margin:3px 0 0;padding-left:1.1em}.w15 li{margin:1px 0}'
++'#m15{position:fixed;inset:0;z-index:9000;background:rgba(6,4,2,.72);display:flex;align-items:center;justify-content:center}'
++'.m15c{background:#17110c;border:1px solid #b08a45;border-radius:10px;padding:20px 24px;max-width:760px;color:#f3e6c8;box-shadow:0 10px 40px rgba(0,0,0,.6)}.m15c h3{font:600 22px/1.2 Cinzel,serif;color:#f1d48a;margin:0 0 6px}.m15c p{margin:0 0 14px;font-size:15px}'
++'.m15row{display:flex;gap:8px;flex-wrap:wrap}.m15w{background:#241a12;border:1px solid #6d5430;border-radius:6px;color:#f3e6c8;padding:10px 12px;min-width:96px;text-align:left;cursor:pointer}.m15w b{display:block;font:600 16px/1.2 "IM Fell English",Georgia,serif}.m15w small{color:#d8c49a;font-size:12px}'
++'.m15w.on{background:#4a1d14;border-color:#f0a080;text-decoration:line-through;text-decoration-color:rgba(255,200,180,.8)}.m15b{margin-top:16px;text-align:right}'
++'.r15{position:fixed;z-index:50;text-align:left;font-size:12px;line-height:1.3;color:#f1e6cc;background:rgba(12,9,6,.88);border:1px solid rgba(214,180,110,.5);border-radius:5px;padding:4px 8px;max-width:220px;pointer-events:none}.r15 b{display:block;font:600 9.5px/1.2 Cinzel,serif;letter-spacing:.08em;text-transform:uppercase;color:#e8c987}'
++'.g15{padding:18px 24px;color:#2a1c10;height:100%;overflow:auto}.g15 header{display:flex;justify-content:space-between;align-items:baseline}.g15 h3{margin:0}.g15 p{font-size:14px}'
++'.g15g{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}.g15c{border:1px dashed rgba(70,50,30,.45);border-radius:5px;padding:6px;min-height:58px;background:rgba(60,40,20,.07);text-align:center}'
++'.g15c b{display:block;font:600 14px/1.2 "IM Fell English",Georgia,serif}.g15c small{font-size:11px;color:#4d3a24}.g15c.on{border:1px solid #9c7a3c;background:linear-gradient(rgba(255,248,230,.72),rgba(255,248,230,.86)),var(--a,none) center/cover}';
 (document.head||document.documentElement).appendChild(css);
 })();
 </script>
