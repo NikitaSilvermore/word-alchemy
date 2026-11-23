@@ -155,6 +155,7 @@ assert rl in eng
 eng = eng.replace(rl, rl+"if(window.DTV>=5&&x&&x.tier&&window.WEB21)return Math.max(1,window.WEB21.BREATH[x.tier]||1);")
 _w = json.load(open('/home/claude/fw2/web21.json'))
 web = '<script>window.WEB21=' + json.dumps({k:_w[k] for k in ['base','cat','cards','NEW','BREATH']}, separators=(',',':')) + ';</script>\n'
+web += '<script>if(window.DTV>=14){window.WEB21.base=' + open('/home/claude/dtest/v14/web14.json').read() + ';window.CHART14=' + open('/home/claude/dtest/v14/chart.json').read().replace('\n','') + ';}</script>\n'
 
 ed = "return side(S,ds).filter(t=>takes(t,att&&att.verb)&&"
 assert ed in eng
@@ -189,7 +190,7 @@ dtv = r(H + 'dtv.js').replace('var(--dmat)', 'url(' + _mat + ')')
 head = head.replace('<title>Word Alchemy Prototype</title>', '<title>Word Alchemy: Duel Test</title>')
 i = head.index('<head>') + len('<head>'); head = head[:i] + '\n<script>' + r(H + 'gguard.js') + '</script>\n' + head[i:]
 g = {}; exec(r('/home/claude/wgtest/build.py').split('inlset=set(fs)')[0], g); inl = g['inl']
-tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.DTVBUILD=' + json.dumps(__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')) + ';\n' + r(H + 'logs.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n</body>\n</html>\n'
+tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.DTVBUILD=' + json.dumps(__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')) + ';\n' + r(H + 'logs.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n<script>' + r(H + 'v14.js') + '</script>\n</body>\n</html>\n'
 open(P + 'duel.html', 'w', encoding='utf8').write(head + '<script id="engine">\n' + eng + '</script>\n\n' + tail)
 pm = {}
 for pk in ['art0', 'art1', 'art2', 'art3', 'art4', 'art5', 'art6', 'art7', 'ui', 'misc']:

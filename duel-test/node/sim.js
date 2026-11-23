@@ -21,7 +21,7 @@ SIM.schoolDeck=function(schools){const all=SIM.pool(),inS=w=>schools.includes(sc
 function fuse(S,who){S.fz=S.fz||[0,0];if(S.fz[who]===S.turn)return false;const p=S.players[who];let best=null;
  const hn=p.hand.map((w,i)=>({w,i})).filter(o=>W[o.w]&&W[o.w].t===NOUN&&!isEvent(o.w));
  for(let x=0;x<hn.length;x++)for(let y=x+1;y<hn.length;y++){const r=rxOf(hn[x].w,hn[y].w);if(!r||!r.r)continue;const c=rxLevel(hn[x].w,hn[y].w,r);if(p.ink<c)continue;
-  const g=(W[r.r]&&W[r.r].vig||0)+tierOf(r.r)*2-c-((W[hn[x].w].vig||0)+(W[hn[y].w].vig||0))/2;if(!best||g>best.g)best={g,a:hn[x],b:hn[y],r,c};}
+  const g=window.DTV14GAIN?(DTV14GAIN(who,{k:'card',i:hn[x].i},{k:'card',i:hn[y].i})||0):((W[r.r]&&W[r.r].vig||0)+tierOf(r.r)*2-c-((W[hn[x].w].vig||0)+(W[hn[y].w].vig||0))/2);if(!best||g>best.g)best={g,a:hn[x],b:hn[y],r,c};}
  if(!best||best.g<=0)return false;if(W[best.r.r].t===NOUN&&full(S,who,best.r.r))return false;
  S.fz[who]=S.turn;p.ink-=best.c;window.DTVSIDE=who;const bs={things:{}};for(const t of S.things)bs.things[t.id]=1;
  const ra={k:'card',i:best.a.i},rb={k:'card',i:best.b.i};const ins=dtvIn(who,[ra,rb]);react(S,who,{subj:ra,obj:rb},{mult:1,effect:false});try{dtvTrait(bs,best.r,ins);}catch(e){}

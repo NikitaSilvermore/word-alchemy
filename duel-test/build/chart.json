@@ -1,0 +1,6 @@
+{"life|life":["egg","chimera","unicorn"],"life|rot":["spore","toadstool","werewolf"],"fire|life":["ember","will-o-wisp","firebird"],"life|water":["toad","undine","kraken"],"earth|life":["seed","mandrake","treant"],"air|life":["moth","harpy","griffin"],"life|word":["shepherdess","dryad","druid"],
+"rot|rot":["leech","wraith","vampire"],"fire|rot":["ash","brimstone","daemon"],"rot|water":["adder","bog hag","hydra"],"earth|rot":["slag","barrow","basilisk"],"air|rot":["locust","wraith","nightmare"],"rot|word":["thief","barrow","lich"],
+"fire|fire":["ember","salamander","firedrake"],"fire|water":["glass","alchemist","geyser"],"earth|fire":["flint","obsidian","volcano"],"air|fire":["scintilla","will-o-wisp","thunderbird"],"fire|word":["smith","alchemist","red king"],
+"water|water":["brine","undine","white queen"],"earth|water":["clay","gnome","troll"],"air|water":["dew","sylph","siren"],"water|word":["salt","mirror","white queen"],
+"earth|earth":["salt","iron","colossus"],"air|earth":["sand","lodestone","gargoyle"],"earth|word":["knife","scribe","golem"],
+"air|air":["owl","sylph","roc"],"air|word":["magpie","scribe","herald"],"word|word":["unnamed","alchemist","sage"]}
