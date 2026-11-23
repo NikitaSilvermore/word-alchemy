@@ -41,7 +41,7 @@ SIM.play=function(d0,d1,opt){opt=opt||{};window.dtvDeck=(d,me)=>me===1?d0.slice(
  hist.push(life());const win=S.over==null?-1:S.over;
  let behind=0;if(win>=0){for(const h of hist){const d=h[win]-h[1-win];if(d<behind)behind=d;}}
  return {win,first,turns:S.turn,rounds:Math.ceil(S.turn/2),life:life(),maxHit,behind,fuse:S.st.fuse,evo:S.st.evo,said:S.st.said,dmg:S.st.dmg,decks:[(S.players[0].deck0||[]),(S.players[1].deck0||[])]};};
-const gen=g=>Array.isArray(g)?g:g.gen==='rand'?SIM.randDeck():g.gen==='school'?SIM.schoolDeck(g.s):g;
+const gen=g=>Array.isArray(g)?g:g.gen==='rand'?SIM.randDeck():g.gen==='school'?SIM.schoolDeck(g.s):g.gen==='complete'&&window.dtv18Complete?dtv18Complete(g.seed||[]).deck:g.gen==='starter'&&window.DTV18STARTERS?DTV18STARTERS[g.s].slice():g;
 SIM.batch=function(specs){const out=[];for(const sp of specs){try{const t0=performance.now();const a=gen(sp.d0),b=gen(sp.d1);const r=SIM.play(a,b,sp.opt);r.d=[a,b];r.ms=Math.round(performance.now()-t0);r.tag=sp.tag;out.push(r);}catch(e){out.push({err:String(e&&e.stack||e).slice(0,300),tag:sp.tag});}}return out;};
 })();
 
