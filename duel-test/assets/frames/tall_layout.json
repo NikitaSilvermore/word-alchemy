@@ -1,0 +1,40 @@
+{
+ "size": [
+  1024,
+  1536
+ ],
+ "art_window": [
+  65,
+  226,
+  954,
+  948
+ ],
+ "name_bar_approx": [
+  50,
+  66,
+  800,
+  180
+ ],
+ "gem_approx": {
+  "cx": 865,
+  "cy": 122,
+  "r": 70
+ },
+ "type_line_approx": [
+  58,
+  975,
+  965,
+  1035
+ ],
+ "rules_box_approx": [
+  58,
+  1050,
+  965,
+  1296
+ ],
+ "sigil_centre_approx": [
+  512,
+  1410
+ ],
+ "note": "all 7 tall frames match within ~2px; air corrected 23 Nov"
+}
