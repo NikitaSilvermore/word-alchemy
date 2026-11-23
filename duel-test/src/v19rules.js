@@ -125,7 +125,22 @@ if(VERBF.crush){const f=VERBF.crush;VERBF.crush=function(S,who,subs,objs,c){cons
   if(t.forms&&t.forms.length){const tr=(t.traits||[]).filter(a=>!t.forms.includes(a));t.title=tr.concat(t.forms).join(' ')+' '+t.w;}
   if(kept.length)say(S,Cap(t.title||t.w)+' keeps what its parts were given: '+kept.join(', ')+'.');}catch(e){console.error(e);}};}
 
+/* 15. spore: when it dies by any cause, it poisons the thing opposite (it only did when it drifted away) */
+{const _de=destroy;destroy=function(S,t,cause){const sp=t&&t.props&&t.props.includes('spore')&&S.things.includes(t)&&cause!=='gone'?t.side:null;const r=_de.apply(this,arguments);
+  try{if(sp!=null&&!S.things.includes(t)){const o=S.things.filter(q=>q.side!==sp&&!isG(q)&&q.props.includes('living')).sort((a,b)=>b.vig-a.vig)[0];if(o){say(S,'The spore bursts: '+(o.title||o.w)+' is poisoned.');poison(S,{k:'t',t:o},1);}}}catch(e){}return r;};}
+G('spore','Flies, and does not last. When it dies, the strongest living thing opposite is poisoned.');
+
+/* 16. orrery: weather the rival speaks does not touch your side, from the moment it arrives (it only stopped the turn-by-turn part) */
+{const guard=(name)=>{const f=window[name];window[name]=function(S,e){try{if(S&&S._orr!=null&&e&&((e.k==='p'&&e.i===S._orr)||(e.k==='t'&&e.t&&e.t.side===S._orr))){if(!S._orrSaid){S._orrSaid=1;say(S,'The orrery turns the weather aside from '+(S._orr===0?'your':'the rival’s')+' side.');}return false;}}catch(x){}return f.apply(this,arguments);};};
+  for(const n of ['damage','wet','cold','heat','sleep','poison'])guard(n);
+  const orrSide=(S,who)=>S.things.some(t=>t.side===1-who&&t.props.includes('orrery'))?1-who:null;
+  const fixWx=S=>{try{if(!S||!S.clime)return;for(const t of S.things)if(t.wxb&&S.clime.owner!==t.side&&S.things.some(o=>o.side===t.side&&o.props.includes('orrery'))){t.vig-=t.wxb;t.wxb=0;}}catch(e){}};
+  const _rs=resolve;resolve=function(S,who,sen){const cl=sen&&sen.clime!=null;const o=cl?orrSide(S,who):null;if(o!=null){S._orr=o;S._orrSaid=0;}let r;try{r=_rs.apply(this,arguments);}finally{if(o!=null){delete S._orr;delete S._orrSaid;}}fixWx(S);return r;};
+  for(const n of ['startTurn','endTurn','react'])if(typeof window[n]==='function'){const f=window[n];window[n]=function(S){const r=f.apply(this,arguments);fixWx(S);return r;};}}
+
 /* 14. card text that did not say what the card does */
+G('burning','Sets alight anything that can burn or is alive. It burns for 4 a turn, and its keeper chokes on the smoke for 2. Whatever it bites, crushes, cuts or stings catches fire too.');
+if(W.feral)W.feral.gloss=W.feral.gloss.replace(/A beast’s bite hits twice as hard\./,'As a beast, its bite hits 30% harder.');
 AP('wash','Heavy things stand firm.');
 G('rat','When it dies, the strongest living thing opposite is poisoned.');
 if(W.haunt)W.haunt.gloss=W.haunt.gloss.replace(/ ?The haunted also takes 2\./,'');
