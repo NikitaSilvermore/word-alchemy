@@ -96,7 +96,7 @@ const _rs=resolve;resolve=function(S,who,sen){const r=_rs.apply(this,arguments);
 /* tuning round 1: flyers keep their old might; The Word's people are sturdier */
 for(const w of ['scribe','hermit','miser','alchemist','homunculus','word','unnamed','bard','apothecary','shepherdess'])if(W[w]&&SCHOOLOF[w]==='word')W[w].vig+=5;
 /* tuning round 2 */
-W.hawk.vig=2;W.otter.vig=2;W.boulder.vig=8;
+W.hawk.vig=2;W.otter.vig=2;W.boulder.vig=9;
 let LASTA=null;
 const _da2=didAct;didAct=function(S,who,e,keep){if(e&&e.k==='t')LASTA=e.t;return _da2.apply(this,arguments);};
 /* Rot: a toxic thing's blows poison what they hit */
@@ -113,13 +113,13 @@ window.MTW=function(w,vig){const d=W[w];if(!d||d.t!==NOUN)return null;return win
 if(window.DTVRO)Object.assign(DTVRO,{scribe:.7,hermit:.6,alchemist:.7,bard:.7,wolf:1.2,bear:.9,boulder:.5});
 /* tuning round 4: Life outlasts (heals 1 a turn for each Life thing, up to 3); Earth's heavy things hit 20% harder */
 const _st4=startTurn;startTurn=function(S,i){const r=_st4.apply(this,arguments);try{if(S.over!=null)return r;const n=Math.min(3,S.things.filter(t=>t.side===i&&!isG(t)&&schoolOf(t.w)==='life'&&t.props.includes('living')).length);if(n){S.players[i].life+=n;say(S,(i===0?'You gain ':'The rival gains ')+n+' life from the living green.');}}catch(e){}return r;};
-const _mt4=window.MT;window.MT=function(t){const m=_mt4(t);try{if(t&&t.props&&t.props.includes('heavy')&&!isG(t)&&schoolOf(t.w)==='earth')return m+Math.round(t.vig*.2);}catch(e){}return m;};
+const _mt4=window.MT;window.MT=function(t){const m=_mt4(t);try{if(t&&t.props&&t.props.includes('heavy')&&!isG(t)&&schoolOf(t.w)==='earth')return m+Math.round(t.vig*.3);}catch(e){}return m;};
 window.MTW=function(w,vig){const d=W[w];if(!d||d.t!==NOUN)return null;return window.MT({w,props:d.props,vig:vig!=null?vig:d.vig});};
 /* tuning round 5: a flyer up in the air cannot stand in the way of something on the ground, unless it is on guard */
 const _ed=eligibleDef;eligibleDef=function(S,ds,att){const r=_ed.apply(this,arguments);try{if(att&&!(att.props.includes('flying')||att.props.includes('bird')))return r.filter(t=>!(t.props.includes('flying')||t.props.includes('bird'))||t.st.guarding);}catch(e){}return r;};
 const _bi=VERBF.bite;VERBF.bite=function(S,who,subs,objs,c){const lb=(subs||[]).some(e=>e&&e.k==='t'&&e.t.props.includes('beast')&&schoolOf(e.t.w)==='life');const m0=c.mult;if(lb)c.mult=(c.mult||1)*1.25;try{return _bi.apply(this,arguments);}finally{c.mult=m0;}};
 /* tuning round 6: The Word speaks. Each sentence of three or more words you say makes the rival take 1 for each voiced Word person of yours (up to 3) */
-const _rs6=resolve;resolve=function(S,who,sen){const r=_rs6.apply(this,arguments);try{if(r&&r.ok&&S.over==null){const n=(sen.subj?1:0)+(sen.verb!=null||sen.kverb?1:0)+(sen.obj?1:0)+((sen.adjs||[]).length);
+const _rs6=resolve;resolve=function(S,who,sen){const r=_rs6.apply(this,arguments);try{if(r&&r.ok&&S.over==null&&!(window.DTV>=19)){const n=(sen.subj?1:0)+(sen.verb!=null||sen.kverb?1:0)+(sen.obj?1:0)+((sen.adjs||[]).length);
   if(n>=3){const k=Math.min(3,S.things.filter(t=>t.side===who&&!isG(t)&&t.props.includes('voiced')&&schoolOf(t.w)==='word').length);if(k){say(S,'The words carry: the '+(who===0?'rival':'other side')+' takes '+k+'.');damage(S,P(1-who),k,'word');checkOver(S);}}}}catch(e){}return r;};
 /* Air: the squall carries each flyer at half its might */
 /* text for the reworked words */

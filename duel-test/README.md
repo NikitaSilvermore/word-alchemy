@@ -15,6 +15,7 @@ Snapshot of the published "Word Alchemy: Duel Test" artifact. Art packs (`assets
 | `src/v15.js` | v15 layer: the price of making (made things bind their inputs and leave with them; great results are Final; each held trait makes taking-in 1 dearer; rungs can't climb on arrival; the weather's school makes fusions 1 cheaper), kind marks, status overlays and a gilt frame on cards, a full sentence preview, the Fading from round 13 and a draw at round 20, one mulligan, the Second Wind, computer-rival tags with house rules, and the Grimoire of made words. Load after `v14.js`. |
 | `src/v16.js` | v16 layer: school identity. 19 school moves, linking kinds (spark, bright, dark, damp), sea-born things seep and drench, plants bind, hot things blind, wake/sting/thaw/gust/decay reworked, aloe/cedar/wormwood act each turn, clean card text. Load after `v13.js`. `web16.js` is its fusion table. |
 | `src/v17.js` | v17 layer: seven ways to win. 25 new words (torch, cinderling, bonfire, scorch, firebrand, wildfire, otter, eel, pike, mist, wash, tide, hawk, swallow, squall, boulder, wolf, hare, bear, stampede, ghost, rat, miasma, bard, lexicon), crush overflow, toxic blows poison, Life grows and heals, Word sentences deal damage, flyers vs guards, and the tuning from the starter matrix. Load after `v16.js`. `web17.js` is its fusion table. |
+| `src/v19.js` | v19 layer: The Word wins by speaking spells. Each spell of The Word you speak hits the rival for 3, plus 2 for each Word speaker on your side (up to 3 speakers); the bard draws on each spell. Replaces v17's sentence-length damage. Load after `v17.js`. |
 | `src/v18.js` | v18 layer: decks. Seven starters, Wild draw, the deck builder with Complete my deck, the market stocked 40/40/20 by school, rival school decks. Saves only `wa-dt18-deck`. Load last. |
 | `node/starters.json`, `node/an2.py`, `node/syn.js`, `node/synsum.py` | Starter decks; matrix analysis with damage by route; the school-synergy check and its summary. |
 | `src/v8.js` | v8–v10 layer: the verbs round (percentages, seep, toxify, spells), v9 colour pie (schools, weather by school, evolve, in tune) v10 might, v11 balance and v12 strike and stand (a display-only rename: might shows as strike, vigour as stand, and the verb card `strike` as hit; the engine still uses `vig`, `MT()` and the key `strike`). **The current card text (glosses) for v8+ is set here** and overrides `engine.js`. |
@@ -29,7 +30,7 @@ Snapshot of the published "Word Alchemy: Duel Test" artifact. Art packs (`assets
 node duel-test/node/load.js
 ```
 
-Set `DTV` in `load.js` to choose the version (0–18; the page defaults to 18). Card definitions live in `W` after `engine.js` loads; for v8 and later, `v8.js` rewrites many glosses and verb functions (`VERBF`), and adds `MT()` (might). `newGame(seed, opts)` makes a state; `resolve(S, who, sentence)` plays a sentence; `botChoose(S, who)` picks one.
+Set `DTV` in `load.js` to choose the version (0–19; the page defaults to 19). Card definitions live in `W` after `engine.js` loads; for v8 and later, `v8.js` rewrites many glosses and verb functions (`VERBF`), and adds `MT()` (might). `newGame(seed, opts)` makes a state; `resolve(S, who, sentence)` plays a sentence; `botChoose(S, who)` picks one.
 
 ## Balance simulator
 
