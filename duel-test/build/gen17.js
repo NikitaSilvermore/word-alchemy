@@ -20,6 +20,9 @@ for(const k in B){const v=B[k],[a,b]=k.split('|');
   if(a===b){N[k]=v;stat.same++;continue;}
   {const ba=body(a),bb=body(b);if(ba!==bb){const th=ba?a:b,q=ba?b:a,sq=sch(q)||'word';const sum=syl(a)+syl(b),tt=sum<=3?2:sum<=5?3:4;N[k]=[th,tt,'take',TR[sq]];stat.take=(stat.take||0)+1;continue;}
   const sa=sch(a)||'word',sb=sch(b)||'word',key=[sa,sb].sort().join('|'),sum=syl(a)+syl(b),t=sum<=3?0:sum<=5?1:2;
+  if(ba&&!(crea(a)&&crea(b))){const BL={plant:['bramble','dryad','treant'],liquid:['brine','elixir','azoth']};let done=false;
+    for(const kind in BL){if((W[a].props||[]).includes(kind)&&(W[b].props||[]).includes(kind)){let o=null,ut=t;for(const tt of (t===0?[0,1,2]:t===1?[1,2,0]:[2,1,0])){const c=BL[kind][tt];if(!o&&c!==a&&c!==b&&W[c]){o=c;ut=tt;}}if(o){N[k]=[o,ut+2,'blend','',ut];stat.blend=(stat.blend||0)+1;done=true;}break;}}
+    if(done)continue;}
   if(ba){if(!(crea(a)&&crea(b))){stat.drop=(stat.drop||0)+1;continue;}
     const F=FAM[key];let o=null,ut=t;for(const tt of (t===0?[0,1,2]:t===1?[1,2,0]:[2,1,0])){const c=F[tt];if(!o&&c!==a&&c!==b&&crea(c)){o=c;ut=tt;}}
     if(!o){stat.drop=(stat.drop||0)+1;continue;}N[k]=[o,ut+2,'hybrid','',ut];stat.hybrid=(stat.hybrid||0)+1;continue;}

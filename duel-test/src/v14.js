@@ -16,6 +16,7 @@ function rule(x){if(!x)return '';const L=x.layer;
   if(L==='grown')return 'Like feeds like: it grows.';
   if(L==='take'||L==='element')return 'Taking in: it keeps its name and becomes '+x.trait+'.';
   if(L==='haunt')return 'Taking in a spirit: it keeps its name and becomes haunted.';
+  if(L==='blend')return 'Two of a kind grow together into '+x.r+'.';
   if(L==='hybrid')return 'Two creatures make a hybrid with both their gifts: '+SCH[sch(x.a)]+' with '+SCH[sch(x.b)]+(x.tier>=2?', '+SIZE[Math.min(2,x.tier-2)]:'')+'.';
   if(L==='quality')return 'Two qualities make a stronger one: '+SCH[sch(x.a)]+' with '+SCH[sch(x.b)]+'.';
   if(L==='potion')return 'A potion: poured at once, and a flask is kept.';

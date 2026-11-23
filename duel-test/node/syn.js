@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm');
 const D='/home/claude/word-alchemy/duel-test/src/';
 const g={console,Math,JSON,Date,setTimeout:(f)=>{try{f()}catch(e){}},clearTimeout,setInterval:()=>0,clearInterval:()=>0,performance:{now:()=>Date.now()},requestAnimationFrame:()=>0};g.window=g;g.globalThis=g;g.DTV=+(process.env.DTV||16);g.document={addEventListener(){},createElement(){return{style:{},appendChild(){}}},head:{appendChild(){}},body:{classList:{add(){},remove(){},toggle(){}},appendChild(){}},querySelector(){return null},querySelectorAll(){return[]}};g.addEventListener=()=>{};g.localStorage={getItem(){return null},setItem(){}};
 vm.createContext(g);
-for(const f of ['engine.js','web21.js','web14.js','dtv.js','v8.js','v13.js','v16.js','v14.js'])vm.runInContext(fs.readFileSync(D+f,'utf8'),g,{filename:f});
+for(const f of ['engine.js','web21.js','web14.js','dtv.js','v8.js','v13.js','v16.js','v17.js','v14.js'])vm.runInContext(fs.readFileSync(D+f,'utf8'),g,{filename:f});
 const data=JSON.parse(vm.runInContext(`(function(){const r=[];for(const w in W){const d=W[w];if(d.token||!ALLWORDS.includes(w)||DTVX7.includes(w))continue;let ab=[];if(d.t===NOUN){try{ab=abilities(d.props,{})}catch(e){}}r.push({w,t:d.t,sch:schoolOf(w),props:d.props||[],ab,match:d.match||null});}return JSON.stringify(r);})()`,g));
 const H=(p,...k)=>k.some(x=>p.includes(x));
 // enabling/bonus condition for each support word: f(props,w) -> true if this noun "works with" it
