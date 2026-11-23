@@ -106,7 +106,7 @@ const _rl=window.renderLex;if(_rl)window.renderLex=function(){const h=document.g
 
 /* ---- run with every render ---- */
 const _dec=window.dtvDecorate;window.dtvDecorate=function(){if(_dec)_dec();try{houseSet();cards();bench();wind();mull();rivalTag();}catch(e){console.error(e);}};
-setInterval(()=>{try{if(typeof view!=='undefined'&&view==='book')grim();}catch(e){}},600);
+setInterval(()=>{try{if(typeof view!=='undefined'&&view==='book')grim();const m=typeof view!=='undefined'&&view==='match'&&S&&S.live&&S.over==null;const r=document.getElementById('r15');if(r&&!m)r.style.display='none';const q=document.getElementById('m15');if(q&&!m)q.remove();}catch(e){}},400);
 
 const css=document.createElement('style');css.textContent=
  '.p15{position:absolute;left:4px;right:4px;bottom:31%;z-index:5;display:flex;flex-wrap:nowrap;gap:2px;justify-content:center;pointer-events:none}'
