@@ -18,6 +18,7 @@ window.dtv15Block=function(who,ra,rb,x){const ts=[thingOf(ra),thingOf(rb)].filte
 window.dtv15Cost=function(who,ra,rb,x){let d=0;const ts=[thingOf(ra),thingOf(rb)].filter(Boolean);
   if(TAKE.includes(x.layer))for(const t of ts)d+=(t.traits||[]).length;
   if(S.clime&&W[S.clime.w]){const cs=sch(S.clime.w);if(cs&&(sch(x.a)===cs||sch(x.b)===cs))d-=1;}
+  if(S.things.some(t=>t.side===who&&t.w==='lexicon'))d-=1;
   if(who===1&&S.house==='fuse'&&!(S.fz&&S.fz[1]===S.turn))d-=1;return d;};
 window.dtv15CostWhy=function(who,ra,rb,x){const o=[];const ts=[thingOf(ra),thingOf(rb)].filter(Boolean);
   if(TAKE.includes(x.layer)){const n=ts.reduce((s,t)=>s+(t.traits||[]).length,0);if(n)o.push('+'+n+' for the trait'+(n>1?'s':'')+' it already has');}
@@ -37,9 +38,9 @@ const _tr=window.dtvTrait;window.dtvTrait=function(bs,x,ins){_tr(bs,x,ins);try{i
 
 /* ---- 3. a bounded match: the Fading, a draw at round 20, the Second Wind, one mulligan ---- */
 const _sec=window.dtvSecond;window.dtvSecond=function(S,i){
-  if(S.second===i&&!S.secondDone&&i===0){S.secondDone=1;S.sw=1;say(S,'You go second: you hold a Second Wind, +1 breath on any turn you choose.');}
-  else _sec(S,i);
-  try{if(i===1&&S.house==='breath'&&!S.houseDone){S.houseDone=1;S.players[1].ink+=1;say(S,(S.rival?S.rival.n.split(' ')[0]:'The rival')+'’s house rule: 1 more breath on her first turn.');}
+  const SW=window.DTV>=17?2:1;if(S.second===i&&!S.secondDone&&i===0){S.secondDone=1;S.sw=1;S.swN=SW;say(S,'You go second: you hold a Second Wind, +'+SW+' breath on any turn you choose.');}
+  else{const was=S.secondDone;_sec(S,i);if(window.DTV>=17&&!was&&S.secondDone&&S.second===i&&i===1){S.players[1].ink+=1;}}
+  try{if(i===1&&S.house==='breath'&&!S.houseDone){S.houseDone=1;S.players[1].ink+=1;say(S,(S.rival?S.rival.n.split(' ')[0]:'The rival')+'’s house rule: 1 more breath on the first turn.');}
     const R=Math.ceil(S.turn/2);
     if(R>20&&S.over==null){S.over=2;S.how='time';S.phase='over';say(S,'Round 20 passes and neither of you has fallen: a draw.');return;}
     if(R>=13){const n=R-12;say(S,'The Fading: the ink is thinning. '+(i===0?'You lose ':'The rival loses ')+n+' life.');damage(S,P(i),n,'fade');checkOver(S);}}catch(e){console.error(e);}};
@@ -55,7 +56,7 @@ document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.clos
   const i=+b.dataset.m15;S.m15sel[i]=!S.m15sel[i];mull();},true);
 
 /* ---- 5. rivals: marked as computer rivals, each with a house rule ---- */
-const HOUSE=[['life','Starts with 3 more life.'],['fuse','Her first fusion each turn costs 1 less breath.'],['stand','Her things arrive with 1 more stand.'],['breath','1 more breath on her first turn.']];
+const HOUSE=[['life','Starts with 3 more life.'],['fuse','Their first fusion each turn costs 1 less breath.'],['stand','Their things arrive with 1 more stand.'],['breath','1 more breath on their first turn.']];
 function houseSet(){if(!S||!S.live||S.house||S.puz)return;const n=(S.rival&&S.rival.n)||'rival';let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;S.house=HOUSE[h%HOUSE.length][0];
   if(S.house==='life'){S.players[1].life+=3;}say(S,(S.rival?S.rival.n:'The rival')+' is a computer rival. House rule: '+HOUSE.find(x=>x[0]===S.house)[1]);}
 const _add=window.addThing;window.addThing=function(S,w,sd,owner,token,card){const t=_add.apply(this,arguments);try{if(S&&S.house==='stand'&&sd===1&&t&&!isG(t)&&!(t.props||[]).includes('spell'))t.vig+=1;}catch(e){}return t;};
@@ -85,8 +86,8 @@ function bench(){const st=document.querySelector('#bench .sentext');if(!st)retur
   if(!h){if(old)old.remove();return;}if(old){if(old.innerHTML!==h)old.innerHTML=h;return;}const d=document.createElement('div');d.className='w15';d.innerHTML=h;const hint=st.querySelector('.hint');if(hint)hint.after(d);else st.appendChild(d);}
 /* the Second Wind button */
 function wind(){const a=document.querySelector('#bench .btns.acts');if(!a)return;let b=a.querySelector('.sw15');const ok=S.sw===1&&S.phase==='play'&&S.active===0&&S.over==null;
-  if(!ok){if(b)b.remove();return;}if(!b){b=document.createElement('button');b.className='btn ghost sw15';b.dataset.sw15='1';b.innerHTML='Second Wind<br><small>+1 breath, once</small>';a.insertBefore(b,a.lastElementChild);}}
-document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-sw15]');if(!b)return;ev.preventDefault();ev.stopPropagation();if(S.sw!==1)return;S.sw=2;S.players[0].ink+=1;say(S,'You take your Second Wind: +1 breath.');try{keepMatch();}catch(e){}render();},true);
+  if(!ok){if(b)b.remove();return;}if(!b){b=document.createElement('button');b.className='btn ghost sw15';b.dataset.sw15='1';b.innerHTML='Second Wind<br><small>+'+(S.swN||1)+' breath, once</small>';a.insertBefore(b,a.lastElementChild);}}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-sw15]');if(!b)return;ev.preventDefault();ev.stopPropagation();if(S.sw!==1)return;S.sw=2;const n=S.swN||1;S.players[0].ink+=n;say(S,'You take your Second Wind: +'+n+' breath.');try{keepMatch();}catch(e){}render();},true);
 /* the vat says why a fusion costs what it does */
 const _pn=window.dtvPanel;window.dtvPanel=function(){_pn();try{const e=document.getElementById('dfz'),p=S.players[0],v=p.vat||[];if(!e||v.length!==2)return;window.DTVSIDE=0;const x=rxOf(v[0].w,v[1].w);if(!x||!x.r)return;
   const why=dtv15CostWhy(0,v[0],v[1],x),t=e.querySelector('.f14t em');if(why&&t&&!t.querySelector('.c15'))t.insertAdjacentHTML('beforeend','<span class="c15"> Cost: '+esc(why)+'.</span>');

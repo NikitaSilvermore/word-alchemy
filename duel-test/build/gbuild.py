@@ -155,7 +155,7 @@ assert rl in eng
 eng = eng.replace(rl, rl+"if(window.DTV>=5&&x&&x.tier&&window.WEB21)return Math.max(1,window.WEB21.BREATH[x.tier]||1);")
 _w = json.load(open('/home/claude/fw2/web21.json'))
 web = '<script>window.WEB21=' + json.dumps({k:_w[k] for k in ['base','cat','cards','NEW','BREATH']}, separators=(',',':')) + ';</script>\n'
-web += '<script>if(window.DTV>=14){window.WEB21.base=' + open('/home/claude/dtest/v14/web14.json').read() + ';window.CHART14=' + open('/home/claude/dtest/v14/chart.json').read().replace('\n','') + ';window.QCHART14=' + open('/home/claude/dtest/v14/qchart.json').read().replace('\n','') + ';}</script>\n'
+web += '<script>if(window.DTV>=14){window.WEB21.base=window.DTV>=17?' + open('/home/claude/dtest/v14/web17.json').read() + ':window.DTV>=16?' + open('/home/claude/dtest/v14/web16.json').read() + ':' + open('/home/claude/dtest/v14/web14.json').read() + ';window.CHART14=' + open('/home/claude/dtest/v14/chart.json').read().replace('\n','') + ';window.QCHART14=' + open('/home/claude/dtest/v14/qchart.json').read().replace('\n','') + ';}</script>\n'
 
 ed = "return side(S,ds).filter(t=>takes(t,att&&att.verb)&&"
 assert ed in eng
@@ -181,6 +181,10 @@ eng = RP(eng,"if(x.r){const t=addThing(S,x.r,who,who,true);","if(x.r){const t=ad
 eng = RP(eng,"if(S.cfg.gw2&&t.props.includes('metal')&&t.w!=='slag'","if(S.cfg.gw2&&!("+D13+")&&t.props.includes('metal')&&t.w!=='slag'")
 eng = RP(eng,"addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');","if("+D13+"){addThing(S,'carrion',t.side,t.side,true);say(S,'Carrion is left behind.');}else{addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}")
 eng = RP(eng,"say(S,'The sum: '+s+' = '+Math.max(1,n+b+nv+ex+pv)+'.','q');","{const raw=n+b+nv+ex+pv;say(S,'The sum: '+s+' = '+(("+D13+")&&raw<1?raw+', at least 1':Math.max(1,raw))+'.','q');}")
+eng = RP(eng,"Math.max(1,Math.ceil(t.vig*0.1))","(window.DTV>=17?Math.max(1,Math.ceil(t.vig*0.2*Math.min(3,t.st.poisoned||1))):Math.max(1,Math.ceil(t.vig*0.1)))")
+eng = eng.replace("(!fly||flies(t))","(!fly||flies(t)||(window.DTV>=17&&t.st.guarding))")
+eng = RP(eng,"if(p.poisoned>0){p.poisoned--;say(S,'The poison works.');damage(S,P(i),S.cfg.gw2?3:2,'poison');}","if(p.poisoned>0){const pd=p.poisoned;p.poisoned--;say(S,'The poison works.');damage(S,P(i),(S.cfg.gw2?3:2)+(window.DTV>=17?pd:0),'poison');}")
+eng = RP(eng,"p.attune&&i===0&&S.turn>2?ATTUNEB:0","p.attune&&(i===0||window.DTV>=16)&&S.turn>2?ATTUNEB:0")
 eng = RP(eng,"if(m){say(S,'The foundry works.');climb(S,m,1);}","if(m&&!("+D13+")){say(S,'The foundry works.');climb(S,m,1);}")
 eng = RP(eng,"if(m){say(S,'Erosion wears at the ladder.');fall(S,m);}","if(m&&!("+D13+")){say(S,'Erosion wears at the ladder.');fall(S,m);}")
 eng = RP(eng,"say(S,'It rises out of the black matter with '+n+' more vigour.');","say(S,"+D13+"?'It rises from the black matter your fallen things left behind: '+n+' more vigour.':'It rises out of the black matter with '+n+' more vigour.');")
@@ -190,7 +194,7 @@ dtv = r(H + 'dtv.js').replace('var(--dmat)', 'url(' + _mat + ')')
 head = head.replace('<title>Word Alchemy Prototype</title>', '<title>Word Alchemy: Duel Test</title>')
 i = head.index('<head>') + len('<head>'); head = head[:i] + '\n<script>' + r(H + 'gguard.js') + '</script>\n' + head[i:]
 g = {}; exec(r('/home/claude/wgtest/build.py').split('inlset=set(fs)')[0], g); inl = g['inl']
-tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.DTVBUILD=' + json.dumps(__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')) + ';\n' + r(H + 'logs.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n<script>' + r(H + 'v14.js') + '</script>\n<script>' + r(H + 'v15.js') + '</script>\n</body>\n</html>\n'
+tail = web + '<script>' + dtv + '</script>\n<script>' + r(H + 'v8.js') + '</script>\n<script>' + r(H + 'v13.js') + '</script>\n<script>' + r(H + 'v16.js') + '</script>\n<script>' + r(H + 'v17.js') + '</script>\n<script>\nconst INL=' + json.dumps(inl) + ';\n' + ui + '</script>\n<script>' + r(H + 'gfeed.js') + '</script>\n<script>window.DTVBUILD=' + json.dumps(__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')) + ';\n' + r(H + 'logs.js') + '</script>\n<script>window.MOCKCSS=' + json.dumps(r(H + 'mock.css')) + ';\n' + r(H + 'mock.js') + '</script>\n<script>' + r(H + 'v14.js') + '</script>\n<script>' + r(H + 'v15.js') + '</script>\n</body>\n</html>\n'
 open(P + 'duel.html', 'w', encoding='utf8').write(head + '<script id="engine">\n' + eng + '</script>\n\n' + tail)
 pm = {}
 for pk in ['art0', 'art1', 'art2', 'art3', 'art4', 'art5', 'art6', 'art7', 'ui', 'misc']:
