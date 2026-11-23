@@ -1,0 +1,34 @@
+{
+ "size": [
+  1086,
+  1448
+ ],
+ "card_edge": [
+  16,
+  15,
+  1070,
+  1430
+ ],
+ "name_bar": {
+  "left": 82,
+  "top": 108,
+  "bottom": 249,
+  "right_ends_at_gem": true
+ },
+ "gem": {
+  "cx": 885,
+  "cy": 170,
+  "r": 118
+ },
+ "art_window": {
+  "left": 95,
+  "top": 305,
+  "right": 985,
+  "bottom": 1110,
+  "note": "flat grey interior; rounded corners ~40px"
+ },
+ "sigil_centre": [
+  543,
+  1258
+ ]
+}
