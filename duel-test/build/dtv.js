@@ -52,7 +52,7 @@ function dtvRand(){const NO=['vessel','fuse','conjoin','be'],P=w=>W[w].props||[]
 /* ---- version picker on the duelling bench, and the corner tag ---- */
 function picker(){const l=document.querySelector('#view-lobby .home.lobby > div, #view-match .home.lobby > div');if(!l||l.querySelector('.dtvp'))return;
   const d=document.createElement('div');d.className='dtvp';
-  d.innerHTML='<b>Test version</b>'+NAMES.map((n,i)=>'<button data-dtv="'+i+'"'+(i===V?' class="on"':'')+'>'+n+'</button>').join('')+'<p>'+DESC[V]+(V>1?' Includes everything in the earlier versions.':'')+'</p>';
+  const L=NAMES.length-1,bt=i=>'<button data-dtv="'+i+'"'+(i===V?' class="on"':'')+'>'+NAMES[i]+'</button>';d.innerHTML='<b>Test version</b>'+bt(L)+'<details'+(V<L?' open':'')+'><summary>Earlier versions</summary>'+NAMES.slice(0,L).map((n,i)=>bt(i)).join('')+'</details><p>'+DESC[V]+(V>1?' Includes everything in the earlier versions.':'')+'</p>';
   l.appendChild(d);d.querySelectorAll('button').forEach(b=>b.onclick=ev=>{ev.stopPropagation();try{localStorage.setItem('wa-duel-test-ver',b.dataset.dtv);}catch(e){}location.reload();});}
 setInterval(()=>{try{picker();const t=document.getElementById('dtv');if(t)t.textContent='Duel test · '+NAMES[V];}catch(e){}},500);
 
@@ -157,7 +157,7 @@ const css=document.createElement('style');css.textContent=
  '.dtvp{margin-top:18px;max-width:520px;background:rgba(9,7,5,.82);border:1px solid rgba(230,196,94,.45);border-radius:12px;padding:12px 14px;color:#f3e4c2}'
 +'.dtvp b{display:block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#e6d3a8;margin-bottom:8px}'
 +'.dtvp button{margin:0 6px 6px 0;padding:7px 11px;border-radius:999px;border:1px solid rgba(230,196,94,.5);background:rgba(30,20,10,.9);color:#f3e4c2;font:600 13px "Alegreya Sans",sans-serif;cursor:pointer}'
-+'.dtvp button.on{background:#8e1d10;border-color:#d14a35;color:#fff6e6}.dtvp p{margin:6px 0 0;font-size:14px;line-height:1.4;color:#e8dcc0}'
++'.dtvp details{margin:4px 0 2px}.dtvp summary{cursor:pointer;font:600 13px "Alegreya Sans",sans-serif;color:#e6d3a8;margin:2px 0 8px}.dtvp details button{font-size:12px;padding:5px 9px}'+'.dtvp button.on{background:#8e1d10;border-color:#d14a35;color:#fff6e6}.dtvp p{margin:6px 0 0;font-size:14px;line-height:1.4;color:#e8dcc0}'
 +'#dfzg{position:fixed;z-index:9500;pointer-events:none;transform:translate(-50%,-60%) rotate(-3deg) scale(1.05);filter:drop-shadow(0 14px 18px rgba(0,0,0,.7)) drop-shadow(0 0 10px rgba(214,168,255,.7))}'
 +'.thing.dfz{animation:dfzp 1s ease-in-out infinite}@keyframes dfzp{50%{filter:drop-shadow(0 0 16px #d6a8ff) brightness(1.15)}}'
 +(V>=1&&V<4?'body .table.v2 .mat{background:var(--dmat) center/100% 100% no-repeat!important}':'')+(V>=1?''
