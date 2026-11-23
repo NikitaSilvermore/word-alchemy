@@ -1,0 +1,5 @@
+{"fire|fire":"lava","fire|water":"steam","air|fire":"energy","earth|fire":"lava","fire|life":"energy","fire|rot":"black sun","fire|word":"foundry",
+"water|water":"swamp","air|water":"cloud","earth|water":"swamp","life|water":"life","rot|water":"swamp","water|word":"ink",
+"air|air":"wind","air|earth":"dust","air|life":"cloud","air|rot":"void","air|word":"muse",
+"earth|earth":"tower","earth|life":"life","earth|rot":"abyss","earth|word":"orrery",
+"life|life":"life","life|rot":"void","life|word":"sigil","rot|rot":"abyss","rot|word":"black sun","word|word":"rune"}

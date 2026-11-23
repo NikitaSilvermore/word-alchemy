@@ -16,7 +16,8 @@ function rule(x){if(!x)return '';const L=x.layer;
   if(L==='grown')return 'Like feeds like: it grows.';
   if(L==='take'||L==='element')return 'Taking in: it keeps its name and becomes '+x.trait+'.';
   if(L==='haunt')return 'Taking in a spirit: it keeps its name and becomes haunted.';
-  if(L==='hybrid')return 'Two creatures make a hybrid with both their gifts.';
+  if(L==='hybrid')return 'Two creatures make a hybrid with both their gifts: '+SCH[sch(x.a)]+' with '+SCH[sch(x.b)]+(x.tier>=2?', '+SIZE[Math.min(2,x.tier-2)]:'')+'.';
+  if(L==='quality')return 'Two qualities make a stronger one: '+SCH[sch(x.a)]+' with '+SCH[sch(x.b)]+'.';
   if(L==='potion')return 'A potion: poured at once, and a flask is kept.';
   if(L==='chart'){const a=sch(x.a),b=sch(x.b);return 'The chart: '+(a===b?SCH[a]+' with '+SCH[a]:SCH[a]+' with '+SCH[b])+', '+SIZE[x.tier-2>=0?Math.min(2,x.tier-2):0]+' (by breath).';}
   return '';}
@@ -35,7 +36,7 @@ function pred(who,ra,rb){const A=inOf(who,ra),B=inOf(who,rb);if(!A||!B)return nu
   const vig=Math.max(d.vig,sum+2),m0=window.MT0({w:r,props,vig}),need=Math.max(A.mt||0,B.mt||0)+1,mt=Math.max(m0,need);
   o.kind='thing';o.vig=vig;o.mt=mt;o.mb=mt-m0;o.traits=tr;o.props=props;o.name=(tr.length?tr.join(' ')+' ':'')+r;o.ready=A.board||B.board;return o;}
 window.dtv14Pred=pred;
-const st=q=>q.mt?'strike '+q.mt+' · stand '+q.vig:'stand '+q.vig;
+const st=q=>q.mt?'might '+q.mt+' · vigour '+q.vig:'vigour '+q.vig;
 function trade(p){if(!p)return '';const g='you give '+esc(p.A.name)+(p.A.mt?' ('+st(p.A)+')':'')+' and '+esc(p.B.name)+(p.B.mt?' ('+st(p.B)+')':'')+' and '+p.cost+' breath';
   if(p.kind!=='thing')return g+' · you get '+esc(p.name)+', '+p.say;
   const nw=p.traits.filter(k=>!p.A.traits.includes(k)&&!p.B.traits.includes(k)).map(k=>TP[k]&&TX[TP[k]]?k+': '+TX[TP[k]]:k);
@@ -79,16 +80,18 @@ const _pn=window.dtvPanel;window.dtvPanel=function(){_pn();try{const e=document.
 /* the rival weighs a fusion by what it really makes */
 window.DTV14GAIN=function(who,ra,rb){const q=pred(who,ra,rb);if(!q)return null;if(q.kind!=='thing')return 3;return q.mt+q.vig/2-Math.max(q.A.mt,q.B.mt)-Math.max(q.A.vig,q.B.vig)/2-q.cost+1;};
 /* the law, written into How to play and the Grimoire's rules */
-function lawHtml(){const C=window.CHART14||{},S7=['life','rot','fire','water','earth','air','word'],rows=[];
-  for(let i=0;i<7;i++)for(let j=i;j<7;j++){const k=[S7[i],S7[j]].sort().join('|');if(C[k])rows.push('<tr><th>'+SCH[S7[i]]+' + '+SCH[S7[j]]+'</th><td>'+C[k].join('</td><td>')+'</td></tr>');}
-  return '<div class="f14law"><h4>The fusion law</h4><p>Put two things in the vat. Before you fuse, the vat shows what you will get, its strike and stand, the breath it costs and the rule it follows. The first rule that fits decides:</p><ol>'
+function lawHtml(){const C=window.CHART14||{},Q=window.QCHART14||{},S7=['life','rot','fire','water','earth','air','word'],CR=['beast','bird','human','serpent','insect','spirit','fish'],cr=w=>W[w]&&CR.some(p=>(W[w].props||[]).includes(p)),rows=[];
+  for(let i=0;i<7;i++)for(let j=i;j<7;j++){const k=[S7[i],S7[j]].sort().join('|');const h=(C[k]||[]).map(w=>cr(w)?w:'—');rows.push('<tr><th>'+SCH[S7[i]]+' + '+SCH[S7[j]]+'</th><td>'+h.join('</td><td>')+'</td><td class="q">'+(Q[k]||'—')+'</td></tr>');}
+  return '<div class="f14law"><h4>The fusion law</h4><p>Put two words in the vat. Before you fuse, it shows what you will get, its strike and stand, the breath it costs and the rule it follows. Not everything fuses: only pairs that make sense. The first rule that fits decides:</p><ol>'
   +'<li><b>Named recipes and ladders.</b> Owl and crow make an eagle; tin climbs to copper, copper to iron; a catalyst on your side can open a recipe.</li>'
   +'<li><b>Taking in.</b> A thing with an element, a quality, a spell or a spirit keeps its name and takes a trait from that school: fireborn (Fire), sea-born (Water), stone-skinned (Earth), winged (Air), quickened (Life), blighted (Rot), learned (the Word), haunted (a spirit). Oak and fire make a fireborn oak.</li>'
   +'<li><b>Like feeds like.</b> Two of the same grow into one.</li>'
-  +'<li><b>The chart.</b> Any other pair follows its two schools, in three sizes by the breath of the two words: up to 3 small, 4 to 5 middling, 6 or more great. The result is never one of the two you put in.</li></ol>'
-  +'<p><b>Always worth it.</b> What you make has at least 2 more stand than the two together, strikes at least 1 harder than the harder of the two, and keeps their traits and gifts. Made from something already on your side, it can act at once.</p>'
+  +'<li><b>Two creatures make a hybrid</b> by their schools, in three sizes by the breath of the two words: up to 3 small, 4 to 5 middling, 6 or more great. It keeps both their gifts.</li>'
+  +'<li><b>Two qualities make a stronger one.</b> Fire and water make steam; air and water make cloud; earth and rot make the abyss.</li>'
+  +'<li><b>Anything else does not fuse.</b> Two objects with no recipe (an oak and a knife) stay as they are.</li></ol>'
+  +'<p><b>Always worth it.</b> A thing you make has at least 2 more stand than the two together, strikes at least 1 harder than the harder of the two, and keeps their traits and gifts. Made from something already on your side, it can act at once.</p>'
   +'<p><b>Cost.</b> 1 breath for a small fusion, 2 for a middling one, 3 for a great one. One fusion a turn.</p>'
-  +'<table class="f14ch"><caption>The chart: small · middling · great</caption>'+rows.join('')+'</table>'
+  +'<table class="f14ch"><caption>Hybrids: small · middling · great · and the quality two qualities make</caption>'+rows.join('')+'</table>'
   +'<p>Words that can fuse wear a flask (⚗). Pick one and each partner shows what it makes and what it costs.</p></div>';}
 setInterval(()=>{try{document.querySelectorAll('.howbox').forEach(h=>{if(!h.querySelector('.f14law'))h.insertAdjacentHTML('beforeend',lawHtml());});}catch(e){}},700);
 const css=document.createElement('style');css.textContent=
@@ -99,6 +102,6 @@ const css=document.createElement('style');css.textContent=
 +'#dfz .f14t{margin:6px 0 4px;font:13px/1.35 "IM Fell English",Georgia,serif;color:#f3e6c8;max-width:34em}#dfz .f14t em{display:block;font-style:italic;color:#e8c987;margin-top:2px}'
 +'#dfz .fz-out{position:relative}#dfz .f14m{position:absolute;left:-6px;bottom:-6px;font:700 13px/1 Cinzel,serif;color:#fff1d0;background:#7a2c1a;border:1px solid #f0b48a;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-style:normal}'
 +'#hand .card,#you .thing{position:relative}'
-+'.f14law{margin-top:1em}.f14law ol{padding-left:1.2em}.f14law li{margin:.3em 0}.f14ch{border-collapse:collapse;margin:.6em 0;font-size:.92em}.f14ch caption{text-align:left;font-style:italic;padding-bottom:.3em}.f14ch th{text-align:left;padding:2px 10px 2px 0;font-weight:600;white-space:nowrap}.f14ch td{padding:2px 8px;border-left:1px solid rgba(128,100,60,.35)}';
++'.f14law{margin-top:1em}.f14law ol{padding-left:1.2em}.f14law li{margin:.3em 0}.f14ch{border-collapse:collapse;margin:.6em 0;font-size:.92em}.f14ch caption{text-align:left;font-style:italic;padding-bottom:.3em}.f14ch th{text-align:left;padding:2px 10px 2px 0;font-weight:600;white-space:nowrap}.f14ch td{padding:2px 8px;border-left:1px solid rgba(128,100,60,.35)}.f14ch td.q{font-style:italic}';
 (document.head||document.documentElement).appendChild(css);
 })();

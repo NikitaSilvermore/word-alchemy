@@ -155,7 +155,7 @@ assert rl in eng
 eng = eng.replace(rl, rl+"if(window.DTV>=5&&x&&x.tier&&window.WEB21)return Math.max(1,window.WEB21.BREATH[x.tier]||1);")
 _w = json.load(open('/home/claude/fw2/web21.json'))
 web = '<script>window.WEB21=' + json.dumps({k:_w[k] for k in ['base','cat','cards','NEW','BREATH']}, separators=(',',':')) + ';</script>\n'
-web += '<script>if(window.DTV>=14){window.WEB21.base=' + open('/home/claude/dtest/v14/web14.json').read() + ';window.CHART14=' + open('/home/claude/dtest/v14/chart.json').read().replace('\n','') + ';}</script>\n'
+web += '<script>if(window.DTV>=14){window.WEB21.base=' + open('/home/claude/dtest/v14/web14.json').read() + ';window.CHART14=' + open('/home/claude/dtest/v14/chart.json').read().replace('\n','') + ';window.QCHART14=' + open('/home/claude/dtest/v14/qchart.json').read().replace('\n','') + ';}</script>\n'
 
 ed = "return side(S,ds).filter(t=>takes(t,att&&att.verb)&&"
 assert ed in eng
