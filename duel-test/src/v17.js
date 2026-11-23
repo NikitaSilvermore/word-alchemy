@@ -30,7 +30,7 @@ N('hawk','OE',2,3,'beast bird living flying sharp','A hunting hawk with a hooked
 N('swallow','OE',1,2,'beast bird living flying swift','Swift: it can strike the turn it arrives. In Spring it arrives 20% stronger.','air',1);
 N('squall','OE',4,1,'event','A single-use spell: say it alone and it is spent. Every flyer of yours strikes the rival now, at half its might.','air');
 /* ---- Earth: Walls, then overflow ---- */
-N('boulder','OE',2,7,'stone heavy','A great rolling stone. It stands guard from the moment it arrives, and a thing on guard can stop even a flyer.','earth',.3);
+N('boulder','OE',2,7,'stone heavy','A great rolling stone. It stands guard from the moment it arrives. Only a flyer can stop a flyer.','earth',.3);
 /* ---- Life: Outgrow and outlast ---- */
 N('wolf','OE',2,4,'beast living sharp','Hunts in a pack: it arrives 20% stronger for each other beast of yours.','life',1);
 N('hare','OE',1,2,'beast living swift','Swift: it can strike the turn it arrives.','life',1);
@@ -115,6 +115,8 @@ if(window.DTVRO)Object.assign(DTVRO,{scribe:.7,hermit:.6,alchemist:.7,bard:.7,wo
 const _st4=startTurn;startTurn=function(S,i){const r=_st4.apply(this,arguments);try{if(S.over!=null)return r;const n=Math.min(3,S.things.filter(t=>t.side===i&&!isG(t)&&schoolOf(t.w)==='life'&&t.props.includes('living')).length);if(n){S.players[i].life+=n;say(S,(i===0?'You gain ':'The rival gains ')+n+' life from the living green.');}}catch(e){}return r;};
 const _mt4=window.MT;window.MT=function(t){const m=_mt4(t);try{if(t&&t.props&&t.props.includes('heavy')&&!isG(t)&&schoolOf(t.w)==='earth')return m+Math.round(t.vig*.3);}catch(e){}return m;};
 window.MTW=function(w,vig){const d=W[w];if(!d||d.t!==NOUN)return null;return window.MT({w,props:d.props,vig:vig!=null?vig:d.vig});};
+/* flyers: only a flyer may block a flyer (enforced below) */
+const _ed0=eligibleDef;eligibleDef=function(S,ds,att){const r=_ed0.apply(this,arguments);try{if(att&&(att.props.includes('flying')||att.props.includes('bird')))return r.filter(t=>t.props.includes('flying')||t.props.includes('bird'));}catch(e){}return r;};
 /* tuning round 5: a flyer up in the air cannot stand in the way of something on the ground, unless it is on guard */
 const _ed=eligibleDef;eligibleDef=function(S,ds,att){const r=_ed.apply(this,arguments);try{if(att&&!(att.props.includes('flying')||att.props.includes('bird')))return r.filter(t=>!(t.props.includes('flying')||t.props.includes('bird'))||t.st.guarding);}catch(e){}return r;};
 const _bi=VERBF.bite;VERBF.bite=function(S,who,subs,objs,c){const lb=(subs||[]).some(e=>e&&e.k==='t'&&e.t.props.includes('beast')&&schoolOf(e.t.w)==='life');const m0=c.mult;if(lb)c.mult=(c.mult||1)*1.25;try{return _bi.apply(this,arguments);}finally{c.mult=m0;}};
@@ -124,7 +126,7 @@ const _rs6=resolve;resolve=function(S,who,sen){const r=_rs6.apply(this,arguments
 /* Air: the squall carries each flyer at half its might */
 /* text for the reworked words */
 const G=(w,s)=>{if(W[w])W[w].gloss=s;};
-G('guard',(W.guard.gloss||'').replace(/\s*$/,'')+' A thing on guard can stop even a flyer.');
+G('guard',(W.guard.gloss||'').replace(/\s*$/,'')+' Guarding gives no wings: only a flyer can stop a flyer.');
 G('seep','Hits for half its might. Nothing can block it. Any liquid or sea-born thing can seep: it finds the gap.');
 G('crush','A heavy thing crushes for its might +50%. If it destroys the thing in its way, what is left over goes through to the rival. A frozen or brittle defender shatters.');
 })();

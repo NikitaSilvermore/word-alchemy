@@ -182,7 +182,6 @@ eng = RP(eng,"if(S.cfg.gw2&&t.props.includes('metal')&&t.w!=='slag'","if(S.cfg.g
 eng = RP(eng,"addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');","if("+D13+"){addThing(S,'carrion',t.side,t.side,true);say(S,'Carrion is left behind.');}else{addThing(S,'carrion',1-t.side,1-t.side,true);say(S,'Carrion is left for the other side.');}")
 eng = RP(eng,"say(S,'The sum: '+s+' = '+Math.max(1,n+b+nv+ex+pv)+'.','q');","{const raw=n+b+nv+ex+pv;say(S,'The sum: '+s+' = '+(("+D13+")&&raw<1?raw+', at least 1':Math.max(1,raw))+'.','q');}")
 eng = RP(eng,"Math.max(1,Math.ceil(t.vig*0.1))","(window.DTV>=17?Math.max(1,Math.ceil(t.vig*0.2*Math.min(3,t.st.poisoned||1))):Math.max(1,Math.ceil(t.vig*0.1)))")
-eng = eng.replace("(!fly||flies(t))","(!fly||flies(t)||(window.DTV>=17&&t.st.guarding))")
 eng = RP(eng,"if(p.poisoned>0){p.poisoned--;say(S,'The poison works.');damage(S,P(i),S.cfg.gw2?3:2,'poison');}","if(p.poisoned>0){const pd=p.poisoned;p.poisoned--;say(S,'The poison works.');damage(S,P(i),(S.cfg.gw2?3:2)+(window.DTV>=17?pd:0),'poison');}")
 eng = RP(eng,"p.attune&&i===0&&S.turn>2?ATTUNEB:0","p.attune&&(i===0||window.DTV>=16)&&S.turn>2?ATTUNEB:0")
 eng = RP(eng,"if(m){say(S,'The foundry works.');climb(S,m,1);}","if(m&&!("+D13+")){say(S,'The foundry works.');climb(S,m,1);}")
