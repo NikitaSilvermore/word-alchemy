@@ -1,0 +1,6 @@
+dur1_remember 10080 first 55.0 rounds 8.9 sd 1.8 fuse 0.27 evo 0.27 raised 0.28 decided 41.0 comeb 23.4 finH 1.50 openVar 19.6 wr 20.4-65.7 sd 10.0 outside 26/36
+dur1_forget 10080 first 53.2 rounds 9.6 sd 2.1 fuse 0.28 evo 0.27 raised 0.27 decided 42.7 comeb 22.6 finH 1.38 openVar 19.6 wr 21.3-67.3 sd 10.7 outside 19/36
+dur1.5_remember 10080 first 54.5 rounds 9.1 sd 1.8 fuse 0.29 evo 0.35 raised 0.20 decided 41.5 comeb 27.2 finH 1.37 openVar 18.9 wr 43.8-55.4 sd 2.5 outside 3/36
+dur1.5_forget 10080 first 53.3 rounds 9.8 sd 2.1 fuse 0.30 evo 0.36 raised 0.19 decided 44.7 comeb 26.5 finH 1.29 openVar 18.9 wr 30.9-64.5 sd 7.9 outside 21/36
+dur2_remember 10080 first 54.1 rounds 9.2 sd 1.8 fuse 0.31 evo 0.38 raised 0.15 decided 42.4 comeb 28.6 finH 1.35 openVar 18.4 wr 33.2-65.4 sd 7.0 outside 16/36
+dur2_forget 10080 first 52.8 rounds 10.0 sd 2.2 fuse 0.31 evo 0.39 raised 0.16 decided 44.9 comeb 27.1 finH 1.24 openVar 18.4 wr 26.3-74.3 sd 11.4 outside 25/36
