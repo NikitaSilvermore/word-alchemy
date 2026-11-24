@@ -9,20 +9,20 @@ const absorb=(G,t,o)=>{/* t takes o into itself: stats, kinds and nature */buff(
 
 /* =========================== LIFE · The Long Enclosure =========================== */
 /* The Orchard: Variety */
-T('pear','life','orchard',2,1,4,'plant tree fruit living','Variety: +1 strike for each differently named thing beside it (up to 4), and each of your turns you gain 1 life for each different fruit you grow (up to 3). Sameness: if two things beside it share a name, it gives nothing.',
- {atk(G,t){const s={};let dup=false,n=0;for(const x of mine(G,t.own)){if(x===t)continue;if(s[x.id])dup=true;else{s[x.id]=1;n++;}if(x.id==='pear')dup=true;}return dup?0:Math.min(4,n);},
-  turn(G,t){const s={};let dup=false;const all={};for(const x of mine(G,t.own)){if(x!==t&&(all[x.id]||x.id==='pear'))dup=true;all[x.id]=1;if(x.kw.fruit)s[x.id]=1;}if(!dup)life(G,t.own,Math.min(3,Object.keys(s).length));}},'S|new (the pear of the Atlas)');
+T('pear','life','orchard',2,1,4,'plant tree fruit living','Variety: +1 strike for each differently named thing beside it (up to 3), and each of your turns you gain 1 life for each different fruit you grow (up to 2). Sameness: if two things beside it share a name, it gives nothing.',
+ {atk(G,t){const s={};let dup=false,n=0;for(const x of mine(G,t.own)){if(x===t)continue;if(s[x.id])dup=true;else{s[x.id]=1;n++;}if(x.id==='pear')dup=true;}return dup?0:Math.min(3,n);},
+  turn(G,t){const s={};let dup=false;const all={};for(const x of mine(G,t.own)){if(x!==t&&(all[x.id]||x.id==='pear'))dup=true;all[x.id]=1;if(x.kw.fruit)s[x.id]=1;}if(!dup)life(G,t.own,Math.min(2,Object.keys(s).length));}},'S|new (the pear of the Atlas)');
 T('apple','life','orchard',2,2,4,'plant tree fruit living','Each of your turns it mends your most hurt thing by 2.',{turn(G,t){const x=most(G,t.own);if(x)mend(G,x,2);}},'C|adapts aloe');
 T('quince','life','orchard',2,1,5,'plant tree fruit living','Slow to sweeten: after 2 of your turns it gains +2/+2.',{turn(G,t){if(t.age===2)buff(G,t,2,2);}},'U|new');
 T('blossom','life','orchard',1,0,2,'plant flower living','Stands for 2 turns. When it arrives your trees gain +0/+2. When it falls, you draw a word.',{arrive(G,t){for(const x of mine(G,t.own))if(x.kw.tree)buff(G,x,0,2);},die(G,t){draw(G,t.own,1);}},'C|new').left=2;
 A('graft','life','orchard',2,'One of your plants takes your weakest other plant into itself: the sum of their strike and stand, and both natures.',{use(G,t){const o=low(mine(G,t.own).filter(x=>x!==t&&x.kw.plant));if(o)absorb(G,t,o);},need:(t,G)=>!!t.kw.plant&&mine(G,t.own).some(x=>x!==t&&x.kw.plant)},'U|keeps graft');
-S('windfall','life','orchard',1,'Fruit on the ground: you gain 2 life for each fruit tree you have, and draw a word.',(G,p)=>{life(G,p,2*cnt(mine(G,p),'fruit'));draw(G,p,1);},'C|keeps windfall (new sense)',{keep:true});
+S('windfall','life','orchard',1,'Fruit on the ground: you gain 2 life for each fruit tree you have, and draw a word.',(G,p)=>{life(G,p,2*cnt(mine(G,p),'fruit'));draw(G,p,1);},'C|keeps windfall (new sense)',{});
 T('orchard keeper','life','orchard',3,2,5,'person living','Your trees have +1 strike. When a tree of yours dies, a sapling is planted.',{aura:(G,t,o)=>o.kw.tree?1:0,anyDie(G,t,o){if(o.own===t.own&&o.kw.tree)put(G,t.own,'sapling');}},'R|adapts druid');
 /* Hedgerow and pack */
-T('wolf','life','hedgerow',2,2,3,'beast living','Pack: it arrives with +1/+1 for each other beast of yours.',{arrive(G,t){const n=cnt(mine(G,t.own),'beast')-1;if(n>0)buff(G,t,n,n);}},'C|keeps wolf');
+T('wolf','life','hedgerow',2,2,2,'beast living','Pack: it arrives with +1/+1 for each other beast of yours.',{arrive(G,t){const n=cnt(mine(G,t.own),'beast')-1;if(n>0)buff(G,t,n,n);}},'C|keeps wolf');
 T('hare','life','hedgerow',1,1,2,'beast living swift','Swift.',null,'C|keeps hare');
 T('hound','life','hedgerow',2,2,3,'beast living guardian','Guardian.',null,'C|new');
-T('stag','life','hedgerow',3,4,4,'beast living','Your other beasts have +1 strike.',{aura:(G,t,o)=>o.kw.beast?1:0},'R|keeps stag');
+T('stag','life','hedgerow',3,3,4,'beast living','Your other beasts have +1 strike.',{aura:(G,t,o)=>o.kw.beast?1:0},'R|keeps stag');
 T('bramble','life','hedgerow',2,1,5,'plant living thorny guardian','Guardian. Thorny: whatever strikes it takes 1.',null,'C|keeps bramble');
 T('fox','life','hedgerow',2,3,2,'beast living hidden','Hidden: the rival cannot single it out.',null,'U|new');
 S('stampede','life','hedgerow',3,'Your beasts charge the strongest rival thing with all their strike together. What is left over hits the rival.',(G,p)=>{let s=0;for(const x of mine(G,p))if(x.kw.beast)s+=E.strikeOf(G,x);if(!s)return;const f=top(foes(G,p));if(!f){face(G,1-p,s,'stampede');return;}const o=s-f.st;hurt(G,f,s,'stampede');if(o>0)face(G,1-p,o,'stampede','crush');},'R|keeps stampede',{ok:(G,p)=>mine(G,p).some(x=>x.kw.beast)});
@@ -51,15 +51,15 @@ T('bee','life','tiny',2,2,2,'insect living tiny flying','Tiny, flies. When it hi
 T('weevil','life','tiny',1,1,1,'insect living tiny','Tiny. When it arrives it eats a rival plant of stand 3 or less; if there is none, it gains +1/+1.',{arrive(G,t){const f=low(seen(G,t.own).filter(x=>x.kw.plant));if(f&&f.st<=3)kill(G,f,'weevil');else buff(G,t,1,1);}},'C|adapts locust');
 Q('magnify','life','tiny',2,'Under the glass: a tiny thing doubles its strike and stand and is tiny no longer. Anything else gains +1/+1.',{apply(G,t){if(t.kw.tiny){buff(G,t,E.strikeOf(G,t),t.st);delete t.kw.tiny;}else buff(G,t,1,1);}},'S|new (Hooke’s Micrographia)');
 /* Life support */
-T('bear','life','',4,4,7,'beast living heavy','Heavy: its blows carry through.',null,'U|keeps bear');
-T('boar','life','',3,4,4,'beast living heavy','Heavy: its blows carry through.',null,'U|keeps boar');
+T('bear','life','',4,4,7,'beast living heavy','Heavy: wind and water cannot move it.',null,'U|keeps bear');
+T('boar','life','',3,4,4,'beast living heavy swift','Heavy, swift.',null,'U|keeps boar');
 T('nettle','life','',1,1,3,'plant herb living thorny','Thorny: whatever strikes it takes 1.',null,'C|keeps nettle');
 A('bite','life','',1,'It learns to bite: +1 strike, +2 for a beast.',{learn:true,atk:(G,t)=>t.kw.beast?2:1},'C|keeps bite');
-S('mend','life','',1,'You gain 3 life, and your most hurt thing heals fully.',(G,p)=>{life(G,p,3);const x=most(G,p);if(x)x.st=x.mx;},'C|keeps mend',{keep:true});
+S('mend','life','',1,'You gain 3 life, and your most hurt thing heals fully.',(G,p)=>{life(G,p,3);const x=most(G,p);if(x)x.st=x.mx;},'C|keeps mend',{});
 S('tame','life','',3,'A rival beast of stand 4 or less comes to your side.',(G,p)=>{const f=top(seen(G,p).filter(x=>x.kw.beast&&x.st<=4&&!x.kw.named));if(!f||G.pl[p].board.length>=G.cfg.field)return;E.exile(G,f);f.own=p;f.fresh=true;f.guard=true;G.pl[p].board.push(f);},'R|keeps tame',{ok:(G,p)=>G.pl[p].board.length<G.cfg.field&&seen(G,p).some(x=>x.kw.beast&&x.st<=4&&!x.kw.named)});
 A('ripen','life','',1,'A plant of yours gains +1/+2. Anything on a ladder also climbs a rung.',{use(G,t){if(DB[t.id].lad)E.evolve(G,t,DB[t.id].lad.to);if(t.kw.plant)buff(G,t,1,2);},need:t=>!!t.kw.plant||!!DB[t.id].lad},'C|keeps ripen');
 Q('thorny','life','',1,'+0/+2, and whatever strikes it takes 1.',{apply(G,t){buff(G,t,0,2);t.kw.thorny=1;}},'C|keeps thorny');
-Q('feral','life','',1,'Wild: +2 strike, and it is swift.',{apply(G,t){buff(G,t,2,0);t.kw.swift=1;t.fresh=false;},need:t=>!t.kw.structure},'C|keeps feral');
+Q('feral','life','',1,'Wild: +1 strike, and it is swift.',{apply(G,t){buff(G,t,1,0);t.kw.swift=1;t.fresh=false;},need:t=>!t.kw.structure},'C|keeps feral');
 Q('sacred','life','',1,'+0/+1, and the rival cannot single it out.',{apply(G,t){buff(G,t,0,1);t.kw.hidden=1;t.kw.sacred=1;}},'C|keeps sacred');
 W('spring','life','',1,'While it lasts: Life things have +1 strike, and each turn your weakest thing gains +0/+1.',{atk:schAtk('life'),turn(G,p){const x=low(G.pl[p].board);if(x&&G.wx.own===p)buff(G,x,0,1);}},'C|keeps spring');
 W('harvest','life','',2,'While it lasts: Life things have +1 strike, and whoever called it gains 1 life a turn for each plant they grow (up to 3).',{atk:schAtk('life'),turn(G,p){if(G.wx.own===p)life(G,p,Math.min(3,cnt(G.pl[p].board,'plant')));}},'U|keeps harvest');
@@ -67,13 +67,13 @@ S('abundance','life','',3,'Every living thing of yours gains +1/+2.',(G,p)=>{for
 
 /* =========================== ROT · Sallow Fen =========================== */
 /* The paper mill: Salvage */
-T('rag','rot','paper',1,0,2,'paper','When it dies, a spell comes back from your graveyard to your hand.',{die(G,t){raise(G,t.own,c=>c.type==='spell','hand');}},'C|new');
-T('pulp','rot','paper',1,0,3,'paper','When it arrives, the newest thing in your graveyard goes to the bottom of your deck, and you draw a word.',{arrive(G,t){const a=pile(G,t.own);for(let i=a.length-1;i>=0;i--)if(DB[a[i]].type==='thing'){G.pl[t.own].deck.unshift(a.splice(i,1)[0]);break;}draw(G,t.own,1);}},'C|new');
+T('rag','rot','paper',1,1,2,'paper','When it dies, a spell comes back from your graveyard to your hand.',{die(G,t){raise(G,t.own,c=>c.type==='spell','hand');}},'C|new');
+T('pulp','rot','paper',1,1,3,'paper','When it arrives, the newest thing in your graveyard goes to the bottom of your deck, and you draw a word.',{arrive(G,t){const a=pile(G,t.own);for(let i=a.length-1;i>=0;i--)if(DB[a[i]].type==='thing'){G.pl[t.own].deck.unshift(a.splice(i,1)[0]);break;}draw(G,t.own,1);}},'C|new');
 T('palimpsest','rot','paper',2,0,1,'paper','Written over: it arrives as the strongest thing in either graveyard, with its strike, stand and nature, under its own name.',{arrive(G,t){let b=null;for(let s=0;s<2;s++)for(const id of pile(G,s)){const d=DB[id];if(d.type==='thing'&&id!=='palimpsest'&&(!b||d.sk+d.st>b.sk+b.st))b=d;}if(!b)return;t.bsk=b.sk;t.mx=t.st=Math.max(1,Math.round(b.st*G.cfg.dur));for(const k of b.kw)t.kw[k]=1;t.also=[b.id];t.title='palimpsest ('+b.name+')';}},'R|adapts unnamed');
-T('papermaker','rot','paper',2,1,4,'person living','The first time a thing of yours dies each turn, you draw a word.',{anyDie(G,t,o){if(o.own===t.own&&t.ctr!==G.turn){t.ctr=G.turn;draw(G,t.own,1);}}},'U|new');
-S('page','rot','paper',1,'A recycled page: the newest thing in your graveyard returns to your hand.',(G,p)=>{raise(G,p,c=>c.type==='thing','hand');},'C|new',{ok:(G,p)=>pile(G,p).some(id=>DB[id].type==='thing'),keep:true});
+T('papermaker','rot','paper',2,2,4,'person living','Whenever another thing of yours dies, you draw a word.',{anyDie(G,t,o){if(o.own===t.own)draw(G,t.own,1);}},'U|new');
+S('page','rot','paper',1,'A recycled page: the newest thing in your graveyard returns to your hand.',(G,p)=>{raise(G,p,c=>c.type==='thing','hand');},'C|new',{ok:(G,p)=>pile(G,p).some(id=>DB[id].type==='thing')});
 S('salvage','rot','paper',2,'Two words come back from your graveyard to your hand.',(G,p)=>{raise(G,p,c=>c.id!=='salvage','hand');raise(G,p,c=>c.id!=='salvage','hand');},'U|adapts memory',{ok:(G,p)=>pile(G,p).length>0});
-T('ragpicker','rot','paper',2,2,3,'person living hidden','Hidden. When it hits the rival, the newest word in their graveyard comes to your hand.',{hit(G,t,tg){if(!tg){const a=pile(G,opp(t));if(a.length)G.pl[t.own].hand.push(a.pop());}}},'U|adapts thief');
+T('ragpicker','rot','paper',2,3,3,'person living hidden','Hidden. When it hits the rival, the newest word in their graveyard comes to your hand.',{hit(G,t,tg){if(!tg){const a=pile(G,opp(t));if(a.length)G.pl[t.own].hand.push(a.pop());}}},'U|adapts thief');
 /* The peat bog: Poison */
 T('adder','rot','bog',2,2,3,'beast serpent living toxic','Toxic: its hits poison.',null,'C|keeps adder');
 T('hemlock','rot','bog',1,0,3,'plant herb living toxic','When it dies, the rival takes 2 doses of poison.',{die(G,t){psn(G,opp(t),2);}},'C|keeps hemlock');
@@ -85,10 +85,10 @@ T('bog','rot','bog',2,0,5,'structure','Each of your turns it holds the strongest
 /* The mushroom wood: death feeds it */
 T('toadstool','rot','mushroom',1,0,3,'fungus living toxic','Gains +1/+1 whenever anything dies.',{anyDie(G,t){buff(G,t,1,1);}},'C|keeps toadstool');
 T('spore','rot','mushroom',1,1,1,'fungus living flying','Flies, and lasts 2 turns. When it dies, the strongest living rival thing takes 2 doses of poison.',{die(G,t){const f=top(foes(G,t.own).filter(x=>x.kw.living));if(f)tpsn(G,f,2);}},'C|keeps spore').left=2;
-T('mycelium','rot','mushroom',2,0,4,'fungus living structure','Each of your turns the rival takes 1 for every 3 words in your graveyard (up to 3).',{turn(G,t){const n=Math.min(3,Math.floor(pile(G,t.own).length/3));if(n)face(G,opp(t),n,'mycelium','poison');}},'R|new');
+T('mycelium','rot','mushroom',2,0,4,'fungus living structure','Each of your turns the rival takes 1 for every 2 words in your graveyard (up to 3).',{turn(G,t){const n=Math.min(3,Math.floor(pile(G,t.own).length/2));if(n)face(G,opp(t),n,'mycelium','poison');}},'R|new');
 T('rotlog','rot','mushroom',2,0,5,'structure','When a living rival thing dies, the rival takes a dose of poison. When a living thing of yours dies, a spore rises.',{anyDie(G,t,o){if(!o.kw.living)return;if(o.own===t.own){if(o.id!=='spore')put(G,t.own,'spore');}else psn(G,opp(t),1);}},'U|adapts barrow');
-T('puffball','rot','mushroom',1,0,2,'fungus living','When it dies, every living rival thing is poisoned.',{die(G,t){for(const f of foes(G,t.own))tpsn(G,f,1);}},'C|new');
-T('rat','rot','mushroom',1,2,1,'beast living toxic','Toxic. When it dies, the strongest living rival thing is poisoned.',{die(G,t){const f=top(foes(G,t.own).filter(x=>x.kw.living));if(f)tpsn(G,f,1);}},'C|keeps rat');
+T('puffball','rot','mushroom',1,0,2,'fungus living','When it dies, every living rival thing is poisoned and the rival takes a dose.',{die(G,t){for(const f of foes(G,t.own))tpsn(G,f,1);psn(G,opp(t),1);}},'C|new');
+T('rat','rot','mushroom',1,2,2,'beast living toxic','Toxic. When it dies, the strongest living rival thing is poisoned.',{die(G,t){const f=top(foes(G,t.own).filter(x=>x.kw.living));if(f)tpsn(G,f,1);}},'C|keeps rat');
 S('decay','rot','mushroom',2,'Destroy your weakest thing: the strongest rival thing loses that much stand, +2.',(G,p)=>{const x=low(mine(G,p));if(!x)return;const n=x.st+2;kill(G,x,null);const f=top(seen(G,p));if(f)hurt(G,f,n,'decay');},'U|keeps decay',{ok:(G,p)=>mine(G,p).length>0});
 /* Fermentation, undertakers and physicians: what is buried works on */
 T('yeast','rot','ferment',1,0,2,'fungus living','Each of your turns your weakest other thing gains +1/+1.',{turn(G,t){const x=low(mine(G,t.own).filter(y=>y!==t));if(x)buff(G,x,1,1);}},'C|new');
@@ -99,13 +99,13 @@ T('barrow','rot','ferment',3,0,6,'structure stone','Each of your turns a shade r
 T('ghost','rot','ferment',2,2,2,'spirit flying hidden','Flies. Hidden.',null,'U|keeps ghost');
 T('mould','rot','ferment',1,0,3,'fungus living','Each of your turns the weakest rival thing loses 1 stand for good.',{turn(G,t){const f=low(foes(G,t.own));if(f)buff(G,f,0,-1);}},'C|new');
 /* Rot support */
-T('shadow','rot','',1,2,1,'spirit hidden','Hidden.',null,'C|keeps shadow');
-T('spider','rot','',2,1,4,'beast living toxic guardian reach','Guardian, toxic. Its web reaches flyers: it can block them.',null,'U|keeps spider');
+T('shadow','rot','',1,2,2,'spirit hidden','Hidden.',null,'C|keeps shadow');
+T('spider','rot','',2,2,4,'beast living toxic guardian reach','Guardian, toxic. Its web reaches flyers: it can block them.',null,'U|keeps spider');
 T('yew','rot','',2,0,5,'plant tree living toxic guardian thorny','Guardian. Every part is poison: whatever strikes it takes 1.',null,'C|keeps yew');
 T('scorpion','rot','',3,3,4,'beast living toxic thorny','Toxic. Whatever strikes it takes 1.',null,'U|keeps scorpion');
-S('wither','rot','',2,'The strongest rival thing loses 3 stand; a plant loses 5.',(G,p)=>{const f=top(seen(G,p));if(f)hurt(G,f,f.kw.plant?5:3,'wither');},'C|keeps wither',{ok:(G,p)=>seen(G,p).length>0,keep:true});
-S('rust','rot','',1,'The strongest rival metal or structure loses 4 stand.',(G,p)=>{const f=top(seen(G,p).filter(x=>x.kw.metal||x.kw.structure));if(f)hurt(G,f,4,'rust');},'C|keeps rust',{ok:(G,p)=>seen(G,p).some(x=>x.kw.metal||x.kw.structure),keep:true});
-S('haunt','rot','',2,'The strongest rival thing goes back to its keeper’s hand. Sacred and named things cannot be haunted.',(G,p)=>{const f=top(seen(G,p).filter(x=>!x.kw.sacred&&!x.kw.named));if(f)bounce(G,f);},'U|keeps haunt',{ok:(G,p)=>seen(G,p).some(x=>!x.kw.sacred&&!x.kw.named),keep:true});
+S('wither','rot','',2,'The strongest rival thing loses 3 stand; a plant loses 5.',(G,p)=>{const f=top(seen(G,p));if(f)hurt(G,f,f.kw.plant?5:3,'wither');},'C|keeps wither',{ok:(G,p)=>seen(G,p).length>0});
+S('rust','rot','',1,'The strongest rival metal or structure loses 4 stand.',(G,p)=>{const f=top(seen(G,p).filter(x=>x.kw.metal||x.kw.structure));if(f)hurt(G,f,4,'rust');},'C|keeps rust',{ok:(G,p)=>seen(G,p).some(x=>x.kw.metal||x.kw.structure)});
+S('haunt','rot','',2,'The strongest rival thing goes back to its keeper’s hand. Sacred and named things cannot be haunted.',(G,p)=>{const f=top(seen(G,p).filter(x=>!x.kw.sacred&&!x.kw.named));if(f)bounce(G,f);},'U|keeps haunt',{ok:(G,p)=>seen(G,p).some(x=>!x.kw.sacred&&!x.kw.named)});
 A('poison','rot','',1,'It learns poison: its hits poison, and the strongest living rival thing is poisoned now.',{learn:true,use(G,t){t.kw.toxic=1;const f=top(seen(G,t.own).filter(x=>x.kw.living));if(f)tpsn(G,f,1);}},'C|keeps poison');
 Q('occult','rot','',1,'Hidden: the rival cannot single it out, and its next strike cannot be blocked.',{apply(G,t){t.kw.hidden=1;t.unbl=1;}},'C|keeps occult, masked');
 Q('feeble','rot','',1,'A rival thing weakens: −2 strike, and it takes 2.',{foe:true,apply(G,t){t.bsk-=2;hurt(G,t,2,'feeble');}},'C|keeps feeble');
@@ -116,22 +116,22 @@ T('abyss','rot','',3,0,4,'structure','The first thing of yours destroyed each tu
 /* =========================== THE WORD · Quire =========================== */
 /* The printing house: Editions */
 T('press','word','press',3,0,6,'structure','The first spell you speak each turn is printed: its words work twice.',{play(G,t,c){if(c.type==='spell'&&t.ctr!==G.turn&&G.over==null){t.ctr=G.turn;E.say(G,'The press prints it again.');c.cast(G,t.own);}}},'R|adapts echo');
-T('type','word','press',1,0,3,'structure metal speaker','Movable type. A speaker: your spells of The Word hit 1 harder.',null,'C|new');
+T('type','word','press',1,0,3,'structure metal speaker','Movable type. A speaker: the first spell of The Word you speak each turn hits 1 harder.',null,'C|new');
 T('ink','word','press',1,0,2,'liquid','A well of ink, lasting 4 turns: 1 more breath each of your turns.',{turn(G,t){br(G,t.own,1);}},'C|keeps ink').left=4;
 S('edition','word','press',2,'A new edition: two spells come back from your graveyard to your hand.',(G,p)=>{raise(G,p,c=>c.type==='spell'&&c.id!=='edition','hand');raise(G,p,c=>c.type==='spell'&&c.id!=='edition','hand');},'U|new',{ok:(G,p)=>pile(G,p).some(id=>DB[id].type==='spell'&&id!=='edition')});
 T('printer','word','press',2,2,4,'person living speaker','A speaker. Gains +1 strike whenever you speak a spell.',{play(G,t,c){if(c.type==='spell')buff(G,t,1,0);}},'U|new');
 S('proof','word','press',1,'Read the proof: draw two words.',(G,p)=>draw(G,p,2),'C|adapts omen');
 S('pamphlet','word','press',1,'The rival takes 1 for each spell you have spoken this turn, this one included.',(G,p)=>face(G,1-p,G.pl[p].spells,'pamphlet','spell'),'C|adapts rumour');
 /* Scribes and the colleges: Speakers */
-T('scribe','word','scribes',1,1,4,'person living speaker','A speaker: your spells of The Word hit 1 harder (up to 3 speakers).',null,'C|keeps scribe');
+T('scribe','word','scribes',1,1,4,'person living speaker','A speaker: the first spell of The Word you speak each turn hits 1 harder (up to 3 speakers).',null,'C|keeps scribe');
 T('bard','word','scribes',2,2,4,'person living speaker','A speaker. The first spell you speak each turn, you draw a word.',{play(G,t,c){if(c.type==='spell'&&t.ctr!==G.turn){t.ctr=G.turn;draw(G,t.own,1);}}},'U|keeps bard');
 T('hermit','word','scribes',2,1,5,'person living speaker hidden','A speaker. Hidden: the rival cannot single him out.',null,'U|keeps hermit');
 Q('rune','word','scribes',1,'Carved with a rune: +1/+1, and it counts as a speaker.',{apply(G,t){buff(G,t,1,1);t.kw.speaker=1;}},'C|keeps rune');
 S('omen','word','scribes',2,'Read the omen: draw two words.',(G,p)=>draw(G,p,2),'U|keeps omen');
-S('silence','word','scribes',2,'The rival drops two words from their hand.',(G,p)=>{dis(G,1-p);dis(G,1-p);},'U|keeps silence');
+S('silence','word','scribes',2,'The rival drops two words from their hand.',(G,p)=>{dis(G,1-p);dis(G,1-p);},'U|keeps silence',{once:true});
 S('gnosis','word','scribes',3,'Draw three words. For the rest of this turn nothing can block your things.',(G,p)=>{draw(G,p,3);G.pl[1-p].noblk=G.turn;},'R|keeps gnosis');
 /* Names and translators: the Margin */
-A('name','word','naming',1,'Give a thing a name of its own: +1/+1, and no rival word can send it away or take it. Named clay wakes as a golem.',{use(G,t){t.kw.named=1;if(t.id==='clay'){E.evolve(G,t,'golem');t.tmp=t.tmp||0;}buff(G,t,1,1);}},'C|keeps name');
+A('name','word','naming',1,'Give a thing a name of its own: +1/+1, and no rival word can send it away or take it. Clay that has stood a turn wakes, named, as a golem.',{use(G,t){t.kw.named=1;if(t.id==='clay'&&!t.fresh){E.evolve(G,t,'golem');}buff(G,t,1,1);}},'C|keeps name');
 T('translator','word','naming',2,1,4,'person living speaker','A speaker. She carries meaning across: the first word you play each turn costs 1 less.',{turn(G,t){G.pl[t.own].red=Math.max(G.pl[t.own].red,1);}},'U|new');
 Q('resonant','word','naming',2,'One string, many notes: +1/+1 for each other thing anywhere that shares its name, and whatever harms it harms every thing of that name, on both sides.',{apply(G,t){let n=0;for(let s=0;s<2;s++)for(const x of G.pl[s].board)if(x!==t&&x.id===t.id)n++;buff(G,t,n,n);t.kw.resonant=1;}},'S|keeps resonant (Fludd’s monochord)');
 T('unnamed','word','naming',2,0,1,'','A thing with no word: it arrives with the strike and stand of the strongest thing opposite.',{arrive(G,t){const f=top(foes(G,t.own));if(f){t.bsk=E.strikeOf(G,f);t.mx=t.st=f.st;}}},'U|keeps unnamed');
@@ -139,7 +139,7 @@ S('true name','word','naming',3,'Speak the true name of the strongest rival thin
 S('enchant','word','naming',1,'Your strongest thing shakes off every bad condition, heals fully and may act again.',(G,p)=>{const t=top(mine(G,p).filter(x=>!x.kw.structure))||top(mine(G,p));if(!t)return;t.frz=0;t.burn=0;t.psn=0;t.wet=0;t.st=Math.max(t.st,t.mx);t.acted=false;t.fresh=false;},'C|keeps enchant',{ok:(G,p)=>mine(G,p).length>0});
 Q('twin','word','naming',3,'There are two of it: a second one arrives beside it.',{apply(G,t){const c=put(G,t.own,t.id);if(c){c.tmp=1;c.bsk=t.bsk;c.st=t.st;c.mx=t.mx;for(const k in t.kw)c.kw[k]=1;}},need:(t,G)=>G.pl[t.own].board.length<G.cfg.field},'R|keeps twin');
 /* The publisher's ledger: accumulation */
-S('loan','word','ledger',0,'3 more breath now. The debt: 1 less breath next turn.',(G,p)=>{br(G,p,3);G.pl[p].tax+=1;},'C|keeps loan, debt',{keep:true});
+S('loan','word','ledger',0,'3 more breath now. The debt: 1 less breath next turn.',(G,p)=>{br(G,p,3);G.pl[p].tax+=1;},'C|keeps loan, debt',{});
 T('miser','word','ledger',2,1,5,'person living speaker','A speaker. He keeps what you do not spend: up to 2 unspent breath come back next turn.',{end(G,t){t.ctr=Math.min(2,G.pl[t.own].breath);},turn(G,t){if(t.ctr){br(G,t.own,t.ctr);t.ctr=0;}}},'U|keeps miser');
 T('ledger','word','ledger',2,0,4,'structure paper','Each of your turns it gains a mark. At 3 marks it pays out: you draw two words and gain 2 breath, and it starts again.',{turn(G,t){t.ctr++;if(t.ctr>=3){t.ctr=0;draw(G,t.own,2);br(G,t.own,2);}}},'U|new');
 T('publisher','word','ledger',3,2,5,'person living speaker','A speaker. Whenever you play your third word in a turn, the rival takes 3.',{play(G,t){if(G.pl[t.own].pc===3)face(G,opp(t),3,'publisher','spell');}},'R|new');
@@ -147,26 +147,26 @@ Q('measure','word','ledger',1,'A rival thing is measured: it loses every gain it
 T('surveyor','word','ledger',2,2,3,'person living','When he arrives, if the rival has more things than you, you draw two words; otherwise one.',{arrive(G,t){draw(G,t.own,foes(G,t.own).length>mine(G,t.own).length?2:1);}},'U|new');
 T('time','word','ledger',3,0,3,'structure clock','The pendulum. Everything else of yours that works at the start of your turn works twice, and your ladders climb twice as fast.',null,'S|keeps time (Huygens’s clock)');
 /* Word support */
-T('word','word','',2,1,5,'','Grows by +1/+1 every time you speak a spell or call a weather.',{play(G,t,c){if(spellish(c))buff(G,t,1,1);}},'U|keeps word');
+T('word','word','',2,2,5,'','Grows by +0/+1 every time you speak a spell or call a weather, and by +1 strike every second time.',{play(G,t,c){if(spellish(c)){t.ctr++;buff(G,t,t.ctr%2===0?1:0,1);}}},'U|keeps word');
 T('alchemist','word','',3,2,5,'person living speaker','A speaker. Your fusions cost 1 less, and each fusion you make gives you a word.',null,'R|keeps alchemist');
 S('echo','word','',1,'The newest spell in your graveyard is spoken again.',(G,p)=>{const a=pile(G,p);for(let i=a.length-1;i>=0;i--){const d=DB[a[i]];if(d.type==='spell'&&d.id!=='echo'){d.cast(G,p);return;}}},'U|keeps echo',{ok:(G,p)=>pile(G,p).some(id=>DB[id].type==='spell'&&id!=='echo')});
 S('reckoning','word','',3,'Every rival thing of stand 3 or less is destroyed.',(G,p)=>{for(const f of foes(G,p).slice())if(f.st<=3)kill(G,f,'reckoning');},'R|keeps reckoning');
 S('stammer','word','',2,'Every word the rival says next turn costs 1 more breath.',(G,p)=>{G.pl[1-p].stamNext=1;},'U|keeps stammer');
-S('scream','word','',1,'Everything opposite takes 1.',(G,p)=>{for(const f of foes(G,p).slice())hurt(G,f,1,'scream');},'C|keeps scream');
+S('scream','word','',2,'Everything opposite takes 1.',(G,p)=>{for(const f of foes(G,p).slice())hurt(G,f,1,'scream');},'C|keeps scream');
 S('dispel','word','',1,'The weather ends, and the strongest rival thing loses every gain and every quality.',(G,p)=>{G.wx=null;const t=top(seen(G,p));if(t){DB.measure.apply(G,t);delete t.kw.measured;for(const k of ['guardian','hidden','flying','toxic','thorny','speaker','swift'])if(!DB[t.id].kw.includes(k))delete t.kw[k];}},'C|keeps dispel, doubt');
 Q('protect','word','',1,'+0/+2, and the rival cannot single it out.',{apply(G,t){buff(G,t,0,2);t.kw.hidden=1;}},'C|keeps protect, hermetic');
 Q('eternal','word','',2,'Destroyed, it returns to its keeper’s hand.',{apply(G,t){t.kw.undying=1;}},'R|keeps eternal');
-S('summon','word','',2,'A rival thing of stand 3 or less comes to your side.',(G,p)=>{const f=top(seen(G,p).filter(x=>x.st<=3&&!x.kw.named));if(!f||G.pl[p].board.length>=G.cfg.field)return;E.exile(G,f);f.own=p;f.fresh=true;f.guard=true;G.pl[p].board.push(f);},'U|keeps summon',{ok:(G,p)=>G.pl[p].board.length<G.cfg.field&&seen(G,p).some(x=>x.st<=3&&!x.kw.named)});
+S('summon','word','',2,'A rival thing of stand 3 or less comes to your side.',(G,p)=>{const f=top(seen(G,p).filter(x=>x.st<=3&&!x.kw.named));if(!f||G.pl[p].board.length>=G.cfg.field)return;E.exile(G,f);f.own=p;f.fresh=true;f.guard=true;G.pl[p].board.push(f);},'U|keeps summon',{once:true,ok:(G,p)=>G.pl[p].board.length<G.cfg.field&&seen(G,p).some(x=>x.st<=3&&!x.kw.named)});
 A('awaken','word','',2,'A thing that could not strike comes alive: +3 strike, and it is a structure no longer.',{use(G,t){delete t.kw.structure;t.kw.living=1;buff(G,t,3,0);},need:t=>!!t.kw.structure},'U|keeps awaken');
 T('lexicon','word','',1,0,3,'structure paper','Your fusions cost 1 less.',null,'C|keeps lexicon');
 
 /* =========================== PLAIN SPEECH and the HERMETIC ORDER (no school) =========================== */
 A('hit','plain','',1,'Plain Speech. It learns to hit: +1 strike, and it may strike at once.',{learn:true,atk:()=>1,use(G,t){t.fresh=false;},need:t=>!t.kw.structure},'C|keeps hit');
-Q('guard','plain','',1,'The first word. It always stands in the way first, takes 2 less from every blow, gains +0/+2, and keeps guarding even when it strikes.',{apply(G,t){t.kw.guardian=1;t.guard=true;buff(G,t,0,2);}},'S|keeps guard (the first word)');
+Q('guard','plain','',1,'The first word. It always stands in the way first, takes 2 less from every blow, gains +0/+2, and keeps guarding even when it strikes.',{apply(G,t){t.kw.guardian=1;t.kw.warded=1;t.guard=true;buff(G,t,0,2);}},'S|keeps guard (the first word)');
 T('meridian','plain','',2,0,4,'structure','The duelling court. Each of your turns: if you have less life than the rival you gain 1 breath; otherwise your strongest thing gains +1 strike.',{turn(G,t){if(G.pl[t.own].life<G.pl[opp(t)].life)br(G,t.own,1);else{const x=top(mine(G,t.own).filter(y=>!y.kw.structure));if(x)buff(G,x,1,0);}}},'S|new (the Meridian)');
-S('green book','plain','',1,'The Order’s natural history: a living thing comes from your deck or discard into your hand.',(G,p)=>{fetch(G,p,c=>c.type==='thing'&&c.kw.includes('living'));},'S|new (the Green Book)',{keep:true});
+S('green book','plain','',1,'The Order’s natural history: a living thing comes from your deck or discard into your hand.',(G,p)=>{fetch(G,p,c=>c.type==='thing'&&c.kw.includes('living'));},'S|new (the Green Book)',{});
 Q('margin','plain','',1,'A note in the margin: +1/+1, and +0/+1 more whenever you play a word of a school other than its own.',{apply(G,t){buff(G,t,1,1);t.kw.margin=1;}},'S|new (the Margin)');
-S('folio','plain','',2,'Nothing leaves the Folio: your graveyard is shuffled into your deck, and you draw two words.',(G,p)=>{const P=G.pl[p],a=pile(G,p);while(a.length)P.deck.push(a.pop());E.shuffle(G,P.deck);draw(G,p,2);},'S|new (the Open Folio)',{keep:true});
+S('folio','plain','',2,'Nothing leaves the Folio: your graveyard is shuffled into your deck, and you draw two words.',(G,p)=>{const P=G.pl[p],a=pile(G,p);while(a.length)P.deck.push(a.pop());E.shuffle(G,P.deck);draw(G,p,2);},'S|new (the Open Folio)',{});
 
 /* =========================== LADDER RUNGS AND TOKENS (never in a deck) =========================== */
 const K=(id,sch,sk,st,kw,text,on,o)=>{const d=def(id,Object.assign({name:id,sch,th:'',type:'thing',cost:0,sk,st,kw:kw?kw.split(' '):[],text,on:on||{},tok:true,rar:'—',repl:''},o||{}));return d;};
@@ -176,12 +176,12 @@ K('ale','water',0,4,'liquid','What the cask became. Each of your turns you gain 
 K('blade','fire',4,4,'metal','What the ingot became.',null,{layer:'ladder',repl:'adapts knife'});
 K('ash','fire',0,1,'ash','What fire leaves behind. With an ember it is a phoenix.',null,{layer:'token',repl:'keeps ash'});
 K('shade','rot',2,1,'spirit flying','A shade from the barrow. Flies, and lasts 2 turns.',null,{layer:'token',left:2,repl:'adapts wraith'});
-K('golem','earth',4,8,'heavy guardian named made','Clay given a name. Guardian, heavy. Not alive: it cannot be poisoned.',null,{layer:'great',repl:'keeps golem',recipeText:'clay + the action name'});
+K('golem','earth',2,4,'heavy guardian named made','Clay given a name. Guardian, heavy. It keeps every shape the clay was given. Not alive: it cannot be poisoned.',null,{layer:'great',repl:'keeps golem',recipeText:'clay + the action name'});
 
 /* =========================== MADE-ONLY CARDS (fusion) =========================== */
 /* value rule from the duel test: stand at least the sturdier input +2, strike at least the harder input +1 */
 const M=(id,sch,a,b,kw,text,on,o)=>{const A_=DB[a],B=DB[b];if(!A_||!B)throw new Error('recipe input missing: '+a+' '+b);o=o||{};
-  const d=def(id,Object.assign({name:id,sch,th:'',type:'thing',cost:o.fc||2,sk:Math.max(A_.sk,B.sk)+1+(o.dsk||0),st:Math.max(A_.st,B.st)+2+(o.dst||0),kw:kw?kw.split(' '):[],text,on:on||{},made:true,tok:false,rar:o.great?'Great':'Made',repl:o.repl||'',inputs:[a,b],cat:o.cat||null,layer:o.great?'great':'made'},o.x||{}));
+  const d=def(id,Object.assign({name:id,sch,th:'',type:'thing',cost:o.fc||2,sk:Math.max(A_.sk,B.sk)+1+(o.dsk||0),st:Math.max(A_.st,B.st)+2+(o.dst||0),kw:kw?kw.split(' '):[],text,on:on||{},made:true,tok:false,rar:o.great?'Great':'Made',repl:o.repl||'',inputs:[a,b],cat:o.cat||null,layer:o.great?'great':'made',mk:{dsk:o.dsk||0,dst:o.dst||0,fsk:o.x&&o.x.sk!=null?o.x.sk:null,fst:o.x&&o.x.st!=null?o.x.st:null}},o.x||{}));
   recipe(a,b,id);return d;};
 /* the great recipes */
 M('phoenix','fire','ash','ember','bird flying fireborn undying living','Renewal through loss. Flies. Destroyed, it returns to your hand. Whatever it hits catches fire.',{hit(G,t,tg){if(tg)ign(G,tg);}},{great:true,dsk:1,repl:'keeps phoenix (now made only)'});
@@ -232,4 +232,6 @@ M('wight','rot','undertaker','barrow','person spirit','The barrow’s keeper. Wh
 M('sage','word','scribe','bard','person living speaker','Knows every name. A speaker who counts twice. The first word you play each turn costs 1 less.',{turn(G,t){G.pl[t.own].red=Math.max(G.pl[t.own].red,1);}},{repl:'keeps sage',x:{kw:['person','living','speaker','speaker2']}});
 M('broadside','word','press','type','structure paper','Printed and posted. Whenever you speak a spell, the rival takes 2.',{play(G,t,c){if(c.type==='spell')face(G,opp(t),2,'broadside','spell');}},{x:{sk:0},repl:'new'});
 M('mint','word','ledger','silver','structure metal cheapspell','The publisher’s money. 1 more breath each of your turns, and your spells and weather cost 1 less.',{turn(G,t){br(G,t.own,1);}},{x:{sk:0},repl:'adapts miser'});
+/* made cards follow their inputs: call this again whenever card numbers are retuned */
+E.remake=function(){for(const id in DB){const d=DB[id];if(!d.made||!d.mk)continue;const A_=DB[d.inputs[0]],B=DB[d.inputs[1]];d.sk=d.mk.fsk!=null?d.mk.fsk:Math.max(A_.sk,B.sk)+1+d.mk.dsk;d.st=d.mk.fst!=null?d.mk.fst:Math.max(A_.st,B.st)+2+d.mk.dst;}};
 return {absorb};});

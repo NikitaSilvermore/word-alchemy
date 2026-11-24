@@ -3,16 +3,17 @@
    spec: {name, cfg:{deck,hand,dur,remember,grave,market,copies}, build:'theme'|'mix2'|'mix3'|'vs' , games (per pairing, rounded to 8), field:[ids], tune:{card:{sk,st,cost}}} */
 const cp=require('child_process'),fs=require('fs'),path=require('path');
 function buildDecks(E,spec){const size=spec.cfg.deck||10,copies=spec.cfg.copies||1,TH=E.THEMES;let ids=spec.field||E.FIELD,decks;
+  if(spec.entries){/* explicit field: [{id,label,copies,mix}] */ids=spec.entries.map(e=>e.label||e.id);decks=spec.entries.map(e=>e.list?e.list:e.mix?E.mixOf([e.id].concat(TH[e.id].cross.slice(0,e.mix-1)),size,e.copies||1):E.deckOf(e.id,size,e.copies||copies));return {ids,decks};}
   if(spec.build==='mix2'||spec.build==='mix3'){ids=ids.filter(id=>TH[id]);decks=ids.map(id=>E.mixOf([id].concat(TH[id].cross.slice(0,spec.build==='mix2'?1:2)),size,copies));}
   else decks=ids.map(id=>E.deckOf(id,size,copies));
   if(spec.swap)for(const k in spec.swap){const i=ids.indexOf(k);if(i>=0)decks[i]=spec.swap[k];}
   return {ids,decks};}
-function applyTune(E,tune){if(!tune)return;for(const id in tune){const d=E.DB[id];if(!d)continue;for(const k in tune[id])d[k]=tune[id][k];}}
+function applyTune(E,tune){if(!tune)return;for(const id in tune){const d=E.DB[id];if(!d)continue;for(const k in tune[id])d[k]=tune[id][k];}E.remake();}
 const STY=[['aggressive','aggressive'],['aggressive','careful'],['careful','aggressive'],['careful','careful']];
 function blankDeck(){return {g:0,w:0,d:0,fg:0,fw:0,turns:0,turns2:0,fuse:0,evo:0,raised:0,bought:0,decided:0,comeb:0,heal:0,dmg:0,top:{},open:{},openN:0,cards:{},route:{},ag:0,aw:0,cg:0,cw:0};}
-function work(spec,part,parts){const E=require('./load.js');applyTune(E,spec.tune);const {ids,decks}=buildDecks(E,spec);const n=ids.length,per=Math.max(8,Math.round((spec.games||80)/8)*8);
+function work(spec,part,parts){const E=require('./load.js');applyTune(E,spec.tune);if(spec.chars)for(const k in spec.chars)E.CHARS[k].list=spec.chars[k];const {ids,decks}=buildDecks(E,spec);const n=ids.length,per=Math.max(8,Math.round((spec.games||80)/8)*8);
   const pair={},deck=ids.map(blankDeck);let pi=0,games=0;
-  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if((pi++)%parts!==part)continue;const P=pair[i+','+j]={g:0,a:0,b:0,d:0,fw:0,turns:0};
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if(spec.groups&&spec.groups[i]===spec.groups[j])continue;if((pi++)%parts!==part)continue;const P=pair[i+','+j]={g:0,a:0,b:0,d:0,fw:0,turns:0};
     for(let k=0;k<per;k++){const st=STY[k%4],first=(k>>2)&1,seed=(i*7919+j*104729+k*15485863+(spec.seed||1))|0;
       const G=E.bot.playGame(spec.cfg,decks[i],decks[j],seed,first,st[0],st[1]);games++;const rounds=Math.ceil(G.turn/2);
       P.g++;P.turns+=rounds;if(G.over===0)P.a++;else if(G.over===1)P.b++;else P.d++;if(G.over===G.first)P.fw++;

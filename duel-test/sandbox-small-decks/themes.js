@@ -9,7 +9,7 @@ const SUP={
  life:['guard','bite','hit','nettle','spring','mend','ripen','thorny','feral','boar','bear','harvest','sacred','abundance','tame'],
  rot:['guard','shadow','poison','hit','spider','night','wither','feeble','yew','occult','scorpion','haunt','plague','rust','abyss'],
  word:['guard','scream','hit','word','protect','echo','alchemist','dispel','reckoning','stammer','summon','eternal','awaken','lexicon']};
-const TH=E.THEMES;
+const TH=E.THEMES;E.SUP=SUP;
 function th(id,name,sch,region,mech,win,core,sup,cross,story){const s=sup.slice();for(const x of SUP[sch])if(!s.includes(x)&&!core.includes(x))s.push(x);TH[id]={id,name,sch,region,mech,win,core,sup:s,cross,story:story||''};}
 /* AIR · Bramble Cross */
 th('falconry','Falconry','air','Bramble Cross · falconers','Stoop: a bird that waited last turn strikes +2. Falconer and mews keep the birds coming back.','Evasive strikes over the ground, timed.',['hawk','kestrel','falcon','falconer','lure','mews','hood'],['swallow','guard','blow','wind','owl'],['hedgerow','wildfire'],'Dorothea Finch, first deck');

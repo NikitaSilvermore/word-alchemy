@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Alchemy small-deck sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* The duel test's own table: dark oak, candle brass, words on parchment. One world, one theme.
+     Layout: settings strip, then the table (chronicle left, the two rows and the hand right). */
+  color-scheme:dark;
+  --wood:#17100b; --wood2:#241810; --paper:#efe0bd; --paper2:#e2cf9f; --ink:#23170d; --ink2:#4a3723;
+  --rule:#b39a68; --light:#f3e8cf; --light2:#d9c8a2; --brass:#c9a04a; --brass2:#7d5f22; --gilt:#e6c45e; --wax:#a3281a;
+  --display:"IM Fell DW Pica","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --body:"Alegreya Sans","Gill Sans","Trebuchet MS",sans-serif;
+  --fire:#b4411c; --water:#2c6f93; --air:#6d8fa8; --earth:#7a6238; --life:#4d7a2c; --rot:#6a4a78; --word:#b8892b; --plain:#6b6660;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--wood);color:var(--light);font-family:var(--body);font-size:17px;line-height:1.4}
+button,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,summary:focus-visible,.card:focus-visible,.thing:focus-visible{outline:3px solid var(--gilt);outline-offset:2px}
+.wrap{max-width:1500px;margin:0 auto;padding:12px 16px 48px;display:grid;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px}
+h1{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;margin:0;color:var(--gilt);text-wrap:balance}
+header p{margin:0;color:var(--light2);max-width:70ch}
+.setup{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end;background:var(--wood2);border:1.5px solid var(--brass2);padding:10px 12px}
+.setup label{display:grid;gap:2px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light2)}
+.setup select{background:var(--paper);color:var(--ink);border:1.5px solid var(--brass2);padding:4px 6px;font-size:16px;letter-spacing:0;text-transform:none;font-weight:500;max-width:260px}
+.setup .tog{display:flex;align-items:center;gap:6px;font-size:15px;letter-spacing:0;text-transform:none;font-weight:500;color:var(--light)}
+.setup input{width:18px;height:18px;accent-color:var(--brass)}
+.btn{background:var(--brass);color:var(--ink);border:1.5px solid var(--brass2);padding:6px 16px;font-weight:700;letter-spacing:.04em}
+.btn.ghost{background:transparent;color:var(--light);border-color:var(--brass)}
+.btn.wax{background:var(--wax);color:#fff6e6;border-color:#6a140b}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:2px 10px;font-size:15px}
+.table{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;border:2px solid var(--brass2);background:#120c08;padding:12px}
+@media (max-width:960px){.table{grid-template-columns:1fr}.chron{order:2;height:260px!important}}
+.chron{background:var(--paper);color:var(--ink);border:2px solid var(--brass2);padding:8px 10px;display:grid;grid-template-rows:auto 1fr;gap:6px;height:0;min-height:100%}
+.chron h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0;text-align:center;border-bottom:1px solid var(--rule)}
+.log{overflow-y:auto;display:grid;gap:3px;font-size:15px;align-content:start;min-height:0}
+.log .t{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border-top:1px solid var(--rule);padding-top:5px;margin-top:5px}
+.board{display:grid;gap:8px;align-content:start;min-width:0}
+.side{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.who{font-family:var(--display);font-size:22px;color:var(--gilt)}
+.ctr{display:inline-flex;align-items:baseline;gap:5px;border:1.5px solid var(--brass);padding:1px 10px;background:rgba(18,12,8,.8);font-variant-numeric:tabular-nums}
+.ctr b{font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1}
+.ctr small{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--light2)}
+.ctr.life b{color:#ff9d86}
+details.pile{font-size:15px}
+details.pile summary{cursor:pointer;color:var(--light2)}
+details.pile div{max-width:60ch;color:var(--light)}
+.row{display:flex;flex-wrap:wrap;gap:8px;min-height:118px;align-items:flex-start}
+.empty{color:var(--light2);font-style:italic;border:1.5px dashed rgba(243,232,207,.35);padding:16px 20px;align-self:center}
+.wx{border:2px solid var(--brass);border-left-width:12px;border-right-width:12px;padding:3px 14px;background:#16212a;text-align:center}
+.wx b{font-family:var(--display);font-weight:400;font-size:20px}
+.thing,.card{position:relative;background:var(--paper);color:var(--ink);border:4px solid var(--plain);border-radius:7px;text-align:left;display:grid;gap:2px;align-content:start;padding:4px 7px 6px;box-shadow:0 3px 9px rgba(0,0,0,.55)}
+.thing{width:150px}
+.card{width:164px}
+.s-fire{border-color:var(--fire)}.s-water{border-color:var(--water)}.s-air{border-color:var(--air)}.s-earth{border-color:var(--earth)}.s-life{border-color:var(--life)}.s-rot{border-color:var(--rot)}.s-word{border-color:var(--word)}.s-plain{border-color:var(--plain)}
+.nm{font-family:var(--display);font-size:21px;line-height:1.05;overflow-wrap:anywhere;padding-right:26px}
+.card.action .nm{font-style:italic;color:#8f2413}.card.quality .nm{color:#6b4a00}.card.weather .nm,.card.spell .nm{color:#1d5c4e}
+.kind{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.tx{font-size:14px;line-height:1.25}
+.cost{position:absolute;top:-9px;right:-9px;width:30px;height:30px;border-radius:50%;background:#141c33;border:2px solid #8fa3d8;color:#fff;font-family:var(--display);font-size:19px;display:grid;place-items:center;line-height:1}
+.num{display:flex;justify-content:space-between;font-family:var(--display);font-size:21px;line-height:1;border-top:1px solid var(--rule);padding-top:3px;margin-top:2px}
+.num span:first-child{color:#8f2413}
+.num small{font-family:var(--body);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-left:3px}
+.chips{display:flex;flex-wrap:wrap;gap:3px}
+.chips i{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;background:var(--ink);color:var(--paper)}
+.chips i.bad{background:#8f2413}.chips i.good{background:#1d5c4e}
+.thing.ready{box-shadow:0 0 0 3px var(--gilt),0 0 14px 3px rgba(230,196,94,.6)}
+.thing.target,.card.sel{box-shadow:0 0 0 3px #fff3c9,0 0 16px 5px rgba(255,243,201,.8)}
+.card.dim{filter:saturate(.5) brightness(.8)}
+.thing:disabled,.card:disabled{cursor:default}
+.bench{background:var(--paper);color:var(--ink);border:2px solid var(--brass2);padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;min-height:54px}
+.bench .hint{flex:1 1 300px;min-width:0}
+.bench .btn{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.bench .btn.wax{background:var(--wax);color:#fff6e6;border-color:#6a140b}
+.bench .btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+.label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--light2)}
+.over{font-family:var(--display);font-size:28px;color:var(--gilt);border:2px solid var(--brass);padding:8px 16px;background:var(--wood2);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.how{background:var(--paper);color:var(--ink);border:2px solid var(--brass2);padding:10px 16px}
+.how summary{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:14px;cursor:pointer}
+.how ol{margin:8px 0 0;padding-left:20px;display:grid;gap:4px;max-width:90ch}
+.decklist{columns:2 260px;font-size:15.5px;max-width:95ch;margin-top:8px}
+.decklist div{break-inside:avoid;border-bottom:1px solid var(--rule);padding:2px 0}
+.decklist b{font-family:var(--display);font-weight:400;font-size:19px}
+@media (prefers-reduced-motion:no-preference){.card,.thing{transition:transform .12s,box-shadow .12s}.card:not(:disabled):hover,.thing:not(:disabled):hover{transform:translateY(-4px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Word Alchemy small-deck sandbox</h1><p>A separate test table for small decks, themes and the graveyard. It shares nothing with the live game and keeps no save.</p></header>
+<form class="setup" id="setup">
+  <label for="s-me">Your deck<select id="s-me"></select></label>
+  <label for="s-ri">Rival deck<select id="s-ri"></select></label>
+  <label for="s-size">Deck size<select id="s-size"><option>8</option><option>10</option><option>12</option><option>20</option></select></label>
+  <label for="s-hand">Hand size<select id="s-hand"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <label for="s-dur">Stand<select id="s-dur"><option value="1">as printed</option><option value="1.5">×1.5 (longer)</option><option value="2">×2 (longest)</option></select></label>
+  <label for="s-bot">Rival plays<select id="s-bot"><option value="careful">carefully</option><option value="aggressive">aggressively</option></select></label>
+  <label class="tog" for="s-grave"><input type="checkbox" id="s-grave"> Graveyard</label>
+  <label class="tog" for="s-market"><input type="checkbox" id="s-market"> Market and spark</label>
+  <button class="btn" type="submit">New duel</button>
+</form>
+<div id="over"></div>
+<div class="table">
+  <aside class="chron"><h2>Chronicle</h2><div class="log" id="log" aria-live="polite"></div></aside>
+  <section class="board">
+    <div class="side" id="ri-info"></div>
+    <div class="row" id="ri-row"></div>
+    <div class="wx" id="wx"></div>
+    <div class="row" id="me-row"></div>
+    <div class="side" id="me-info"></div>
+    <div class="bench" id="bench"></div>
+    <div class="label">Your hand</div>
+    <div class="row" id="hand"></div>
+    <div id="mk-wrap"><div class="label">Market (bought with spark)</div><div class="row" id="market"></div></div>
+  </section>
+</div>
+<details class="how"><summary>How this sandbox plays</summary><ol>
+<li>Bring the rival from 30 life to 0. Breath grows by 1 each turn, up to 7. You draw up to two words a turn, never above your hand size.</li>
+<li>A thing stays on your row. It can strike once a turn, but not on the turn it arrives unless it is swift. A thing that strikes is not on guard during the rival’s next turn; a thing that waits is.</li>
+<li>When a thing strikes the rival, the rival’s sturdiest thing on guard stands in the way and takes the blow. Only flyers (and things with reach) stop flyers. A guardian always steps in first and takes 1 less.</li>
+<li>An action is given to one of your things, and it remembers up to two. A quality stays on a thing. A weather lasts three of its caller’s turns. A spell is spoken and goes to your discard, or to the graveyard if it says single use.</li>
+<li>Your deck is small and it comes round again: at the start of your turn, if it has run out, your discard is shuffled back in. Nothing you say comes back within the same turn. Destroyed things go to the graveyard and do not come back by themselves. With the graveyard switched off they go to your discard instead.</li>
+<li>Once a turn you may fuse two things that have a recipe, from your hand or your row, for the breath shown. Ladders climb on their own: seed to sapling to oak, lead to tin to silver to gold.</li>
+<li>Once a turn you may discard a word to draw another.</li>
+<li>The first spell of The Word you speak each turn also hits the rival for 2, plus 1 for each speaker on your side (up to 3).</li>
+<li>From round 11 the Fading takes life from both sides, so no duel stalls.</li>
+</ol><div id="decklist"></div></details>
+</div>
+<script>/*ENGINE*/</script>
+<script>/*CARDS1*/</script>
+<script>/*CARDS2*/</script>
+<script>/*THEMES*/</script>
+<script>/*BOT*/</script>
+<script>
+(function(){
+'use strict';
+const E=WAS,H=WAS_CARDS1(E);WAS_CARDS2(E,H);WAS_THEMES(E);const BOT=WAS_BOT(E);const DB=E.DB;
+const TUNE=/*TUNE*/{};for(const id in TUNE)if(DB[id])Object.assign(DB[id],TUNE[id]);E.remake();
+const REC=/*REC*/{deck:10,hand:5,dur:1.5,grave:true,market:false};
+const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let G=null,sel=null,busy=false,style='careful',decks=[[],[]],names=['',''],shown=0;
+/* ---- setup ---- */
+function fillDecks(){const SCH={air:'Air · Bramble Cross',water:'Water · The Thousand Reaches',earth:'Earth · The Milefields',fire:'Fire · The Cinder Ports',life:'Life · The Long Enclosure',rot:'Rot · Sallow Fen',word:'The Word · Quire'};
+  let h='';for(const s in SCH){h+='<optgroup label="'+SCH[s]+'">';for(const id in E.THEMES)if(E.THEMES[id].sch===s)h+='<option value="'+id+'">'+esc(E.THEMES[id].name)+'</option>';h+='</optgroup>';}
+  h+='<optgroup label="Characters">';for(const id in E.CHARS)h+='<option value="'+id+'">'+esc(E.CHARS[id].name)+'</option>';h+='</optgroup>';
+  $('s-me').innerHTML=h;$('s-ri').innerHTML='<option value="?">Any (drawn at random)</option>'+h;$('s-me').value='orchard';
+  $('s-size').value=String(REC.deck);$('s-hand').value=String(REC.hand);$('s-dur').value=String(REC.dur);$('s-grave').checked=!!REC.grave;$('s-market').checked=!!REC.market;}
+function start(){const me=$('s-me').value;let ri=$('s-ri').value;if(ri==='?'){const f=E.FIELD.filter(x=>x!==me);ri=f[Math.floor(Math.random()*f.length)];}
+  const size=+$('s-size').value,cfg={deck:size,hand:+$('s-hand').value,dur:+$('s-dur').value,grave:$('s-grave').checked,market:$('s-market').checked};style=$('s-bot').value;
+  decks=[E.deckOf(me,size,1),E.deckOf(ri,size,1)];names=[E.titleOf(me),E.titleOf(ri)];
+  const first=Math.random()<.5?0:1;G=E.newGame(cfg,decks[0],decks[1],(Math.random()*2147483647)|0,first,{log:true,stats:false});sel=null;busy=false;shown=0;$('log').innerHTML='';
+  line('You play '+names[0]+'. The rival plays '+names[1]+'. '+(first===0?'You go':'The rival goes')+' first.','t');
+  $('decklist').innerHTML='<h3 style="font-family:var(--display);font-weight:400;font-size:22px;margin:12px 0 0">Your deck: '+esc(names[0])+'</h3><div class="decklist">'+decks[0].map(id=>'<div><b>'+esc(id)+'</b> · '+DB[id].type+' · '+esc(DB[id].text)+'</div>').join('')+'</div>';
+  render();if(G.cur===1)rival();}
+/* ---- drawing ---- */
+function line(x,c){const d=document.createElement('div');if(c)d.className=c;d.textContent=x;$('log').appendChild(d);$('log').scrollTop=1e9;}
+function flush(){while(shown<G.log.length)line(G.log[shown++]);}
+function chips(t){const o=[];const k=t.kw,a=(x,c)=>o.push('<i'+(c?' class="'+c+'"':'')+'>'+x+'</i>');
+  if(t.fresh&&!k.swift)a('arrived');if(t.guard&&t.frz<=0&&!k.structure)a('on guard','good');if(k.guardian)a('guardian','good');if(k.flying)a('flies');if(k.swift)a('swift');if(k.toxic)a('toxic');if(k.hidden)a('hidden');if(k.heavy)a('heavy');if(k.brittle&&!k.annealed)a('brittle','bad');if(k.undying)a('undying','good');if(k.named)a('named','good');if(k.speaker)a('speaker');if(k.tiny)a('tiny');if(k.structure)a('cannot strike');
+  if(t.frz>0)a('held '+t.frz,'bad');if(t.burn>0)a('burning','bad');if(t.psn>0)a('poison '+t.psn,'bad');if(t.wet>0)a('wet');if(t.unbl)a('unblockable','good');if(t.ctr>0&&DB[t.id].on.turn)a('count '+t.ctr);if(t.left>0)a(t.left+' turns left');
+  for(const v of t.v)a(v);for(const q of t.q)a(q);const d=DB[t.id];if(d.lad)a('→ '+d.lad.to+' in '+Math.max(0,d.lad.n-t.age));return o.join('');}
+function thingEl(t,mine){const d=DB[t.base&&!DB[t.id].tok?t.id:t.id],can=mine&&!busy&&G.cur===0&&G.over==null;let cls='thing s-'+d.sch,act='';
+  if(can&&sel!=null){const id=G.pl[0].hand[sel],tg=E.legalTargets(G,0,id);if(tg&&tg.includes(t)&&E.canPlay(G,0,sel)){cls+=' target';act='tg';}}
+  else if(can&&E.canAtk(G,t)){cls+=' ready';act='atk';}
+  return '<button type="button" class="'+cls+'" data-act="'+act+'" data-uid="'+t.uid+'"'+(act?'':' disabled')+' title="'+esc(d.text)+'"><span class="nm">'+esc(t.title||d.name)+'</span><span class="chips">'+chips(t)+'</span><span class="tx">'+esc(d.text)+'</span><span class="num"><span>'+E.strikeOf(G,t)+'<small>strike</small></span><span>'+t.st+'<small>stand</small></span></span></button>';}
+function cardEl(id,i,where){const d=DB[id];let ok=false,extra='';if(where==='hand'){ok=!busy&&G.cur===0&&G.over==null;}else{ok=!busy&&G.cur===0&&G.over==null&&E.price(id)<=G.pl[0].spark&&G.pl[0].hand.length<G.cfg.hand+1;extra=' · '+E.price(id)+' spark';}
+  const cost=where==='hand'?E.costOf(G,0,id):d.cost;const playable=where==='hand'?E.canPlay(G,0,i):ok;
+  return '<button type="button" class="card '+d.type+' s-'+d.sch+(where==='hand'&&sel===i?' sel':'')+(playable?'':' dim')+'" data-where="'+where+'" data-i="'+i+'"'+(ok?'':' disabled')+'><span class="cost">'+cost+'</span><span class="nm">'+esc(d.name)+'</span><span class="kind">'+d.type+(d.sch==='plain'?' · plain speech':' · '+d.sch)+extra+'</span><span class="tx">'+esc(d.text)+'</span>'+(d.type==='thing'?'<span class="num"><span>'+d.sk+'<small>strike</small></span><span>'+Math.max(1,Math.round(d.st*G.cfg.dur))+'<small>stand</small></span></span>':'')+'</button>';}
+function info(p){const P=G.pl[p];const pl=G.cfg.grave?P.grave:null;
+  return '<span class="who">'+(p?'Rival':'You')+' · '+esc(names[p])+'</span><span class="ctr life"><b>'+P.life+'</b><small>life</small></span><span class="ctr"><b>'+P.breath+'</b><small>breath</small></span>'+(G.cfg.market?'<span class="ctr"><b>'+P.spark+'</b><small>spark</small></span>':'')+(P.poison?'<span class="ctr"><b>'+P.poison+'</b><small>poison</small></span>':'')+'<span class="ctr"><b>'+P.hand.length+'</b><small>hand</small></span><span class="ctr"><b>'+P.deck.length+'</b><small>deck</small></span><span class="ctr"><b>'+P.disc.length+'</b><small>discard</small></span>'+
+   (pl?'<details class="pile"><summary>Graveyard ('+pl.length+')</summary><div>'+(pl.length?pl.map(esc).join(', '):'empty')+'</div></details>':'');}
+function render(){if(!G)return;flush();const P=G.pl[0];
+  $('ri-info').innerHTML=info(1);$('me-info').innerHTML=info(0);
+  $('ri-row').innerHTML=G.pl[1].board.map(t=>thingEl(t,false)).join('')||'<span class="empty">The rival’s row is empty.</span>';
+  $('me-row').innerHTML=P.board.map(t=>thingEl(t,true)).join('')||'<span class="empty">Your row is empty.</span>';
+  $('wx').innerHTML=G.wx?'<b>'+esc(DB[G.wx.id].name)+'</b> · '+esc(DB[G.wx.id].text)+' ('+G.wx.left+' turns left, called by '+(G.wx.own?'the rival':'you')+')':'<b>Clear sky</b> · no weather';
+  $('hand').innerHTML=P.hand.map((id,i)=>cardEl(id,i,'hand')).join('')||'<span class="empty">Your hand is empty.</span>';
+  $('mk-wrap').hidden=!G.cfg.market;if(G.cfg.market)$('market').innerHTML=G.mk.map((id,i)=>cardEl(id,i,'market')).join('');
+  bench();
+  $('over').innerHTML=G.over==null?'':'<div class="over">'+(G.over===0?'You win.':G.over===1?'The rival wins.':'A draw.')+' <span style="font-family:var(--body);font-size:17px;color:var(--light)">Round '+Math.ceil(G.turn/2)+', '+G.pl[0].life+' life to '+G.pl[1].life+'.</span><button class="btn" type="button" id="again">Play again</button></div>';}
+function bench(){const b=$('bench');if(G.over!=null){b.innerHTML='<span class="hint">The duel is over.</span>';return;}if(G.cur!==0||busy){b.innerHTML='<span class="hint">The rival is thinking.</span>';return;}
+  const P=G.pl[0];let h='',hint='Choose a word from your hand, or a thing with a gold edge to strike.';
+  if(sel!=null&&P.hand[sel]){const id=P.hand[sel],d=DB[id],can=E.canPlay(G,0,sel),tg=E.legalTargets(G,0,id);
+    if(!can)hint=esc(d.name)+': '+(E.costOf(G,0,id)>P.breath?'you need '+E.costOf(G,0,id)+' breath.':'nothing here it can work on.');
+    else if(tg)hint='Give <b>'+esc(d.name)+'</b> to one of your things (lit).';else{hint='<b>'+esc(d.name)+'</b>: '+esc(d.text);h+='<button class="btn" type="button" data-b="play">'+(d.type==='thing'?'Bring it out':d.type==='spell'?'Speak it':d.type==='weather'?'Call it':'Say it')+' ('+E.costOf(G,0,id)+')</button>';}
+    if(P.cyc!==G.turn)h+='<button class="btn ghost" type="button" data-b="cyc">Discard it and draw</button>';h+='<button class="btn ghost" type="button" data-b="clear">Put it back</button>';}
+  for(const f of E.fuseOpts(G,0)){const nmOf=r=>r.h!=null?P.hand[r.h]:DB[E.thing(G,0,r.b).id].name;h+='<button class="btn" type="button" data-b="fuse" data-f="'+esc(JSON.stringify(f))+'">Fuse '+esc(nmOf(f.a))+' + '+esc(nmOf(f.b))+' → '+esc(f.r)+' ('+f.c+')</button>';}
+  h+='<button class="btn wax" type="button" data-b="end">End turn</button>';b.innerHTML='<span class="hint">'+hint+'</span>'+h;}
+/* ---- acting ---- */
+function act(m){try{E.apply(G,m);}catch(e){line('Something went wrong with that move: '+e.message);console.error(e);}sel=null;render();}
+function endTurn(){sel=null;line('The rival’s turn.','t');E.apply(G,{k:'end'});render();if(G.over==null&&G.cur===1)rival();}
+function rival(){busy=true;render();let n=0;const step=()=>{if(G.over!=null||G.cur!==1){busy=false;if(G.over==null)line('Your turn. Round '+Math.ceil(G.turn/2)+'.','t');render();return;}
+    let m=null;try{m=n++<40?BOT.choose(G,style,.3):null;}catch(e){console.error(e);}
+    if(m){E.apply(G,m);render();setTimeout(step,m.k==='atk'?650:800);}
+    else{const P=G.pl[1];if(P.cyc!==G.turn&&P.hand.length>=G.cfg.hand){let j=0;for(let i=1;i<P.hand.length;i++)if(DB[P.hand[i]].cost>DB[P.hand[j]].cost)j=i;E.apply(G,{k:'cyc',i:j});}
+      E.apply(G,{k:'end'});busy=false;if(G.over==null)line('Your turn. Round '+Math.ceil(G.turn/2)+'.','t');render();}};
+  setTimeout(step,700);}
+document.addEventListener('click',ev=>{const t=ev.target.closest('button');if(!t||!G)return;
+  if(t.id==='again'){start();return;}
+  if(busy||G.cur!==0||G.over!=null)return;
+  if(t.dataset.where==='hand'){const i=+t.dataset.i;sel=sel===i?null:i;render();return;}
+  if(t.dataset.where==='market'){act({k:'buy',i:+t.dataset.i});return;}
+  if(t.dataset.act==='tg'){act({k:'play',i:sel,t:+t.dataset.uid});return;}
+  if(t.dataset.act==='atk'){act({k:'atk',t:+t.dataset.uid});return;}
+  const b=t.dataset.b;if(b==='play'){act({k:'play',i:sel});}else if(b==='cyc'){act({k:'cyc',i:sel});}else if(b==='clear'){sel=null;render();}else if(b==='fuse'){act(JSON.parse(t.dataset.f));}else if(b==='end'){endTurn();}});
+$('setup').addEventListener('submit',ev=>{ev.preventDefault();start();});
+fillDecks();start();
+})();
+</script>
+</body>
+</html>

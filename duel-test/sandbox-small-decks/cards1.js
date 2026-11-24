@@ -9,7 +9,7 @@ H.T=(id,sch,th,cost,sk,st,kw,text,on,m)=>{const o=def(id,{name:id,sch,th,type:'t
 H.A=(id,sch,th,cost,text,o,m)=>{const d=def(id,Object.assign({name:id,sch,th,type:'action',cost,text},o||{}));meta(d,m,cost);return d;};
 H.Q=(id,sch,th,cost,text,o,m)=>{const d=def(id,Object.assign({name:id,sch,th,type:'quality',cost,text},o||{}));meta(d,m,cost);return d;};
 H.W=(id,sch,th,cost,text,o,m)=>{const d=def(id,Object.assign({name:id,sch,th,type:'weather',cost,text},o||{}));meta(d,m,cost);return d;};
-H.S=(id,sch,th,cost,text,cast,m,o)=>{const d=def(id,Object.assign({name:id,sch,th,type:'spell',cost,text,cast},o||{}));meta(d,m,cost);return d;};
+H.S=(id,sch,th,cost,text,cast,m,o)=>{const d=def(id,Object.assign({name:id,sch,th,type:'spell',cost,text,cast},o||{}));meta(d,m,cost);if(d.cost>=3||d.once){d.once=true;d.text+=' Single use.';}return d;};
 H.most=(G,p)=>{let b=null;for(const t of mine(G,p))if(t.mx>t.st&&(!b||t.mx-t.st>b.mx-b.st))b=t;return b;};
 H.sw=k=>(G,t)=>t.kw[k]||DB[t.id].sch===k?1:0;
 H.spellish=c=>c.type==='spell'||c.type==='weather';
@@ -20,9 +20,9 @@ H.schAtk=schAtk;
 
 /* =========================== AIR · Bramble Cross =========================== */
 /* Falconry: Stoop (a bird that waited strikes +2) */
-T('hawk','air','falconry',2,3,2,'bird living flying stoop','Flies. Stoop: +2 strike if it waited last turn.',null,'C|keeps hawk');
-T('kestrel','air','falconry',1,1,2,'bird living flying swift stoop','Flies, swift. Stoop: +2 strike if it waited last turn.',null,'C|new');
-T('falcon','air','falconry',3,3,4,'bird living flying stoop','Flies. Stoop +2. When it hits the rival, their weakest thing takes 2.',{hit(G,t,tg){if(!tg){const f=low(seen(G,t.own));if(f)hurt(G,f,2,'falcon');}}},'R|adapts eagle');
+T('hawk','air','falconry',2,2,2,'bird living flying stoop','Flies. Stoop: +2 strike if it waited last turn.',null,'C|keeps hawk');
+T('kestrel','air','falconry',1,1,1,'bird living flying swift stoop','Flies, swift. Stoop: +2 strike if it waited last turn.',null,'C|new');
+T('falcon','air','falconry',3,3,3,'bird living flying stoop','Flies. Stoop +2. When it hits the rival, their weakest thing takes 2.',{hit(G,t,tg){if(!tg){const f=low(seen(G,t.own));if(f)hurt(G,f,2,'falcon');}}},'R|adapts eagle');
 T('falconer','air','falconry',2,1,4,'person living','Your birds return to your hand when they fall.',{keep:(G,t,o)=>!!o.kw.bird},'U|adapts shepherdess');
 Q('hood','air','falconry',1,'A thing of yours rests under the hood: it heals fully, and its next strike cannot be blocked.',{apply(G,t){t.st=Math.max(t.st,t.mx);t.unbl=1;}},'C|adapts masked');
 A('lure','air','falconry',1,'Swing the lure: a flyer of yours gains +1 strike and may strike again this turn.',{use(G,t){t.acted=false;t.fresh=false;buff(G,t,1,0);},need:t=>!!t.kw.flying},'U|keeps lure (now Air)');
@@ -59,7 +59,7 @@ T('crow','air','',2,1,3,'bird living flying','Flies. Gains +1/+1 whenever a livi
 T('swallow','air','',1,1,1,'bird living flying swift','Flies, swift. +1 strike in Spring.',{atk:(G,t)=>G.wx&&G.wx.id==='spring'?1:0},'C|keeps swallow');
 T('wasp','air','',1,1,1,'insect living flying toxic tiny','Flies. Toxic: its hits poison.',null,'C|keeps wasp');
 A('blow','air','',1,'A thing of yours is carried across: its next strike cannot be blocked.',{use(G,t){t.unbl=1;}},'C|keeps blow');
-S('steal','air','',2,'Take a random word from the rival’s hand.',(G,p)=>{const O=G.pl[1-p];if(O.hand.length){const i=Math.floor(E.rnd(G)*O.hand.length);G.pl[p].hand.push(O.hand.splice(i,1)[0]);}},'U|keeps steal',{ok:(G,p)=>G.pl[1-p].hand.length>0});
+S('steal','air','',2,'Take a random word from the rival’s hand.',(G,p)=>{const O=G.pl[1-p];if(O.hand.length){const i=Math.floor(E.rnd(G)*O.hand.length);G.pl[p].hand.push(O.hand.splice(i,1)[0]);}},'U|keeps steal',{once:true,ok:(G,p)=>G.pl[1-p].hand.length>0});
 Q('winged','air','',1,'It flies.',{apply(G,t){t.kw.flying=1;},need:t=>!t.kw.flying&&!t.kw.structure},'C|keeps winged');
 Q('quick','air','',1,'+0/+2, and it may act at once and twice this turn.',{apply(G,t){buff(G,t,0,2);t.fresh=false;t.acted=false;t.extra=1;},need:t=>!t.kw.structure},'U|keeps quick');
 W('wind','air','',1,'While it lasts: Air things have +1 strike, and flyers arrive swift.',{atk:schAtk('air')},'C|adapts wind, flux');
@@ -126,22 +126,22 @@ T('scaffold','earth','masonry',1,0,2,'structure','Stands for 3 turns. Structures
 T('mason','earth','masonry',2,2,4,'person living','Each of your turns she adds +0/+2 to your weakest structure.',{turn(G,t){const x=low(mine(G,t.own).filter(y=>y.kw.structure));if(x)buff(G,x,0,2);}},'U|adapts architect');
 /* The metal ladder: lead to gold */
 T('lead','earth','metal',1,1,4,'metal heavy toxic','Heavy, toxic. After 3 of your turns it becomes tin.',null,'C|keeps lead').lad={to:'tin',n:3};
-T('tin','earth','metal',2,1,6,'metal guardian','Guardian. After 3 of your turns it becomes silver.',null,'C|keeps tin').lad={to:'silver',n:3};
-T('copper','earth','metal',2,3,3,'metal swift','Swift. After 3 of your turns it becomes silver.',null,'U|keeps copper').lad={to:'silver',n:3};
-T('silver','earth','metal',3,3,6,'metal named','No rival word can send it away. After 3 of your turns it becomes gold.',null,'R|keeps silver').lad={to:'gold',n:3};
+T('tin','earth','metal',2,1,6,'metal guardian','Guardian. After 4 of your turns it becomes silver.',null,'C|keeps tin').lad={to:'silver',n:4};
+T('copper','earth','metal',2,3,3,'metal swift','Swift. After 4 of your turns it becomes silver.',null,'U|keeps copper').lad={to:'silver',n:4};
+T('silver','earth','metal',3,3,5,'metal named','No rival word can send it away. After 4 of your turns it becomes gold.',null,'R|keeps silver').lad={to:'gold',n:4};
 A('transmute','earth','metal',2,'One of your things climbs one rung of its ladder now (two with a crucible). Anything else gains +1/+1.',{use(G,t){let n=mine(G,t.own).some(x=>x.id==='crucible')?2:1;let did=false;while(n-->0&&DB[t.id].lad){E.evolve(G,t,DB[t.id].lad.to);did=true;}if(!did)buff(G,t,1,1);}},'U|keeps transmute');
 T('smelter','earth','metal',3,0,5,'structure fireborn','Each of your turns every ladder thing of yours counts one turn closer.',{turn(G,t){for(const x of mine(G,t.own))if(DB[x.id].lad)x.age++;}},'R|adapts foundry');
 T('crucible','earth','metal',2,0,4,'structure heavy crucible','Your fusions cost 1 less, and transmute climbs two rungs.',null,'S|keeps crucible (Agricola’s mining book)');
 /* Quarry and bedrock */
-T('boulder','earth','quarry',2,1,6,'stone heavy guardian bedrock','Guardian, heavy. Bedrock: +0/+1 each turn it stays, up to +3.',null,'C|keeps boulder');
-T('granite','earth','quarry',3,3,6,'stone heavy bedrock','Heavy: its blows carry through. Bedrock: +0/+1 each turn it stays, up to +3.',null,'U|adapts stone');
+T('boulder','earth','quarry',2,1,6,'stone heavy guardian bedrock','Guardian, heavy. Bedrock: +0/+1 each turn it stays, up to +2.',null,'C|keeps boulder');
+T('granite','earth','quarry',3,3,5,'stone heavy bedrock','Heavy. Bedrock: +0/+1 each turn it stays, up to +2.',null,'U|adapts stone');
 T('quarryman','earth','quarry',2,3,3,'person living','Tremor: when he hits, every other rival thing on the ground takes 1.',{hit(G,t,tg){for(const f of foes(G,t.own).slice())if(f!==tg&&!f.kw.flying)hurt(G,f,1,'quarryman');}},'U|new');
 T('flint','earth','quarry',1,2,2,'stone','Strikes sparks: whatever it hits catches fire.',{hit(G,t,tg){if(tg)ign(G,tg);}},'C|keeps flint');
-T('obsidian','earth','quarry',2,5,1,'stone brittle','Brittle. All edge, little body.',null,'U|keeps obsidian');
+T('obsidian','earth','quarry',2,4,1,'stone brittle','Brittle. All edge, little body.',null,'U|keeps obsidian');
 S('avalanche','earth','quarry',3,'Every rival thing that cannot fly takes 2, +1 for each heavy thing you have.',(G,p)=>{const n=2+cnt(mine(G,p),'heavy');for(const f of foes(G,p).slice())if(!f.kw.flying)hurt(G,f,n,'avalanche');},'R|keeps avalanche');
 T('lodestone','earth','quarry',2,1,5,'stone heavy guardian reach','Guardian, heavy. It pulls flyers down: it can block them.',null,'U|keeps lodestone');
 /* Potters and the Golem: Shape */
-T('clay','earth','pottery',1,0,3,'clay','It wants a shape: every quality or action you give it also adds +1/+1. Name it and it wakes as a golem.',null,'C|keeps clay');
+T('clay','earth','pottery',1,0,3,'clay','It wants a shape: every quality or action you give it also adds +1/+1. Once it has stood a turn, name it and it wakes as a golem.',null,'C|keeps clay');
 T('potter','earth','pottery',2,1,4,'person living','When he arrives, a lump of clay arrives beside him.',{arrive(G,t){const c=put(G,t.own,'clay');if(c)c.tmp=1;}},'U|new');
 T('kiln','earth','pottery',2,0,5,'structure fireborn','Each of your turns your clay and pots gain +1/+1.',{turn(G,t){for(const x of mine(G,t.own))if(x.kw.clay||x.kw.pot)buff(G,x,1,1);}},'U|new');
 T('urn','earth','pottery',1,0,3,'pot brittle','Brittle. When it breaks, you draw two words.',{die(G,t){draw(G,t.own,2);}},'C|adapts vessel');
@@ -150,7 +150,7 @@ Q('glaze','earth','pottery',1,'+0/+2. It cannot be poisoned, burned or soaked.',
 T('brick','earth','pottery',1,1,3,'structure clay','A fired block. +0/+1 for each other structure of yours when it arrives.',{arrive(G,t){const n=cnt(mine(G,t.own),'structure')-1;if(n>0)buff(G,t,0,n);}},'C|adapts sand');
 /* Earth support */
 T('earth','earth','',1,0,4,'element','An element. Each of your turns your weakest other thing gains +0/+1.',{turn(G,t){const x=low(mine(G,t.own).filter(y=>y!==t));if(x)buff(G,x,0,1);}},'C|keeps earth');
-T('iron','earth','',2,3,4,'metal heavy','Heavy: its blows carry through.',null,'U|keeps iron');
+T('iron','earth','',2,2,4,'metal heavy','Heavy: wind and water cannot move it.',null,'U|keeps iron');
 T('salt','earth','',1,0,3,'stone','Nothing on your side can be poisoned. The catalyst that lets Fire and Water fuse.',{turn(G,t){G.pl[t.own].poison=0;for(const x of mine(G,t.own))x.psn=0;}},'C|keeps salt');
 T('amber','earth','',1,0,2,'stone','When a living thing of yours would die, it returns to your hand instead, and the amber is spent.',{keep(G,t,o){if(o.kw.living&&mine(G,t.own).includes(t)){E.exile(G,t);E.pile(G,t.own).push('amber');return true;}return false;}},'U|keeps amber');
 T('tower','earth','',2,0,5,'structure','When it arrives you gain 3 life and draw a word.',{arrive(G,t){life(G,t.own,3);draw(G,t.own,1);}},'U|keeps tower');
@@ -159,7 +159,7 @@ A('crush','earth','',1,'It learns to crush: +1 strike, and what is left over aft
 A('cut','earth','',1,'It learns to cut: +2 strike.',{learn:true,atk:()=>2},'C|keeps cut');
 A('temper','earth','',1,'Temper a thing of yours: +1/+2; a metal gains +2/+3.',{use(G,t){if(t.kw.metal)buff(G,t,2,3);else buff(G,t,1,2);}},'C|keeps temper');
 Q('petrify','earth','',3,'A rival thing turns to stone: it takes 3 and cannot act for 2 turns.',{foe:true,apply(G,t){t.frz=Math.max(t.frz,2);hurt(G,t,3,'petrify');}},'R|keeps petrify');
-Q('ancient','earth','',1,'Old and strong: +1/+3.',{apply(G,t){buff(G,t,1,3);}},'C|keeps ancient');
+Q('ancient','earth','',1,'Old and strong: +1/+2.',{apply(G,t){buff(G,t,1,2);}},'C|keeps ancient');
 Q('leaden','earth','',1,'A rival thing grows heavy: it cannot fly, it is no longer swift, and it has −2 strike.',{foe:true,apply(G,t){delete t.kw.flying;delete t.kw.swift;t.bsk-=2;}},'C|keeps leaden');
 W('desert','earth','',2,'While it lasts: Earth things have +1 strike, and flyers have −1 strike.',{atk:(G,t)=>(DB[t.base||t.id].sch==='earth'?1:0)-(t.kw.flying?1:0)},'U|keeps desert');
 
@@ -184,16 +184,16 @@ S('quench','fire','foundry',1,'Your strongest metal thing (or strongest thing) g
 T('brine','fire','saltworks',1,0,3,'liquid','Boil it away: when it dies you gain 2 breath.',{die(G,t){br(G,t.own,2);}},'C|keeps brine (now Fire)');
 T('salter','fire','saltworks',2,2,4,'person living','Whenever another thing of yours dies, the rival is burned for 2.',{anyDie(G,t,o){if(o.own===t.own)face(G,opp(t),2,'salter','burn');}},'U|new');
 A('calcine','fire','saltworks',1,'Burn one of your own things to ash: the rival is burned for its strike +2, and ash is left.',{use(G,t){const s=E.strikeOf(G,t)+2,p=t.own;kill(G,t,null);face(G,1-p,s,'calcine','burn');const a=put(G,p,'ash');}},'U|keeps calcine');
-S('sacrifice','fire','saltworks',1,'Destroy your weakest thing: you gain 3 breath and draw a word.',(G,p)=>{const x=low(mine(G,p));if(!x)return;kill(G,x,null);br(G,p,3);draw(G,p,1);},'C|keeps sacrifice',{ok:(G,p)=>mine(G,p).length>0,keep:true});
+S('sacrifice','fire','saltworks',1,'Destroy your weakest thing: you gain 3 breath and draw a word.',(G,p)=>{const x=low(mine(G,p));if(!x)return;kill(G,x,null);br(G,p,3);draw(G,p,1);},'C|keeps sacrifice',{ok:(G,p)=>mine(G,p).length>0});
 T('saltpetre','fire','saltworks',2,0,3,'stone','When it arrives the rival is burned for 2. When it dies, for 3.',{arrive(G,t){face(G,opp(t),2,'saltpetre','burn');},die(G,t){face(G,opp(t),3,'saltpetre','burn');}},'U|keeps saltpetre');
 T('pitch','fire','saltworks',1,1,3,'liquid','Whatever it hits catches fire. When it dies, the strongest rival thing catches fire.',{hit(G,t,tg){if(tg)ign(G,tg);},die(G,t){const f=top(foes(G,t.own));if(f)ign(G,f);}},'C|keeps pitch');
 T('naphtha','fire','saltworks',2,0,2,'liquid','When it dies it bursts: everything opposite takes 2.',{die(G,t){for(const f of foes(G,t.own).slice())hurt(G,f,2,'naphtha');}},'U|keeps naphtha');
 /* Beacon and wildfire: Burning */
-T('torch','fire','wildfire',1,1,2,'tool','Each of your turns the rival is burned for 1.',{turn(G,t){face(G,opp(t),1,'torch','burn');}},'C|keeps torch');
+T('torch','fire','wildfire',1,1,2,'tool','Burns for 4 turns. Each of your turns the rival is burned for 1.',{turn(G,t){face(G,opp(t),1,'torch','burn');}},'C|keeps torch').left=4;
 T('ember','fire','wildfire',2,2,4,'fireborn','Never burns away. Whatever it hits catches fire.',{hit(G,t,tg){if(tg)ign(G,tg);}},'U|keeps ember');
 T('cinderling','fire','wildfire',2,3,2,'beast living fireborn swift','Swift.',null,'U|keeps cinderling');
 T('bonfire','fire','wildfire',3,0,6,'structure fireborn','Each of your turns the rival is burned for 1 and your fire-born things gain +0/+1.',{turn(G,t){face(G,opp(t),1,'bonfire','burn');for(const x of mine(G,t.own))if(x.kw.fireborn&&x!==t)buff(G,x,0,1);}},'R|keeps bonfire');
-T('tinder','fire','wildfire',1,0,2,'plant','When it dies, the strongest rival thing catches fire, the rival is burned for 2, and ash is left.',{die(G,t){const f=top(foes(G,t.own));if(f)ign(G,f);face(G,opp(t),2,'tinder','burn');put(G,t.own,'ash');}},'C|new');
+T('tinder','fire','wildfire',1,0,2,'plant','When it dies, the strongest rival thing catches fire, the rival is burned for 1, and ash is left.',{die(G,t){const f=top(foes(G,t.own));if(f)ign(G,f);face(G,opp(t),1,'tinder','burn');put(G,t.own,'ash');}},'C|new');
 S('wildfire','fire','wildfire',3,'Every rival thing catches fire, and the rival is burned for 1 for each thing already burning.',(G,p)=>{let n=0;for(let s=0;s<2;s++)for(const t of G.pl[s].board)if(t.burn>0)n++;for(const f of foes(G,p))ign(G,f);face(G,1-p,1+n,'wildfire','burn');},'R|keeps wildfire');
 T('salamander','fire','wildfire',3,3,5,'beast living fireborn','When it arrives it lights the strongest rival thing. +1 strike for each burning thing.',{arrive(G,t){const f=top(seen(G,t.own));if(f)ign(G,f);},atk(G,t){let n=0;for(let s=0;s<2;s++)for(const x of G.pl[s].board)if(x.burn>0)n++;return Math.min(3,n);}},'R|keeps salamander');
 /* Fire support */
@@ -202,10 +202,10 @@ T('phosphorus','fire','',2,0,3,'stone','Light-bearer. When it arrives, the rival
 T('brimstone','fire','',2,2,4,'stone toxic','Toxic. The catalyst that lets Life and Rot fuse.',null,'R|keeps brimstone (now learnable)');
 T('scintilla','fire','',1,0,2,'spark','A spark. Your fusions need no catalyst and cost 1 less.',null,'U|keeps scintilla');
 A('burn','fire','',1,'It learns to burn: +1 strike, and whatever it hits catches fire.',{learn:true,atk:()=>1,hit(G,t,tg){if(tg)ign(G,tg);}},'C|keeps burn');
-A('scorch','fire','',1,'A thing of yours burns the rival for half its strike +1. Nothing can block it.',{use(G,t){face(G,opp(t),Math.ceil(E.strikeOf(G,t)/2)+1,'scorch','burn');}},'C|keeps scorch');
-A('kindle','fire','',1,'A thing of yours gains +2 strike and may strike at once.',{use(G,t){buff(G,t,2,0);t.fresh=false;},need:t=>!t.kw.structure},'C|keeps kindle');
+A('scorch','fire','',1,'A thing of yours burns the rival for half its strike (at least 1). Nothing can block it.',{use(G,t){face(G,opp(t),Math.max(1,Math.ceil(E.strikeOf(G,t)/2)),'scorch','burn');}},'C|keeps scorch');
+A('kindle','fire','',1,'A thing of yours gains +1 strike and may strike at once.',{use(G,t){buff(G,t,1,0);t.fresh=false;},need:t=>!t.kw.structure},'C|keeps kindle');
 Q('blind','fire','',1,'A rival thing is dazzled: it cannot act on its next turn, and it is no longer hidden.',{foe:true,apply(G,t){t.frz=Math.max(t.frz,1);delete t.kw.hidden;}},'C|keeps blind');
-Q('burning','fire','',1,'A rival thing catches fire: it burns for 2 a turn and its keeper chokes for 1, and it takes 1 now.',{foe:true,apply(G,t){ign(G,t);hurt(G,t,1,'burning');}},'C|keeps burning');
+Q('burning','fire','',1,'A rival thing catches fire: it burns for 2 turns, taking 2 a turn while its keeper chokes for 1, and it takes 1 now.',{foe:true,apply(G,t){ign(G,t);hurt(G,t,1,'burning');}},'C|keeps burning');
 Q('radiant','fire','',1,'+1 strike. Nothing opposite stays hidden from it.',{apply(G,t){buff(G,t,1,0);t.kw.seer=1;}},'C|keeps radiant');
 Q('firebrand','fire','',1,'Its hits also burn the rival for 1.',{hit(G,t){face(G,opp(t),1,'firebrand','burn');}},'C|keeps firebrand');
 W('drought','fire','',1,'While it lasts: Fire things have +1 strike, nothing stays wet, and burning things take 1 more each turn.',{atk:schAtk('fire'),turn(G,p){for(const t of G.pl[p].board.slice()){t.wet=0;if(t.burn>0)hurt(G,t,1,'drought');}}},'C|keeps drought');

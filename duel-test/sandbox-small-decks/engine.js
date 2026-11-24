@@ -5,7 +5,7 @@
 (function(root,f){if(typeof module==='object'&&module.exports)module.exports=f();else root.WAS=f();})(this,function(){
 'use strict';
 const DB={},RX={},THEMES={},ORDER=[];
-const CFG={life:30,hand:5,deck:10,dur:1.5,remember:true,grave:true,market:false,maxB:7,field:5,drawPer:2,fade:11,copies:1};
+const CFG={life:30,hand:5,deck:10,dur:1.5,remember:true,grave:true,market:false,maxB:7,field:5,drawPer:2,fade:11,copies:1,wordHit:2,burn:2};
 function def(id,o){o.id=id;o.kw=o.kw||[];o.on=o.on||{};DB[id]=o;ORDER.push(id);return o;}
 function recipe(a,b,r){RX[a<b?a+'|'+b:b+'|'+a]=r;}
 function rx(a,b){return RX[a<b?a+'|'+b:b+'|'+a]||null;}
@@ -76,7 +76,7 @@ function tpsn(G,t,n){if(t.kw.living&&!t.kw.toxic&&!t.kw.glazed&&!G.pl[t.own].boa
 function ign(G,t){if(!t.kw.fireborn&&!t.wet&&!t.kw.stone&&!t.kw.metal){t.burn=Math.max(t.burn,2);t.frz=0;}}
 function frz(G,t){t.frz=t.wet?2:1;t.burn=0;}
 function wet(G,t){if(t.kw.glazed)return;t.wet=3;t.burn=0;}
-function draw(G,p,n){const P=G.pl[p];for(let k=0;k<n;k++){if(!P.deck.length){if(!P.disc.length)return;P.deck=shuffle(G,P.disc);P.disc=[];}const id=P.deck.pop();P.hand.push(id);if(G.st)G.st[p].drawn[id]=1;}}
+function draw(G,p,n){const P=G.pl[p];for(let k=0;k<n;k++){if(!P.deck.length){if(!P.disc.length||!G.reshuf)return;P.deck=shuffle(G,P.disc);P.disc=[];}const id=P.deck.pop();P.hand.push(id);if(G.st)G.st[p].drawn[id]=1;}}
 function br(G,p,n){G.pl[p].breath=Math.max(0,G.pl[p].breath+n);}
 function dis(G,p){const P=G.pl[p];if(!P.hand.length)return null;const i=Math.floor(rnd(G)*P.hand.length);const id=P.hand.splice(i,1)[0];P.disc.push(id);say(G,who(G,p)+' drop'+(G.names||p?'s':'')+' a word.');return id;}
 function pack(G,p){if(!G.sup.length)return;const id=G.sup[(G.supI++)%G.sup.length];G.pl[p].hand.push(id);if(G.st)G.st[p].drawn[id]=1;}
@@ -96,23 +96,24 @@ function speakers(P){let n=0;for(const t of P.board){if(t.kw.speaker)n++;if(t.kw
 /* ---- game ---- */
 function newGame(cfg,d0,d1,seed,first,opt){const C=Object.assign({},CFG,cfg||{});opt=opt||{};
   const G={cfg:C,s:(seed|0)||1,turn:0,cur:first||0,first:first||0,over:null,uid:1,wx:null,mk:[],sup:[],supI:0,pl:[],st:null,log:opt.log?[]:null,names:opt.names||null};
-  const decks=[d0,d1];for(let i=0;i<2;i++)G.pl.push({life:C.life,breath:0,maxB:0,spark:0,poison:0,tax:0,red:0,stam:0,shield:0,noblk:-1,fz:-1,cyc:-1,spells:0,pc:0,stamNext:0,deck:shuffle(G,decks[i].slice()),hand:[],disc:[],grave:[],board:[]});
+  const decks=[d0,d1];for(let i=0;i<2;i++)G.pl.push({life:C.life,breath:0,maxB:0,spark:0,poison:0,tax:0,red:0,stam:0,shield:0,noblk:-1,fz:-1,cyc:-1,spells:0,pc:0,stamNext:0,wsp:-1,deck:shuffle(G,decks[i].slice()),hand:[],disc:[],grave:[],board:[]});
   if(opt.stats!==false)G.st=[0,1].map(()=>({dmg:{},tdmg:{},route:{},tot:0,heal:0,drawn:{},played:{},order:[],fuse:0,evo:0,kills:0,lost:0,raised:0,bought:0,minDiff:0}));
   if(C.market){G.sup=shuffle(G,ORDER.filter(id=>!DB[id].th&&!DB[id].tok&&!DB[id].made&&DB[id].rar!=='S'));for(let i=0;i<4;i++)G.mk.push(G.sup[G.supI++]);}
-  for(let i=0;i<2;i++){draw(G,i,C.hand);opening(G,i);}
+  G.reshuf=true;for(let i=0;i<2;i++){draw(G,i,C.hand);opening(G,i);}
   startTurn(G,G.cur);return G;}
 function opening(G,p){const P=G.pl[p],ok=id=>DB[id].type==='thing'&&DB[id].cost<=2;if(P.hand.some(ok))return;const k=P.deck.findIndex(ok);if(k<0||!P.hand.length)return;let j=0;for(let i=1;i<P.hand.length;i++)if(DB[P.hand[i]].cost>DB[P.hand[j]].cost)j=i;const x=P.hand[j];P.hand[j]=P.deck[k];P.deck[k]=x;if(G.st){G.st[p].drawn[P.hand[j]]=1;}}
-function startTurn(G,p){G.turn++;G.cur=p;const P=G.pl[p],C=G.cfg;P.maxB=Math.min(C.maxB,P.maxB+1);P.breath=P.maxB-P.tax+(G.turn===2?1:0);if(P.breath<0)P.breath=0;P.tax=0;P.red=0;P.stam=P.stamNext;P.stamNext=0;P.spells=0;P.pc=0;
+function startTurn(G,p){G.reshuf=true;startTurn0(G,p);G.reshuf=false;}
+function startTurn0(G,p){G.turn++;G.cur=p;const P=G.pl[p],C=G.cfg;P.maxB=Math.min(C.maxB,P.maxB+1);P.breath=P.maxB-P.tax+(G.turn===2?1:0);if(P.breath<0)P.breath=0;P.tax=0;P.red=0;P.stam=P.stamNext;P.stamNext=0;P.spells=0;P.pc=0;
   if(C.market)P.spark=Math.min(8,P.spark+1);
   const round=Math.ceil(G.turn/2);if(round>=C.fade){const n=round-C.fade+1;say(G,'The Fading: '+who(G,p)+' lose'+(G.names||p?'s ':' ')+n+'.');P.life-=n;checkOver(G);if(G.over!=null)return;}
   if(P.poison>0){face(G,p,Math.min(4,P.poison),'poison','poison');P.poison--;if(G.over!=null)return;}
   const clock=P.board.some(t=>t.kw.clock);
   for(const t of P.board.slice()){if(!P.board.includes(t))continue;t.wait=!t.acted&&!t.fresh;t.fresh=false;t.acted=false;t.guard=true;t.age++;
     if(t.frz>0){t.frz--;t.acted=true;}if(t.wet>0)t.wet--;
-    if(t.burn>0){t.burn--;hurt(G,t,2,'burning');face(G,p,1,'burning','burn');if(G.over!=null)return;if(!P.board.includes(t))continue;}
+    if(t.burn>0){t.burn--;hurt(G,t,G.cfg.burn,'burning');face(G,p,1,'burning','burn');if(G.over!=null)return;if(!P.board.includes(t))continue;}
     if(t.psn>0){hurt(G,t,t.psn,'poison');if(!P.board.includes(t))continue;}
     if(t.left>0){t.left--;if(t.left===0){say(G,nm(t)+' fades.');kill(G,t);continue;}}
-    if(t.kw.bedrock&&t.ctr<3){t.ctr++;buff(G,t,0,1);}
+    if(t.kw.bedrock&&t.ctr<2){t.ctr++;buff(G,t,0,1);}
     if(clock&&!t.kw.clock)t.age++;
     const d=DB[t.id];if(d.lad&&t.age>=d.lad.n){evolve(G,t,d.lad.to);}
     fire(G,t,'turn');if(clock&&!t.kw.clock&&P.board.includes(t)&&G.over==null)fire(G,t,'turn');if(G.over!=null)return;}
@@ -133,13 +134,13 @@ function flag(t,k){for(const v of t.v)if(DB[v][k])return true;for(const q of t.q
 function attack(G,t){const p=t.own,o=1-p,P=G.pl[p];let s=strikeOf(G,t);t.acted=true;if(t.extra){t.extra--;t.acted=false;}t.wait=false;if(!t.kw.guardian)t.guard=false;if(t.kw.hidden&&!DB[t.id].kw.includes('hidden'))delete t.kw.hidden;
   const fly=t.kw.flying;let nb=!!t.unbl;if(!nb){const u=DB[t.id].on.unbl;if(u&&u(G,t))nb=true;}if(!nb&&P.board.some(x=>x.kw.span)&&cnt(P.board,'structure')>=3)nb=true;if(!nb&&P.board.some(x=>x.kw.bridge))nb=true;let b=nb?null:blocker(G,t);t.unbl=0;let rt=fly?'over':'strike';
   if(b&&flag(t,'seep')){s=Math.ceil(s/2);b=null;rt='seep';}
-  if(b){let d=s-(b.kw.guardian&&t.id!=='steel'?2:0);if(d<1)d=1;const before=b.st;say(G,nm(t)+' strikes; '+nm(b)+' stands in the way and takes '+Math.min(d,b.kw.brittle?before:d)+'.');
+  if(b){let d=s-(t.id==='steel'?0:(b.kw.guardian?1:0)+(b.kw.warded?1:0));if(d<1)d=1;const before=b.st;say(G,nm(t)+' strikes; '+nm(b)+' stands in the way and takes '+Math.min(d,b.kw.brittle?before:d)+'.');
     const dealt=hurt(G,b,d,t.id);const alive=G.pl[o].board.includes(b);
     if(alive&&t.kw.toxic)tpsn(G,b,1);if(alive&&t.burn>0)ign(G,b);
     fire(G,b,'blk',t);if(b.kw.thorny&&P.board.includes(t))hurt(G,t,1,b.id);
-    if(!alive&&d>before&&(t.kw.heavy||flag(t,'crush'))&&G.over==null){say(G,'The blow carries through.');face(G,o,d-before,t.id,'crush');}
+    if(!alive&&d>before&&flag(t,'crush')&&G.over==null){say(G,'The blow carries through.');face(G,o,d-before,t.id,'crush');}
     if(P.board.includes(t))hitHooks(G,t,b,dealt);}
-  else{say(G,nm(t)+' strikes the '+(G.names?G.names[o]:(o?'rival':'you'))+' for '+s+'.');face(G,o,s,t.id,rt);if(t.kw.toxic)psn(G,o,1);if(G.over==null&&P.board.includes(t))hitHooks(G,t,null,s);}
+  else{say(G,nm(t)+' strikes '+(G.names?G.names[o]:(o?'the rival':'you'))+' for '+s+'.');face(G,o,s,t.id,rt);if(t.kw.toxic)psn(G,o,1);if(G.over==null&&P.board.includes(t))hitHooks(G,t,null,s);}
   checkOver(G);}
 function legalTargets(G,p,id){const d=DB[id];if(d.type==='action'||(d.type==='quality'&&!d.foe)){return G.pl[p].board.filter(t=>(!d.need||d.need(t,G))&&!(d.learn&&t.v.includes(id))&&!(d.type==='quality'&&t.q.includes(id)));}return null;}
 function canPlay(G,p,i){const P=G.pl[p],id=P.hand[i],d=DB[id];if(costOf(G,p,id)>P.breath)return false;
@@ -152,8 +153,8 @@ function play(G,p,i,uid){const P=G.pl[p],id=P.hand[i],d=DB[id];P.breath-=costOf(
   else if(d.type==='quality'){let t;if(d.foe){t=d.pick?d.pick(G,p):top(seen(G,p));}else t=thing(G,p,uid);if(!t){P.disc.push(id);}else{say(G,who(G,p)+': '+d.name+' '+nm(t)+'.');
       if(d.foe){P.disc.push(id);d.apply(G,t);}else{t.q.push(id);if(t.id==='clay'||t.id==='rhinoceros')buff(G,t,1,1);if(d.apply)d.apply(G,t);}}}
   else if(d.type==='weather'){say(G,who(G,p)+': the weather turns to '+d.name+'.');G.wx={id,own:p,left:3};if(d.arr)d.arr(G,p);for(let s=0;s<2;s++)for(const t of G.pl[s].board.slice())fire(G,t,'wx');P.disc.push(id);}
-  else if(d.type==='spell'){say(G,who(G,p)+' speak'+(G.names||p?'s ':' ')+d.name+'.');P.spells++;d.cast(G,p);if(d.sch==='word'&&G.over==null){const n=2+speakers(P);say(G,'The spell lands for '+n+'.');face(G,1-p,n,id,'spell');}
-    if(d.keep)P.disc.push(id);else pile(G,p).push(id);}
+  else if(d.type==='spell'){say(G,who(G,p)+' speak'+(G.names||p?'s ':' ')+d.name+'.');P.spells++;d.cast(G,p);if(d.sch==='word'&&G.over==null&&P.wsp!==G.turn){P.wsp=G.turn;const n=G.cfg.wordHit+speakers(P);say(G,'The spell lands for '+n+'.');face(G,1-p,n,id,'spell');}
+    if(d.once)pile(G,p).push(id);else P.disc.push(id);}
   if(G.over==null)for(const t of P.board.slice()){if(!P.board.includes(t))continue;if(t.kw.margin&&d.sch!==DB[t.base||t.id].sch&&d.sch!=='plain')buff(G,t,0,1);if(has(t,'play'))fire(G,t,'play',d);}
   checkOver(G);}
 function fuseOpts(G,p){const P=G.pl[p],o=[];if(P.fz===G.turn)return o;const src=[];P.hand.forEach((id,i)=>{if(DB[id].type==='thing')src.push({id,ref:{h:i}});});for(const t of P.board)if(!t.inp)src.push({id:t.id,ref:{b:t.uid},t});
@@ -174,8 +175,8 @@ function moves(G){const p=G.cur,P=G.pl[p],o=[];if(G.over!=null)return o;const se
   if(G.cfg.market)for(let i=0;i<G.mk.length;i++)if(price(G.mk[i])<=P.spark&&P.hand.length<G.cfg.hand+1)o.push({k:'buy',i});
   for(const t of P.board)if(canAtk(G,t))o.push({k:'atk',t:t.uid});
   return o;}
-function clone(G){const c={cfg:G.cfg,s:G.s,turn:G.turn,cur:G.cur,first:G.first,over:G.over,uid:G.uid,wx:G.wx?{id:G.wx.id,own:G.wx.own,left:G.wx.left}:null,mk:G.mk.slice(),sup:G.sup,supI:G.supI,st:null,log:null,names:null,pl:[]};
+function clone(G){const c={cfg:G.cfg,s:G.s,turn:G.turn,cur:G.cur,first:G.first,over:G.over,uid:G.uid,reshuf:G.reshuf,wx:G.wx?{id:G.wx.id,own:G.wx.own,left:G.wx.left}:null,mk:G.mk.slice(),sup:G.sup,supI:G.supI,st:null,log:null,names:null,pl:[]};
   for(const P of G.pl){const b=[];for(const t of P.board){const x=Object.assign({},t);x.kw=Object.assign({},t.kw);x.q=t.q.slice();x.v=t.v.slice();if(t.inp)x.inp=t.inp.slice();if(t.also)x.also=t.also.slice();b.push(x);}
-    c.pl.push({life:P.life,breath:P.breath,maxB:P.maxB,spark:P.spark,poison:P.poison,tax:P.tax,red:P.red,stam:P.stam,shield:P.shield,noblk:P.noblk,fz:P.fz,cyc:P.cyc,spells:P.spells,pc:P.pc,stamNext:P.stamNext,deck:P.deck.slice(),hand:P.hand.slice(),disc:P.disc.slice(),grave:P.grave.slice(),board:b});}return c;}
+    c.pl.push({life:P.life,breath:P.breath,maxB:P.maxB,spark:P.spark,poison:P.poison,tax:P.tax,red:P.red,stam:P.stam,shield:P.shield,noblk:P.noblk,fz:P.fz,cyc:P.cyc,spells:P.spells,pc:P.pc,stamNext:P.stamNext,wsp:P.wsp,deck:P.deck.slice(),hand:P.hand.slice(),disc:P.disc.slice(),grave:P.grave.slice(),board:b});}return c;}
 const E={fire,has,fuseCost,speakers,DB,RX,THEMES,ORDER,CFG,def,recipe,rx,rnd,shuffle,is,mine,foes,seen,top,low,cnt,say,nm,pile,put,strikeOf,buff,mend,life,face,hurt,kill,bounce,exile,psn,tpsn,ign,frz,wet,draw,br,dis,pack,fetch,raise,evolve,checkOver,costOf,newGame,startTurn,endTurn,thing,canAtk,blocker,attack,legalTargets,canPlay,play,fuseOpts,fuse,buy,price,cycle,apply,moves,clone,mkThing};
 return E;});
