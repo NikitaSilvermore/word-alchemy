@@ -1,0 +1,2 @@
+{ "name": "word-alchemy-engine29", "private": true, "version": "0.29.0-a",
+  "scripts": { "test": "node --test test/*.test.js", "sim": "node sim/run.js v29 300 1000 results/stageA_v29.json", "sim:legacy": "node sim/run.js legacy 300 1000 results/stageA_legacy.json", "report": "node sim/report.js results/stageA_legacy.json results/stageA_v29.json" } }
