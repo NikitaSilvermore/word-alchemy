@@ -15,6 +15,20 @@ const FORMAT = {
   id: 'grammar_v29_test', life: 30, deckSize: 20, openingHand: 5, handCap: 7, slots: 5,
   breathCap: 8, extraBreathCap: 2, poolCap: 10, reserveCap: 2, secondPlayerReserve: 1,
   roundCap: 15, poisonCap: 3, bedrockCap: 2,
+  sparkCap: 5, catalystCap: 1, catalystPrice: 2, ownPrice: 2, offPrice: 3, offSchoolBuysPerDuel: 1, copyLimit: 2,
+  marketOrigins: ['A', 'A', 'B', 'B', 'X'], marketRefreshRounds: [3, 6, 9, 12, 15],
+};
+// Experimental economy overrides for stage D/H tests only (never set in normal play): WA_ECON=price3|nosentence
+if (process.env.WA_ECON === 'price3') { FORMAT.ownPrice = 3; FORMAT.offPrice = 4; }
+const NO_SENTENCE_SPARK = process.env.WA_ECON === 'nosentence';
+// Fair-initiative variants for stage D experiments. 'spec' is the V29 candidate (P2 starts with 1 reserve).
+const INITIATIVE = {
+  spec: { p2Reserve: 1 },
+  none: { p2Reserve: 0 },
+  reserve2: { p2Reserve: 2 },
+  card: { p2Reserve: 1, p2ExtraCard: 1 },
+  breath: { p2Reserve: 1, p2FirstTurnBreath: 1 },
+  spark: { p2Reserve: 1, p2Spark: 2 },
 };
 
 // ---------- RNG ----------
@@ -40,16 +54,18 @@ function mainSchool(deck) {
   return Object.entries(n).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
 }
 
-function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserve = true }) {
+function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserve = true, market = true, initiative = 'spec', mulligan = null }) {
   decks.forEach((d, i) => { const e = deckErrors(d); if (e.length) throw new Error('deck ' + i + ': ' + e.join('; ')); });
   const r = rng(seed);
   let nextId = 1;
   const S = {
     format: FORMAT.id, arithmetic, seed, turn: 0, round: 0, active: 0, over: null, seq: 0, ev: 0,
-    rules: { reserve },
+    rules: { reserve, market, initiative }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
     rand: r, log: [], events: [], hashes: [], clause: null, registry: {},
     players: decks.map((d, i) => ({
       i, life: FORMAT.life, breath: 0, reserve: 0, extraBreath: 0, personalTurn: 0, fatigue: 0, poison: 0,
+      spark: 0, catalyst: 1, sentenceSpark: false, abilitySpark: false, bought: false, offSchoolBought: 0, discountUsed: 0,
+      schools: [...new Set(d.map(w => BY_ID[w].school))].sort(), acquired: Object.fromEntries(d.map(w => [w, 1])), mulliganed: false,
       deck: shuffle(d.map(w => ({ pid: 'c' + i + '_' + (nextId++), word: w, owner: i })), r),
       hand: [], grave: [], sealed: [], ground: null, main: mainSchool(d), usedVerbs: {}, leechUsed: false,
     })),
@@ -59,10 +75,66 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
   for (const p of S.players) for (const c of p.deck) S.registry[c.pid] = true;
   S.active = first != null ? first : (r() < 0.5 ? 0 : 1);
   S.first = S.active;
-  if (reserve) S.players[1 - S.first].reserve = FORMAT.secondPlayerReserve; // §3.1 second-player compensation
-  for (const p of S.players) for (let k = 0; k < FORMAT.openingHand; k++) p.hand.push(p.deck.shift());
+  const ini = INITIATIVE[initiative], p2 = S.players[1 - S.first];
+  if (reserve) p2.reserve = ini.p2Reserve; // §3.2 second-player compensation
+  for (const p of S.players) for (let k = 0; k < FORMAT.openingHand + (p === p2 ? ini.p2ExtraCard || 0 : 0); k++) p.hand.push(p.deck.shift());
+  if (ini.p2Spark) p2.spark = ini.p2Spark;
+  // one partial mulligan each, starting player first (§3.2)
+  for (const i of [S.first, 1 - S.first]) applyMulligan(S, i, mulligan ? mulligan(S, i) : []);
+  if (market) for (let k = 0; k < FORMAT.marketOrigins.length; k++) S.market.push(newOffer(S, k));
   startTurn(S);
   return S;
+}
+
+// ---------- mulligan (§3.2) ----------
+function applyMulligan(S, i, pids) {
+  const p = S.players[i];
+  if (p.mulliganed) throw new Error('one mulligan only');
+  p.mulliganed = true;
+  if (!pids || !pids.length) { event(S, 'mulligan', { side: i, n: 0 }); return; }
+  const aside = pids.map(pid => takeCard(p, pid));
+  for (let k = 0; k < aside.length; k++) p.hand.push(p.deck.shift());
+  p.deck = shuffle(p.deck.concat(aside), S.rand);
+  event(S, 'mulligan', { side: i, n: aside.length });
+}
+
+// ---------- market (§4.4) ----------
+// separate integer RNG state so offers are reproducible and independent of deck shuffles
+function mnext(S) {
+  if (S.mseed == null) throw new Error('market RNG is not visible to this view');
+  S.mseed = (S.mseed + 0x6D2B79F5) >>> 0; let t = S.mseed;
+  t = Math.imul(t ^ (t >>> 15), 1 | t); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const ALL_SCHOOLS = ['air', 'earth', 'fire', 'life', 'rot', 'water', 'word'];
+function marketPool(school) { return Object.values(BY_ID).filter(c => c.deckLegal && c.school === school && c.market !== false).map(c => c.id).sort(); }
+function newOffer(S, k) {
+  const origin = FORMAT.marketOrigins[k];
+  const A = S.players[S.first].schools, Bs = S.players[1 - S.first].schools;
+  let schools = origin === 'A' ? A : origin === 'B' ? Bs : ALL_SCHOOLS.filter(x => !A.includes(x) && !Bs.includes(x));
+  if (!schools.length) schools = ALL_SCHOOLS;
+  const shown = new Set(S.market.filter(Boolean).map(o => o.word));
+  const order = schools.slice();
+  // choose school first, then word; skip schools whose pool is exhausted; never retry forever
+  while (order.length) {
+    const sc = order.splice(Math.floor(mnext(S) * order.length), 1)[0];
+    const pool = marketPool(sc).filter(w => !shown.has(w));
+    if (pool.length) return { slot: k, origin, word: pool[Math.floor(mnext(S) * pool.length)] };
+  }
+  return null;
+}
+function marketStep(S) {
+  const p = S.players[S.active];
+  p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); // guaranteed income
+  if (!S.rules.market) return;
+  const refresh = S.active === S.first && FORMAT.marketRefreshRounds.includes(S.round);
+  for (let k = 0; k < S.market.length; k++) if (refresh || !S.market[k]) { S.market[k] = null; S.market[k] = newOffer(S, k); }
+  event(S, 'market', { refresh, offers: S.market.map(o => o && o.word) });
+}
+function priceOf(S, side, word) { return S.players[side].schools.includes(BY_ID[word].school) ? FORMAT.ownPrice : FORMAT.offPrice; }
+function sparkFor(S, n) { // first qualifying successful paid hand-card sentence this own turn
+  const p = S.players[n.side];
+  if (NO_SENTENCE_SPARK || n.side !== S.active || n.kind === 'response' || !n.cardUsed || n.noEffect || p.sentenceSpark) return;
+  p.sentenceSpark = true; p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); event(S, 'spark', { side: n.side, why: 'sentence' });
 }
 
 // ---------- helpers ----------
@@ -115,9 +187,13 @@ function zoneAudit(S) {
     if (p.hand.length > FORMAT.handCap) errs.push('hand over cap P' + p.i);
     if (S.things.filter(t => t.ctrl === p.i).length > FORMAT.slots) errs.push('field over slots P' + p.i);
     if (p.reserve > FORMAT.reserveCap) errs.push('reserve over cap P' + p.i);
+    if (p.spark > FORMAT.sparkCap || p.spark < 0) errs.push('spark out of range P' + p.i);
+    if (p.breath > FORMAT.poolCap) errs.push('pool over cap P' + p.i);
+    for (const [w, n] of Object.entries(p.acquired)) if (n > FORMAT.copyLimit) errs.push('copy limit ' + w);
   }
   S.things.forEach(t => put(t.pid, 'field'));
   if (S.clause) S.clause.nodes.forEach(n => n.card && put(n.card.pid, 'pending'));
+  if (S.market.filter(Boolean).length !== new Set(S.market.filter(Boolean).map(o => o.word)).size) errs.push('duplicate market offer');
   for (const pid of Object.keys(S.registry)) if (!seen[pid]) errs.push(pid + ' missing');
   for (const pid of Object.keys(seen)) if (!S.registry[pid]) errs.push(pid + ' unregistered');
   return errs;
@@ -187,6 +263,8 @@ function startTurn(S) {
   if (S.active === S.first) S.round++;
   p.reserve = 0; // unused reserve is discarded at own Renew
   p.breath = Math.min(FORMAT.breathCap, 2 + p.personalTurn); p.extraBreath = 0; p.leechUsed = false;
+  p.sentenceSpark = false; p.abilitySpark = false; p.bought = false; p.discountUsed = 0;
+  if (p.personalTurn === 1 && S.active !== S.first) p.breath += INITIATIVE[S.rules.initiative].p2FirstTurnBreath || 0;
   for (const t of S.things) if (t.ctrl === S.active) { t.exhausted = false; t.fresh = false; t.actions = 0; }
   event(S, 'renew', { side: p.i });
   // upkeep: burning and poison as one simultaneous batch
@@ -206,7 +284,8 @@ function startTurn(S) {
   if (p.ground && card(p.ground).upkeep === 'torch') { loseLife(S, 1 - p.i, 1, 'torch'); }
   stateCheck(S); if (S.over != null) return;
   if (!(S.active === S.first && p.personalTurn === 1)) drawCard(S, p);
-  stateCheck(S);
+  stateCheck(S); if (S.over != null) return;
+  marketStep(S);
 }
 function drawCard(S, p) {
   if (p.hand.length >= FORMAT.handCap) return;
@@ -315,6 +394,15 @@ function legalActions(S) {
   if (S.over != null) return [{ type: 'pass' }];
   const p = S.players[S.active], out = [{ type: 'pass' }];
   out.push(...cardPlays(S, S.active, 'main'));
+  if (!p.bought) {
+    if (S.rules.market && p.hand.length < FORMAT.handCap) for (const o of S.market) {
+      if (!o) continue;
+      const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
+      if (p.spark < price || (off && p.offSchoolBought >= FORMAT.offSchoolBuysPerDuel) || (p.acquired[o.word] || 0) >= FORMAT.copyLimit) continue;
+      out.push({ type: 'buy', slot: o.slot });
+    }
+    if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
+  }
   const foes = S.things.filter(t => t.ctrl !== p.i);
   if (p.breath >= 1) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0)) {
     out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'rival' });
@@ -370,7 +458,7 @@ function declare(S, act, side, kind, ctl) {
   const p = S.players[side];
   const node = { type: act.type, side, kind, act, card: null, cancelled: false };
   let d = null;
-  if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); }
+  if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; }
   let cost = d ? d.cost : (act.type === 'attack' ? 1 : 0);
   const courage = act.type === 'attack' && S.arithmetic === 'legacy' && p.life <= 8 && kind === 'main';
   if (courage) cost = 0;
@@ -402,6 +490,7 @@ function apply(S, act, ctl) {
   ctl = normCtl(ctl);
   if (!legalActions(S).some(a => sameAction(a, act))) throw new Error('illegal action ' + JSON.stringify(act) + ': ' + whyIllegal(S, act));
   if (act.type === 'pass') { endTurn(S); S.hashes.push(hashState(S)); return; }
+  if (act.type === 'buy' || act.type === 'catalyst') { economy(S, act); S.hashes.push(hashState(S)); return; } // no response window
   S.clause = { nodes: [] };
   S.clause.nodes.push(declare(S, act, S.active, 'main', ctl));
   stateCheck(S); // cost-generated automatic events resolve before the window
@@ -415,6 +504,19 @@ function apply(S, act, ctl) {
   }
   resolveClause(S);
   S.hashes.push(hashState(S));
+}
+
+function economy(S, act) {
+  const p = S.players[S.active];
+  p.bought = true;
+  if (act.type === 'catalyst') { p.spark -= FORMAT.catalystPrice; p.catalyst = FORMAT.catalystCap; event(S, 'catalyst', { side: p.i }); return; }
+  const o = S.market[act.slot], price = priceOf(S, p.i, o.word);
+  p.spark -= price; if (price === FORMAT.offPrice) p.offSchoolBought++;
+  p.acquired[o.word] = (p.acquired[o.word] || 0) + 1;
+  const c = { pid: 'm' + p.i + '_' + (++S.seq), word: o.word, owner: p.i };
+  if (S.registry) S.registry[c.pid] = true;
+  p.hand.push(c); S.market[act.slot] = null; // slot stays empty until the next market step
+  event(S, 'buy', { side: p.i, word: o.word, price, pid: c.pid }); say(S, `P${p.i} buys ${o.word} for ${price} spark.`);
 }
 
 function addResponse(S, side, act, ctl) {
@@ -438,6 +540,7 @@ function resolveClause(S) {
       toGrave(S, n.card, ok ? 'spent' : 'failed'); n.card = null;
     }
     if (n.act.verb && ok) S.players[n.side].usedVerbs[n.act.verb] = true;
+    if (ok) sparkFor(S, n);
     stateCheck(S);
   }
   S.clause = null;
@@ -445,7 +548,7 @@ function resolveClause(S) {
 
 function wardBlocks(S, n, t) { // hostile non-combat single-target node vs Ward
   if (!t || t.ctrl === n.side || !t.status.ward) return false;
-  delete t.status.ward; event(S, 'ward', { target: t.id }); say(S, `${t.word}'s Ward absorbs it.`); return true;
+  delete t.status.ward; n.noEffect = true; event(S, 'ward', { target: t.id }); say(S, `${t.word}'s Ward absorbs it.`); return true;
 }
 
 function resolveNode(S, n, k) {
@@ -574,14 +677,14 @@ function resolveAttack(S, n) {
   return true;
 }
 
-function sameAction(a, b) { return a.type === b.type && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null); }
+function sameAction(a, b) { return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null); }
 
 function hashState(S) {
-  const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.ground && [p.ground.pid, p.ground.damage]]), th: S.things.map(t => [t.id, t.pid, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status]) });
+  const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map(o => o && o.word), th: S.things.map(t => [t.id, t.pid, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status]) });
   let h = 2166136261; for (let i = 0; i < pub.length; i++) { h ^= pub.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16);
 }
 
 module.exports = {
-  FORMAT, createMatch, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
+  FORMAT, INITIATIVE, createMatch, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
 };

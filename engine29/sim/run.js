@@ -1,8 +1,9 @@
 // Reproducible paired benchmark:
-// node sim/run.js <arithmetic> <gamesPerPairing> <seedBase> <out.json> [deckSet A|R] [responses on|off] [reserve on|off] [audit on|off]
+// node sim/run.js <arithmetic> <gamesPerPairing> <seedBase> <out.json> [deckSet A|R] [responses on|off] [reserve on|off] [audit on|off] [initiative spec|none|reserve2|card|breath|spark] [market on|off]
+// Games come in mirrored pairs: the same seed is played twice with the first player swapped.
 'use strict';
 const E = require('../src/engine');
-const { chooseAction, controller } = require('../src/bots');
+const { chooseAction, controller, mulligan } = require('../src/bots');
 
 const DECKS = {
   wall: ['earth.boulder', 'earth.stone', 'earth.lead', 'earth.iron', 'earth.flint', 'earth.tower', 'earth.guard', 'earth.crush', 'earth.cut',
@@ -31,7 +32,7 @@ const SETS = { A: DECKS, R: DECKS_R };
 
 function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];
-  const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false });
+  const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false, market: o.market !== false, initiative: o.initiative || 'spec', mulligan: o.mulligan === false ? null : mulligan });
   const pol = i => pols[i]; const ctl = controller(pol, { responses: o.responses !== false });
   const lifeAtRoundEnd = {}; let maxHitToPlayer = 0, lastRound = 0;
   for (let k = 0; k < 2000 && S.over == null; k++) {
@@ -54,16 +55,18 @@ function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
     leadR2: r2 ? (r2[0] === r2[1] ? -1 : (r2[0] > r2[1] ? 0 : 1)) : -1,
     responses: S.stats.responses, answers: S.stats.answers, failed: S.stats.failed, cancelled: S.stats.cancelled,
     groundHits: S.stats.packets.filter(p => p.to === 'ground').length,
+    buys: S.events.filter(e => e.type === 'buy').length, mulls: S.events.filter(e => e.type === 'mulligan').reduce((a, e) => a + e.n, 0),
+    sparkLeft: S.players.map(p => p.spark),
   };
 }
 
 function main() {
-  const [arith = 'v29', nStr = '200', seedStr = '1000', out = '/tmp/v29_sim.json', set = 'A', resp = 'on', resv = 'on', audit = 'off'] = process.argv.slice(2);
-  const o = { set, responses: resp === 'on', reserve: resv === 'on', audit: audit === 'on' };
+  const [arith = 'v29', nStr = '200', seedStr = '1000', out = '/tmp/v29_sim.json', set = 'A', resp = 'on', resv = 'on', audit = 'off', initiative = 'spec', mkt = 'on'] = process.argv.slice(2);
+  const o = { set, responses: resp === 'on', reserve: resv === 'on', audit: audit === 'on', initiative, market: mkt === 'on' };
   const n = +nStr, seed0 = +seedStr, names = Object.keys(SETS[set]), res = [];
   const POLS = [['careful', 'careful'], ['aggressive', 'aggressive'], ['aggressive', 'careful'], ['careful', 'aggressive']];
   for (let i = 0; i < names.length; i++) for (let j = i; j < names.length; j++) for (let g = 0; g < n; g++) {
-    const seed = seed0 + i * 100000 + j * 10000 + g; // identical seeds across arithmetic models
+    const seed = seed0 + i * 100000 + j * 10000 + (g >> 1); // identical seeds across models; g%2 swaps who starts
     res.push(playOne(names[i], names[j], seed, arith, g % 2, POLS[(g >> 1) % 4], o));
   }
   require('fs').writeFileSync(out, JSON.stringify(res));

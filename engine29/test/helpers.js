@@ -14,7 +14,7 @@ const DECKS = {
 function fixture({ arithmetic = 'v29', decks = [DECKS.earthWater, DECKS.fireAir], first = 0, seed = 7 } = {}) {
   const S = E.createMatch({ decks, seed, arithmetic, first });
   S.synthetic = true;
-  for (const p of S.players) { p.deck.push(...p.hand); p.hand = []; p.breath = 8; p.reserve = 0; }
+  for (const p of S.players) { p.deck.push(...p.hand); p.hand = []; p.breath = 8; p.reserve = 0; p.spark = 0; p.sentenceSpark = false; }
   return S;
 }
 function place(S, side, word, o = {}) {

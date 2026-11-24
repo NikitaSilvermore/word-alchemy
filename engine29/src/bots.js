@@ -13,7 +13,7 @@ function redact(S, viewer) {
     if (p.i !== viewer) p.hand = p.hand.map((x, k) => ({ pid: HIDDEN + p.i + '_' + k, word: HIDDEN, owner: p.i }));
     p.deck = p.deck.map((x, k) => ({ pid: HIDDEN + 'd' + p.i + '_' + k, word: HIDDEN, owner: p.i }));
   }
-  c.registry = null; c.redacted = true;
+  c.registry = null; c.mseed = null; c.redacted = true; // future market offers are hidden too
   return c;
 }
 const clone = S => redact(S, S.active);
@@ -27,12 +27,26 @@ function value(S, me, w) {
   };
   const board = i => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E.groundRemaining(P[i].ground) : 0);
   return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
-    - 1.5 * (P[me].poison - P[1 - me].poison) + (P[1 - me].life <= 0 ? 1e5 : 0);
+    - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + (P[1 - me].life <= 0 ? 1e5 : 0);
+}
+
+// worth of a known card in hand beyond the flat hand-size term: cheap Things and in-school words are easiest to use
+function cardWorth(S, me, word) {
+  const d = E.card({ word }), p = S.players[me];
+  return 0.25 * d.cost + (d.type === 'thing' ? 0.3 : 0) + (p.schools.includes(d.school) ? 0.2 : 0);
+}
+
+// one partial mulligan: keep a hand with at least two cheap Things; otherwise set aside everything else
+function mulligan(S, i) {
+  const h = S.players[i].hand, d = c => E.card(c);
+  const cheap = h.filter(c => d(c).type === 'thing' && d(c).cost <= 2);
+  if (cheap.length >= 2) return h.filter(c => d(c).cost >= 3 && d(c).type !== 'thing').map(c => c.pid).slice(0, 1);
+  return h.filter(c => !(d(c).type === 'thing' && d(c).cost <= 2)).map(c => c.pid);
 }
 
 const POLICIES = {
-  aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35 },
-  careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6 },
+  aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35, spark: 0.2 },
+  careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2 },
 };
 
 // defender's blocking choice (public information only)
@@ -104,10 +118,11 @@ function chooseAction(S, policyOf) {
   for (const a of acts) {
     const c = clone(S);
     try { E.apply(c, a, { block: blk, respond: null }); } catch (e) { continue; }
-    const v = value(c, me, w) + holdValue(c, me, w) + (a.type === 'deploy' || a.type === 'ground' ? 0.8 : 0);
+    const bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S, me, S.market[a.slot].word) : 0;
+    const v = value(c, me, w) + holdValue(c, me, w) + bonus;
     if (v > bestV) { bestV = v; best = a; }
   }
   return best || { type: 'pass' };
 }
 
-module.exports = { chooseAction, blocker, responder, controller, POLICIES, clone, redact, value };
+module.exports = { chooseAction, blocker, responder, controller, mulligan, POLICIES, clone, redact, value };
