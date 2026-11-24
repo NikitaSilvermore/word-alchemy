@@ -28,7 +28,20 @@ const DECKS_R = {
   tide: ['water.eel', 'water.otter', 'water.pike', 'water.ice', 'water.seep', 'water.drench', 'water.dew', 'water.sleep', 'water.frozen', 'water.tonic',
     'air.owl', 'air.hawk', 'air.swallow', 'air.crow', 'air.wind', 'air.gust', 'word.familiar', 'word.protect', 'word.doubt', 'water.thaw'],
 };
-const SETS = { A: DECKS, R: DECKS_R };
+// Stage E alchemy decks: each holds the ingredients of at least one recipe chain.
+const DECKS_E = {
+  forge: ['earth.lead', 'earth.silver', 'earth.clay', 'earth.iron', 'earth.stone', 'earth.boulder', 'earth.transmute', 'earth.crush', 'earth.guard',
+    'fire.ember', 'fire.salamander', 'fire.firebird', 'fire.fire', 'fire.calcine', 'fire.kindle', 'fire.scorch', 'air.wind', 'air.owl', 'air.hawk', 'air.gust'],
+  marsh: ['earth.clay', 'water.water', 'life.seed', 'life.grow', 'life.oak', 'life.sapling', 'water.eel', 'water.otter', 'water.pike', 'water.ice',
+    'life.aloe', 'life.wolf', 'life.stag', 'life.mend', 'water.tonic', 'water.drench', 'water.dew', 'earth.stone', 'earth.guard', 'life.bite'],
+  crypt: ['rot.adder', 'life.scarab', 'rot.rat', 'rot.spider', 'rot.leech', 'rot.yew', 'rot.barrow', 'rot.poison', 'word.familiar', 'word.word',
+    'word.protect', 'word.separate', 'life.bite', 'life.mend', 'life.wolf', 'life.hare', 'life.stag', 'life.apothecary', 'word.doubt', 'life.grow'],
+  lab: ['water.flask', 'word.familiar', 'word.word', 'water.vitriol', 'water.quicksilver', 'water.eel', 'water.otter', 'water.pike', 'water.tonic', 'water.dew',
+    'water.sleep', 'water.seep', 'air.owl', 'air.hawk', 'air.crow', 'air.wind', 'air.gust', 'word.protect', 'word.doubt', 'word.separate'],
+  quarry: DECKS_R.quarry,
+  pack: DECKS_R.pack,
+};
+const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E };
 
 function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];
@@ -57,6 +70,14 @@ function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
     groundHits: S.stats.packets.filter(p => p.to === 'ground').length,
     buys: S.events.filter(e => e.type === 'buy').length, mulls: S.events.filter(e => e.type === 'mulligan').reduce((a, e) => a + e.n, 0),
     sparkLeft: S.players.map(p => p.spark),
+    // per seat: index 0 = starting player, 1 = second player
+    buySeat: [S.first, 1 - S.first].map(i => S.events.filter(e => e.type === 'buy' && e.side === i).length),
+    firstBuyTurn: [S.first, 1 - S.first].map(i => { const e = S.events.find(e => e.type === 'buy' && e.side === i); return e ? e.turn : null; }),
+    offSeat: [S.first, 1 - S.first].map(i => S.players[i].offSchoolBought),
+    handEnd: [S.first, 1 - S.first].map(i => S.players[i].hand.length),
+    deckEnd: [S.first, 1 - S.first].map(i => S.players[i].deck.length),
+    fusions: S.stats.fusions, made: S.stats.made, transforms: S.stats.transforms, tokens: S.stats.tokens, catalystRefills: S.events.filter(e => e.type === 'catalyst').length,
+    fatigueSeat: [S.first, 1 - S.first].map(i => S.players[i].fatigue),
   };
 }
 
@@ -73,4 +94,4 @@ function main() {
   console.log(out, res.length);
 }
 if (require.main === module) main();
-module.exports = { playOne, DECKS, DECKS_R };
+module.exports = { playOne, DECKS, DECKS_R, DECKS_E };

@@ -23,11 +23,12 @@ function value(S, me, w) {
   const P = S.players, side = i => S.things.filter(t => t.ctrl === i);
   const thingV = t => {
     const out = E.incapacitated(t) ? 0.5 : 1;
-    return out * E.curStrike(S, t) * w.str + Math.max(0, E.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0);
+    return out * E.curStrike(S, t) * w.str + Math.max(0, E.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0)
+      + (w.alchemy || 0) * alchemyWorth(t);
   };
   const board = i => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E.groundRemaining(P[i].ground) : 0);
   return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
-    - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + (P[1 - me].life <= 0 ? 1e5 : 0);
+    - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst) + (P[1 - me].life <= 0 ? 1e5 : 0);
 }
 
 // worth of a known card in hand beyond the flat hand-size term: cheap Things and in-school words are easiest to use
@@ -44,9 +45,21 @@ function mulligan(S, i) {
   return h.filter(c => !(d(c).type === 'thing' && d(c).cost <= 2)).map(c => c.pid);
 }
 
+// Worth a one-ply search cannot see: engines, recursion and progress along a recipe chain or ladder.
+const ENGINE = { energy: 1.6, gold: 1.6, lifeHeal: 1.2, worldTree: 2.5, stone: 2.5 };
+const FORM_PROGRESS = { 'earth.tin': 0.6, 'earth.copper': 0.6, 'earth.silver': 1.2, 'earth.gold': 2, 'life.sapling': 0.8, 'life.oak': 1.5, 'life.willow': 1.2 };
+function alchemyWorth(t) {
+  const c = E.card(t);
+  let v = (ENGINE[c.upkeep] || 0) + (FORM_PROGRESS[c.id] || 0);
+  if (t.lineage) v += 0.8 + (c.made ? 0.5 * (c.kw || []).includes('final') + 0.4 * ((c.schools || []).length) : 0.6 * ((t.mods && t.mods.infusions.length) || 0));
+  if (c.rebirth) v += 1.5;
+  if (t.token) v -= 0.3;
+  return v;
+}
+
 const POLICIES = {
-  aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35, spark: 0.2 },
-  careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2 },
+  aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35, spark: 0.2, alchemy: 1 },
+  careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2, alchemy: 1 },
 };
 
 // defender's blocking choice (public information only)

@@ -1,5 +1,21 @@
 # V29 "The Grammar" engine changelog
 
+## 0.29.0-e — Stage E: alchemy (24 Nov 2026)
+- Vessel fusion as a Main declaration that opens the Clause: two distinct controlled-and-owned ingredients, at least one mature Thing, Things ready and not incapacitated, Ground only where the recipe names it, tokens only where registered, no Final ingredient, lethal preview illegal. Breath, catalyst and the once-per-turn allowance are committed at declaration and never refunded; ingredients are revalidated at resolution.
+- Results enter Fresh and exhausted with summed marked damage; a Made event, never Arrival; no sentence spark. Ingredients are consumed without death or sacrifice and bound in a public lineage.
+- 12 named recipes (§9) and 4 compositional infusions (Fireborn, Winged, Sea-born, Stonebound; max two per lineage, no duplicates, Heavy cannot be Winged, Stonebound grounds flyers). Catalyst computed from recorded school affiliations; matches the spec table for all 12.
+- Recipe validator and reachability check: every named recipe reachable from deck-legal words, ladders and token creators; Philosopher's Stone assembled by real play in a test.
+- Leaving play (§5.12): destroyed made forms count as one death and release every original card to its owner's Grave; bounce dissolves without death; tokens vanish; Separate restores ingredients (damage to primary, Fresh/exhausted, fails without room, consumes the Vessel, no spark).
+- Ladders (§7.5): Lead → Tin/Copper → Silver → Gold via Transmute, one edge per own turn, printed word kept; Gold ladder-only (+1 breath). Seed → Sapling → Oak/Willow by upkeep age and Grow; one stage per own turn; Growth counters (cap 3) persist through transformation.
+- Tokens: Ash (Calcine), Carrion (Barrow); never displace. Sacrifice as an additional cost resolves its death triggers before the response window.
+- Phoenix rebirth (once per player, no overflow through prevented destruction), Ouroboros recovery, Recurrent (per physical card), Homunculus spell search, Energy/Gold/Life/World Tree/Philosopher's Stone upkeeps, Steam lifespan and wet-on-hit, Fire and Water Ground upkeeps, Flask potion bonus, Word might counter, Familiar fusion discount.
+- New words: Fire (Ground), Calcine, Water (Ground), Flask, Vitriol, Quicksilver, Clay, Tin, Copper, Silver, Gold, Transmute, Seed, Sapling, Oak, Willow, Grow, Scarab, Barrow, Word, Separate. Market pool now includes them.
+- `whyIllegal()` explains rejected fusions. Zone audit follows lineage.
+- Bots value engines, recursion and chain progress; catalyst valued.
+- Stage D market diagnostic (`WA_MKT=norefresh|p2refresh|from2|nobuy`).
+- 84 tests.
+- Not yet: Graft, Fruit/Blossom creators, Alkahest's ability, Rust, Willow's own heal ability, Philosopher's Stone choice is a fixed policy, Fire/Water Ground choices are fixed policies.
+
 ## 0.29.0-d — Stage D: economy (24 Nov 2026)
 - Opening: 5 cards each; one partial mulligan per player (starting player first), set-aside cards shuffled back; starting player skips the first draw.
 - Spark: start 0, cap 5; +1 guaranteed at each own market step; +1 for the first successful paid hand-card sentence in Main (or a successful answer). None for basic strikes, off-turn responses, purchases, countered, failed or Ward-absorbed sentences.

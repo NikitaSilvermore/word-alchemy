@@ -5,22 +5,28 @@
 //
 // Stage B: stable physical IDs, zones with reasons, damageable Ground, illegal-sentence reasons,
 //          zone invariant audit.
+// Stage E: Vessel fusion (named and compositional recipes), computed catalysts, physical lineage, release,
+//          Separate, metal and plant ladders, tokens, sacrifice costs, Recurrent, Phoenix and Ouroboros.
 // Stage C: reserve, bounded Clause (declaration → blocker → defender response → active answer →
 //          reverse resolution with revalidation), Response cards, controller-relative expiry,
 //          deterministic trigger order, event log.
 'use strict';
 const { BY_ID, capabilities } = require('./cards');
+const R = require('./recipes');
 
 const FORMAT = {
   id: 'grammar_v29_test', life: 30, deckSize: 20, openingHand: 5, handCap: 7, slots: 5,
   breathCap: 8, extraBreathCap: 2, poolCap: 10, reserveCap: 2, secondPlayerReserve: 1,
-  roundCap: 15, poisonCap: 3, bedrockCap: 2,
+  roundCap: 15, poisonCap: 3, bedrockCap: 2, growthCap: 3, mightCap: 2,
   sparkCap: 5, catalystCap: 1, catalystPrice: 2, ownPrice: 2, offPrice: 3, offSchoolBuysPerDuel: 1, copyLimit: 2,
   marketOrigins: ['A', 'A', 'B', 'B', 'X'], marketRefreshRounds: [3, 6, 9, 12, 15],
 };
 // Experimental economy overrides for stage D/H tests only (never set in normal play): WA_ECON=price3|nosentence
 if (process.env.WA_ECON === 'price3') { FORMAT.ownPrice = 3; FORMAT.offPrice = 4; }
 const NO_SENTENCE_SPARK = process.env.WA_ECON === 'nosentence';
+// Market diagnostics (test only): WA_MKT=norefresh | p2refresh (refresh at the second player's step) | from2 (no purchases in round 1) | nobuy (offers shown, never purchasable)
+const MKT = process.env.WA_MKT || '';
+if (MKT === 'norefresh') FORMAT.marketRefreshRounds = [];
 // Fair-initiative variants for stage D experiments. 'spec' is the V29 candidate (P2 starts with 1 reserve).
 const INITIATIVE = {
   spec: { p2Reserve: 1 },
@@ -61,16 +67,16 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
   const S = {
     format: FORMAT.id, arithmetic, seed, turn: 0, round: 0, active: 0, over: null, seq: 0, ev: 0,
     rules: { reserve, market, initiative }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
-    rand: r, log: [], events: [], hashes: [], clause: null, registry: {},
+    rand: r, log: [], events: [], hashes: [], clause: null, registry: {}, flags: {},
     players: decks.map((d, i) => ({
       i, life: FORMAT.life, breath: 0, reserve: 0, extraBreath: 0, personalTurn: 0, fatigue: 0, poison: 0,
       spark: 0, catalyst: 1, sentenceSpark: false, abilitySpark: false, bought: false, offSchoolBought: 0, discountUsed: 0,
-      schools: [...new Set(d.map(w => BY_ID[w].school))].sort(), acquired: Object.fromEntries(d.map(w => [w, 1])), mulliganed: false,
+      schools: [...new Set(d.map(w => BY_ID[w].school))].sort(), fusedTurn: 0, phoenixUsed: false, ouroUsed: false, barrowTurn: 0, potionTurn: 0, acquired: Object.fromEntries(d.map(w => [w, 1])), mulliganed: false,
       deck: shuffle(d.map(w => ({ pid: 'c' + i + '_' + (nextId++), word: w, owner: i })), r),
       hand: [], grave: [], sealed: [], ground: null, main: mainSchool(d), usedVerbs: {}, leechUsed: false,
     })),
     things: [], // field instances
-    stats: { packets: [], firstLethalRound: null, responses: 0, answers: 0, failed: 0, cancelled: 0 },
+    stats: { packets: [], firstLethalRound: null, responses: 0, answers: 0, failed: 0, cancelled: 0, made: {}, fusions: 0, transforms: 0, tokens: 0 },
   };
   for (const p of S.players) for (const c of p.deck) S.registry[c.pid] = true;
   S.active = first != null ? first : (r() < 0.5 ? 0 : 1);
@@ -126,7 +132,7 @@ function marketStep(S) {
   const p = S.players[S.active];
   p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); // guaranteed income
   if (!S.rules.market) return;
-  const refresh = S.active === S.first && FORMAT.marketRefreshRounds.includes(S.round);
+  const refresh = (MKT === 'p2refresh' ? S.active !== S.first : S.active === S.first) && FORMAT.marketRefreshRounds.includes(S.round);
   for (let k = 0; k < S.market.length; k++) if (refresh || !S.market[k]) { S.market[k] = null; S.market[k] = newOffer(S, k); }
   event(S, 'market', { refresh, offers: S.market.map(o => o && o.word) });
 }
@@ -137,24 +143,37 @@ function sparkFor(S, n) { // first qualifying successful paid hand-card sentence
   p.sentenceSpark = true; p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); event(S, 'spark', { side: n.side, why: 'sentence' });
 }
 
+function mightFor(S, n) { // Word: first other successful hand-card sentence each own turn grants 1 Might
+  const p = S.players[n.side];
+  if (n.side !== S.active || n.kind === 'response' || !n.cardUsed || n.noEffect) return;
+  for (const t of S.things) if (t.ctrl === n.side && card(t).mightOnSentence && t.pid !== n.cardPid && t.mightTurn !== p.personalTurn) {
+    t.mightTurn = p.personalTurn; t.counters.might = Math.min(FORMAT.mightCap, (t.counters.might || 0) + 1);
+  }
+}
+
 // ---------- helpers ----------
 const say = (S, x) => { S.log.push(x); };
 const event = (S, type, o = {}) => { S.events.push({ n: ++S.ev, turn: S.turn, type, ...o }); };
-const card = c => BY_ID[c.word];
+const card = c => BY_ID[c.form || c.word]; // current form (ladders/made) or printed word
+const MOD0 = { strike: 0, stand: 0, props: [], kw: [], kwRemove: [], infusions: [], schools: [] };
+const modsOf = t => t.mods || MOD0;
+function propsOf(t) { const m = modsOf(t); return m.props.length ? [...new Set((card(t).props || []).concat(m.props))] : (card(t).props || []); }
 function kws(S, t) {
-  const k = new Set(card(t).kw || []);
+  const m = modsOf(t);
+  const k = new Set((card(t).kw || []).concat(m.kw));
+  for (const x of m.kwRemove) k.delete(x);
   if (t.tempGuard) k.add('guard');
   const g = S.players[t.ctrl].ground;
   if (g && card(g).static === 'heavyReach' && k.has('heavy')) k.add('reach');
-  if (t.status.wet && (card(t).props || []).includes('winged')) k.delete('flying');
+  if (t.status.wet && prop(t, 'winged')) k.delete('flying');
   return k;
 }
-function caps(S, t) { return capabilities(card(t), kws(S, t)); }
+function caps(S, t) { return capabilities({ ...card(t), props: propsOf(t) }, kws(S, t)); }
 function has(S, t, k) { return kws(S, t).has(k); }
-function prop(t, p) { return (card(t).props || []).includes(p); }
-function maxStand(S, t) { return card(t).stand + (t.counters.bedrock || 0) + (t.tempStand || 0); }
+function prop(t, p) { return propsOf(t).includes(p); }
+function maxStand(S, t) { return card(t).stand + modsOf(t).stand + (t.counters.bedrock || 0) + (t.counters.growth || 0) + (t.tempStand || 0); }
 function curStrike(S, t) {
-  let s = card(t).strike + (t.tempStrike || 0);
+  let s = card(t).strike + modsOf(t).strike + (t.counters.might || 0) + (t.tempStrike || 0);
   if (card(t).packBonus && S.things.some(o => o !== t && o.ctrl === t.ctrl && prop(o, 'beast'))) s += 1;
   if (S.arithmetic === 'legacy') { s += t.attuned ? 2 : 0; s += (t.counters.bedrock || 0) + (t.tempStand || 0); } // legacy: stand growth feeds strike
   if (t.status.blinded) s -= 2;
@@ -176,6 +195,46 @@ function toGrave(S, c, reason) {
   S.players[c.owner].grave.push(e);
   event(S, 'grave', { pid: c.pid, reason });
 }
+function newThing(S, side, o) {
+  const p = S.players[side];
+  const t = { id: 't' + (++S.seq), pid: null, owner: side, ctrl: side, entry: S.seq, damage: 0, counters: {}, status: {}, exhausted: false, fresh: true, actions: 0, arrivedTurn: p.personalTurn, ...o };
+  S.things.push(t); return t;
+}
+function createToken(S, side, id) {
+  if (S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) { event(S, 'token-failed', { side, id }); return null; } // never displace
+  const t = newThing(S, side, { word: id, form: id, token: true });
+  S.stats.tokens++; event(S, 'token', { side, id, tid: t.id }); return t;
+}
+// public lineage record of a fusion ingredient (§7.4)
+function lineageRecord(o, isGround) {
+  if (isGround) return { pid: o.pid, word: o.word, owner: o.owner, ground: true, damage: o.damage || 0 };
+  if (o.token) return { token: o.form, owner: o.owner };
+  if (o.lineage) return { made: true, word: o.word, form: o.form, mods: o.mods || null, lineage: o.lineage, owner: o.owner };
+  return { pid: o.pid, word: o.word, form: o.form || o.word, owner: o.owner };
+}
+function lineagePids(recs, out = []) { for (const r of recs || []) { if (r.pid) out.push(r); if (r.lineage) lineagePids(r.lineage, out); } return out; }
+function release(S, recs, reason, sealed) {
+  for (const r of lineagePids(recs)) { if (sealed) { S.players[r.owner].sealed.push({ pid: r.pid, word: r.word, owner: r.owner }); event(S, 'sealed', { pid: r.pid }); } else toGrave(S, r, reason); }
+}
+// remove a Thing from the field; `how` decides its destination (§5.12). Returns true when it is a death.
+function leaveField(S, t, how) {
+  S.things = S.things.filter(x => x !== t);
+  if (t.token) { event(S, 'token-gone', { tid: t.id, how }); return how === 'destroyed' || how === 'sacrificed'; }
+  if (t.lineage) {
+    release(S, t.lineage, how === 'bounced' ? 'dissolved' : how === 'expired' ? 'retired' : 'released', how === 'sealed');
+    event(S, 'unmade', { tid: t.id, how });
+    return how === 'destroyed' || how === 'sacrificed';
+  }
+  if (how === 'bounced') {
+    const o = S.players[t.owner], c = { pid: t.pid, word: t.word, owner: t.owner };
+    if (o.hand.length >= FORMAT.handCap) toGrave(S, c, 'bounced-full-hand'); else o.hand.push(c);
+    return false;
+  }
+  if (how === 'sealed') { S.players[t.owner].sealed.push({ pid: t.pid, word: t.word, owner: t.owner }); return false; }
+  toGrave(S, t, how);
+  return how === 'destroyed' || how === 'sacrificed';
+}
+
 // every registered physical card is in exactly one zone
 function zoneAudit(S) {
   const seen = {}, errs = [];
@@ -191,7 +250,7 @@ function zoneAudit(S) {
     if (p.breath > FORMAT.poolCap) errs.push('pool over cap P' + p.i);
     for (const [w, n] of Object.entries(p.acquired)) if (n > FORMAT.copyLimit) errs.push('copy limit ' + w);
   }
-  S.things.forEach(t => put(t.pid, 'field'));
+  S.things.forEach(t => { if (t.pid) put(t.pid, 'field'); for (const r of lineagePids(t.lineage)) put(r.pid, 'lineage'); });
   if (S.clause) S.clause.nodes.forEach(n => n.card && put(n.card.pid, 'pending'));
   if (S.market.filter(Boolean).length !== new Set(S.market.filter(Boolean).map(o => o.word)).size) errs.push('duplicate market offer');
   for (const pid of Object.keys(S.registry)) if (!seen[pid]) errs.push(pid + ' missing');
@@ -221,11 +280,14 @@ function stateCheck(S) {
   let changed = true;
   while (changed) {
     changed = false;
-    const dead = S.things.filter(t => remainingOf(S, t) <= 0);
+    let dead = S.things.filter(t => remainingOf(S, t) <= 0);
+    for (const t of dead.filter(t => rebirthAvailable(S, t))) { // Phoenix replacement: no death, no release
+      S.players[t.ctrl].phoenixUsed = true; t.damage = 0; exhaust(t); event(S, 'rebirth', { tid: t.id }); say(S, `${t.word} is reborn.`);
+    }
+    dead = dead.filter(t => remainingOf(S, t) <= 0);
     if (dead.length) {
       changed = true;
-      S.things = S.things.filter(t => !dead.includes(t));
-      for (const t of dead) { toGrave(S, t, 'destroyed'); say(S, `${t.word} (P${t.ctrl}) is destroyed.`); }
+      for (const t of dead) { leaveField(S, t, 'destroyed'); say(S, `${t.word} (P${t.ctrl}) is destroyed.`); }
       // §5.11: active player's triggers first, then source entry order, then stable id
       const ordered = dead.slice().sort((a, b) => (a.ctrl === S.active ? 0 : 1) - (b.ctrl === S.active ? 0 : 1) || a.entry - b.entry || (a.id < b.id ? -1 : 1));
       for (const t of ordered) deathTrigger(S, t);
@@ -241,7 +303,26 @@ function stateCheck(S) {
   }
 }
 
+function rebirthAvailable(S, t) { return !!card(t).rebirth && !S.players[t.ctrl].phoenixUsed; }
+function recoverFromGrave(S, pid, owner) {
+  const p = S.players[owner], k = p.grave.findIndex(g => g.pid === pid);
+  if (k < 0 || p.hand.length >= FORMAT.handCap) return false;
+  const g = p.grave.splice(k, 1)[0]; p.hand.push({ pid: g.pid, word: g.word, owner: g.owner }); event(S, 'recover', { pid }); return true;
+}
 function deathTrigger(S, t) {
+  event(S, 'death', { tid: t.id, ctrl: t.ctrl, made: !!t.lineage, token: !!t.token });
+  const pc = S.players[t.ctrl];
+  if (t.pid && has(S, t, 'recurrent') && !S.flags[t.pid + ':recurrent']) { // physical card's once-per-duel flag
+    S.flags[t.pid + ':recurrent'] = true; recoverFromGrave(S, t.pid, t.owner);
+  }
+  if (card(t).ouroboros && !pc.ouroUsed) {
+    pc.ouroUsed = true;
+    const r = lineagePids(t.lineage).find(x => S.players[x.owner].grave.some(g => g.pid === x.pid));
+    if (r) recoverFromGrave(S, r.pid, r.owner);
+  }
+  if (t.pid && !t.lineage && prop(t, 'living') && t.ctrl === S.active && pc.ground && card(pc.ground).carrionOnDeath && pc.barrowTurn !== pc.personalTurn) {
+    pc.barrowTurn = pc.personalTurn; createToken(S, t.ctrl, 'token.carrion');
+  }
   if (card(t).onDeath === 'poison1') {
     // target chosen at resolution and validated (deterministic choice pending a player prompt)
     const tg = S.things.filter(o => o.ctrl !== t.ctrl && prop(o, 'living')).sort((a, b) => curStrike(S, b) - curStrike(S, a) || a.entry - b.entry)[0];
@@ -278,15 +359,52 @@ function startTurn(S) {
   for (const t of S.things.filter(t => t.ctrl === S.active).sort((a, b) => a.entry - b.entry)) {
     if (has(S, t, 'bedrock') && t.arrivedTurn < p.personalTurn) t.counters.bedrock = Math.min(FORMAT.bedrockCap, (t.counters.bedrock || 0) + 1);
     const u = card(t).upkeep;
+    if (u === 'energy' || u === 'gold') gainExtraBreath(p, 1);
+    if (u === 'lifeHeal') p.life = Math.min(FORMAT.life, p.life + 1);
+    if (u === 'worldTree') {
+      p.life = Math.min(FORMAT.life, p.life + 2);
+      const o = S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'living') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
+      if (o) o.counters.growth = (o.counters.growth || 0) + 1;
+    }
+    if (u === 'stone') { if (p.hand.length <= 3 && p.deck.length) drawCard(S, p); else gainExtraBreath(p, 1); } // owner's choice; deterministic policy here
+    if (card(t).lifespan) { t.age = (t.age || 0) + 1; if (t.age >= card(t).lifespan) { leaveField(S, t, 'expired'); say(S, `${t.word} disperses.`); continue; } }
+    if (card(t).ladder === 'plant' && ['life.seed', 'life.sapling'].includes(card(t).id)) ageUp(S, t);
     if (u === 'aloe') { const d = S.things.filter(o => o.ctrl === p.i && o.damage > 0).sort((a, b) => a.entry - b.entry)[0]; if (d) heal(S, d, 1); }
     if (u === 'wormwood') { if (p.poison) p.poison--; else { const d = S.things.find(o => o.ctrl === p.i && o.status.poison); if (d) d.status.poison--; } }
   }
   if (p.ground && card(p.ground).upkeep === 'torch') { loseLife(S, 1 - p.i, 1, 'torch'); }
+  if (p.ground && card(p.ground).upkeep === 'fireGround') {
+    const v = S.things.filter(o => o.ctrl !== p.i && prop(o, 'flammable') && o.damage > 0 && !o.status.burning && !o.status.wet).sort((a, b) => a.entry - b.entry)[0];
+    if (v) v.status.burning = 2;
+  }
+  if (p.ground && card(p.ground).upkeep === 'waterGround') {
+    const f = S.things.filter(o => o.ctrl === p.i && (o.damage > 0 || o.status.burning)).sort((a, b) => b.damage - a.damage || a.entry - b.entry)[0];
+    if (f) { f.status.wet = true; delete f.status.burning; heal(S, f, 1); }
+  }
   stateCheck(S); if (S.over != null) return;
   if (!(S.active === S.first && p.personalTurn === 1)) drawCard(S, p);
   stateCheck(S); if (S.over != null) return;
   marketStep(S);
 }
+function gainExtraBreath(p, n) { const g = Math.max(0, Math.min(n, FORMAT.extraBreathCap - p.extraBreath, FORMAT.poolCap - p.breath)); p.breath += g; p.extraBreath += g; return g; }
+// ---------- ladders (§7.5) ----------
+const METAL_NEXT = { 'earth.lead': ['earth.tin', 'earth.copper'], 'earth.tin': ['earth.silver'], 'earth.copper': ['earth.silver'], 'earth.silver': ['earth.gold'] };
+function transform(S, t, to) {
+  const from = card(t).id;
+  t.prevForms = (t.prevForms || []).concat(from); t.form = to; t.ladderTurn = S.players[t.ctrl].personalTurn;
+  S.stats.transforms++; event(S, 'transform', { tid: t.id, from, to }); say(S, `${t.word} becomes ${to}.`);
+}
+function plantNext(S, t) {
+  const id = card(t).id; if (id === 'life.seed') return 'life.sapling';
+  if (id === 'life.sapling') { const g = S.players[t.ctrl].ground; return g && card(g).id === 'water.water' ? 'life.willow' : 'life.oak'; }
+  return null;
+}
+function ageUp(S, t) { // one age event; at age 2 advance one edge (max one plant stage per own turn) and reset
+  const nx = plantNext(S, t); if (!nx) return;
+  t.counters.age = Math.min(2, (t.counters.age || 0) + 1);
+  if (t.counters.age >= 2 && t.ladderTurn !== S.players[t.ctrl].personalTurn) { transform(S, t, nx); t.counters.age = 0; }
+}
+
 function drawCard(S, p) {
   if (p.hand.length >= FORMAT.handCap) return;
   if (!p.deck.length) { p.fatigue++; loseLife(S, p.i, p.fatigue, 'fatigue'); return; }
@@ -344,6 +462,8 @@ function spellTargets(S, side, d, mode) {
     case 'gust': return foes.filter(t => !has(S, t, 'heavy') && curStrike(S, t) <= 2).map(t => t.id);
     case 'gasp': return mode === 'main' && p.extraBreath < FORMAT.extraBreathCap ? [null] : [];
     case 'tonic': return mode === 'main' && (p.life < FORMAT.life || p.poison) ? [null] : [];
+    case 'grow': return mode === 'main' ? mine.filter(t => prop(t, 'plant') && ((t.counters.growth || 0) < FORMAT.growthCap || plantNext(S, t))).map(t => t.id) : [];
+    case 'separate': return mode === 'main' && p.fusedTurn !== p.personalTurn ? mine.filter(t => separable(S, t)).map(t => t.id) : [];
     case 'doubt': {
       if (mode === 'main' || !S.clause) return [];
       return S.clause.nodes.map((n, k) => ({ n, k })).filter(({ n }) => n.side !== side && !n.cancelled && n.card && card(n.card).type === 'spell' && card(n.card).cost <= 3).map(({ k }) => 'node:' + k);
@@ -366,6 +486,14 @@ function cardPlays(S, side, mode) {
     if (mode === 'main' && d.responseOnly) continue;
     if (d.type === 'thing') { if (free > 0) out.push({ type: 'deploy', card: c.pid }); continue; }
     if (d.type === 'ground') { out.push({ type: 'ground', card: c.pid }); continue; }
+    if (d.spell === 'transmute') {
+      if (mode === 'main') for (const t of mine) for (const to of (METAL_NEXT[card(t).id] || [])) if (t.ladderTurn !== p.personalTurn) out.push({ type: 'spell', card: c.pid, target: t.id, branch: to });
+      continue;
+    }
+    if (d.spell === 'calcine') {
+      if (mode === 'main') for (const sac of mine) { out.push({ type: 'spell', card: c.pid, target: 'rival', sacrifice: sac.id }); for (const f of foes) out.push({ type: 'spell', card: c.pid, target: f.id, sacrifice: sac.id }); }
+      continue;
+    }
     if (d.type === 'spell') { for (const tg of spellTargets(S, side, d, mode)) out.push(tg == null ? { type: 'spell', card: c.pid } : { type: 'spell', card: c.pid, target: tg }); continue; }
     if (d.type !== 'action') continue;
     const subjects = mine.filter(t => ready(S, t, onTurn) && caps(S, t).has(d.verb));
@@ -394,7 +522,7 @@ function legalActions(S) {
   if (S.over != null) return [{ type: 'pass' }];
   const p = S.players[S.active], out = [{ type: 'pass' }];
   out.push(...cardPlays(S, S.active, 'main'));
-  if (!p.bought) {
+  if (!p.bought && MKT !== 'nobuy' && !(MKT === 'from2' && S.round < 2)) {
     if (S.rules.market && p.hand.length < FORMAT.handCap) for (const o of S.market) {
       if (!o) continue;
       const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
@@ -403,6 +531,7 @@ function legalActions(S) {
     }
     if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
   }
+  out.push(...fusionOptions(S, p.i));
   const foes = S.things.filter(t => t.ctrl !== p.i);
   if (p.breath >= 1) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0)) {
     out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'rival' });
@@ -432,6 +561,24 @@ function whyIllegal(S, act) {
     if (d.responseOnly) return `${d.id} can only be spoken as a response`;
     if (d.type === 'thing' && S.things.filter(t => t.ctrl === p.i).length >= FORMAT.slots) return 'no empty field slot';
   }
+  if (act.type === 'fuse') {
+    const recipe = recipeById(act.recipe); if (!recipe) return 'no such recipe';
+    if (p.fusedTurn === p.personalTurn) return 'the Vessel has already been used this turn';
+    const a = refObj(S, p.i, act.a), b = refObj(S, p.i, act.b);
+    if (!a || !b) return 'ingredient missing';
+    for (const [o, g] of [[a, act.a === 'ground'], [b, act.b === 'ground']]) {
+      if (g) continue;
+      if (o.owner !== p.i || o.ctrl !== p.i) return `${o.word} must be controlled and owned`;
+      if (has(S, o, 'final')) return `${o.word} is Final`;
+      if (o.exhausted) return `${o.word} is exhausted`;
+      if (incapacitated(o)) return `${o.word} cannot act`;
+    }
+    if (![a, b].some((o, k) => !(k ? act.b === 'ground' : act.a === 'ground') && !o.fresh)) return 'at least one ingredient must be a mature Thing';
+    const pv = previewFusion(S, p.i, recipe, a, act.a === 'ground', b, act.b === 'ground');
+    if (!pv) return 'these ingredients do not match the recipe';
+    if (pv.cost > p.breath) return `fusion costs ${pv.cost}; you have ${p.breath} breath`;
+    if (pv.catalyst && p.catalyst < 1) return 'an opposed-school recipe needs a catalyst';
+  }
   if (act.subject) {
     const s = thingById(S, act.subject);
     if (!s || s.ctrl !== p.i) return 'subject is not your Thing';
@@ -447,6 +594,108 @@ function whyIllegal(S, act) {
   return 'not a legal sentence now';
 }
 
+// ---------- the Vessel (§7.1–7.4) ----------
+function schoolsOf(o, isGround) {
+  if (isGround || o.token) return [card(o).school];
+  const c = card(o); return [...new Set((c.schools || [c.school]).concat(modsOf(o).schools))];
+}
+function ingredientOk(S, side, desc, o, isGround, resolving) {
+  if (!o) return false;
+  if (!!desc.ground !== !!isGround) return false;
+  if (isGround) return o.owner === side && card(o).id === desc.form;
+  if (o.ctrl !== side || o.owner !== side) return false; // controlled and owned
+  if (has(S, o, 'final')) return false;
+  if (!!desc.token !== !!o.token) return false;
+  if ((o.exhausted && !resolving) || incapacitated(o)) return false; // ready, not incapacitated (own committed exhaustion is fine at resolution)
+  if (desc.form && card(o).id !== desc.form) return false;
+  if (desc.props && !desc.props.every(x => prop(o, x))) return false;
+  if (desc.host && card(o).made) return false; // named forms are not compositional hosts
+  return true;
+}
+function fusionPrice(S, side, base) {
+  const disc = S.things.some(t => t.ctrl === side && card(t).fusionDiscount) ? 1 : 0; // max one fusion discount
+  return Math.max(2, base - disc);
+}
+function catalystNeeded(S, a, aG, b, bG) { return R.opposedAcross(schoolsOf(a, aG), schoolsOf(b, bG)); }
+function previewFusion(S, side, recipe, a, aG, b, bG) {
+  if (!ingredientOk(S, side, recipe.a, a, aG) || !ingredientOk(S, side, recipe.b, b, bG)) return null;
+  if (a === b) return null;
+  const things = [a, b].filter((o, k) => !(k ? bG : aG));
+  if (!things.some(t => !t.fresh)) return null; // at least one mature Thing
+  if (recipe.mod) { // compositional
+    const m = modsOf(a);
+    if (m.infusions.length >= R.MAX_INFUSIONS || m.infusions.includes(recipe.id)) return null;
+    if ((recipe.forbidKw || []).some(k => has(S, a, k)) || (recipe.forbidProps || []).some(x => prop(a, x))) return null;
+  }
+  const dmg = (a.damage || 0) + (b.damage || 0);
+  const stand = recipe.mod ? card(a).stand + modsOf(a).stand + (recipe.mod.stand || 0) : BY_ID[recipe.out].stand;
+  if (stand - dmg <= 0) return null; // previewed result would be destroyed: illegal at declaration
+  return { cost: fusionPrice(S, side, recipe.cost), catalyst: catalystNeeded(S, a, aG, b, bG), dmg, stand };
+}
+function fusionOptions(S, side) {
+  const p = S.players[side];
+  if (p.fusedTurn === p.personalTurn) return [];
+  const objs = S.things.filter(t => t.ctrl === side).map(t => ({ o: t, g: false, ref: t.id }));
+  if (p.ground) objs.push({ o: p.ground, g: true, ref: 'ground' });
+  const out = [];
+  for (const recipe of R.NAMED.concat(R.INFUSIONS)) for (const x of objs) for (const y of objs) {
+    if (x === y) continue;
+    const pv = previewFusion(S, side, recipe, x.o, x.g, y.o, y.g);
+    if (!pv || pv.cost > p.breath || (pv.catalyst && p.catalyst < 1)) continue;
+    out.push({ type: 'fuse', recipe: recipe.id, a: x.ref, b: y.ref });
+  }
+  return out;
+}
+const recipeById = id => R.NAMED.find(r => r.id === id) || R.INFUSIONS.find(r => r.id === id);
+const refObj = (S, side, ref) => ref === 'ground' ? S.players[side].ground : thingById(S, ref);
+function resolveFuse(S, n) {
+  const side = n.side, p = S.players[side], recipe = recipeById(n.act.recipe);
+  const a = refObj(S, side, n.act.a), b = refObj(S, side, n.act.b), aG = n.act.a === 'ground', bG = n.act.b === 'ground';
+  // revalidate; the ingredients' own committed exhaustion does not invalidate them
+  if (!ingredientOk(S, side, recipe.a, a, aG, true) || !ingredientOk(S, side, recipe.b, b, bG, true)) return false;
+  if (aG && a.pid !== n.groundPid) return false; if (bG && b.pid !== n.groundPid) return false;
+  const lineage = [lineageRecord(a, aG), lineageRecord(b, bG)];
+  const dmg = (a.damage || 0) + (b.damage || 0);
+  for (const [o, g] of [[a, aG], [b, bG]]) { if (g) p.ground = null; else S.things = S.things.filter(x => x !== o); } // consumed: no death, no sacrifice
+  let t;
+  if (recipe.mod) {
+    const m0 = modsOf(a), m = recipe.mod;
+    const mods = { strike: m0.strike + (m.strike || 0), stand: m0.stand + (m.stand || 0), props: m0.props.concat(m.props || []), kw: m0.kw.concat(m.kw || []),
+      kwRemove: m0.kwRemove.concat(m.kwRemove || []), infusions: m0.infusions.concat(recipe.id), schools: m0.schools.concat(recipe.school), igniteOnHit: m0.igniteOnHit || !!m.igniteOnHit };
+    t = newThing(S, side, { word: a.word, form: a.form, mods, lineage, damage: dmg, exhausted: true, fresh: true });
+  } else {
+    t = newThing(S, side, { word: recipe.out, form: recipe.out, lineage, damage: dmg, exhausted: true, fresh: true });
+  }
+  t.madeTurn = p.personalTurn;
+  S.stats.fusions++; S.stats.made[recipe.id] = (S.stats.made[recipe.id] || 0) + 1;
+  event(S, 'made', { side, recipe: recipe.id, tid: t.id }); say(S, `P${side} fuses ${recipe.id}.`);
+  if (card(t).onMade === 'seekSpell') { // Homunculus: inspect top 3, take a Spell if present
+    const top = p.deck.splice(0, 3), k = top.findIndex(c => card(c).type === 'spell');
+    if (k >= 0 && p.hand.length < FORMAT.handCap) p.hand.push(top.splice(k, 1)[0]);
+    p.deck.push(...top);
+  }
+  return true;
+}
+function separable(S, t) { return t.lineage && t.owner === t.ctrl && !has(S, t, 'final'); }
+function resolveSeparate(S, n, t) {
+  const side = n.side, p = S.players[side];
+  if (!t || t.ctrl !== side || !separable(S, t)) return false;
+  const recs = t.lineage, gr = recs.filter(r => r.ground), th = recs.filter(r => !r.ground);
+  const after = S.things.filter(x => x.ctrl === side && x !== t).length;
+  if (after + th.length > FORMAT.slots || (gr.length && p.ground)) return false; // insufficient space: fail
+  S.things = S.things.filter(x => x !== t);
+  recs.forEach((r, k) => {
+    const dmg = k === 0 ? t.damage : 0; // current damage to the primary ingredient
+    if (r.ground) { p.ground = { pid: r.pid, word: r.word, owner: r.owner, damage: dmg }; return; }
+    const o = { word: r.word, damage: dmg, exhausted: true, fresh: true, owner: r.owner };
+    if (r.token) Object.assign(o, { word: r.token, form: r.token, token: true });
+    else if (r.made) Object.assign(o, { form: r.form, mods: r.mods || undefined, lineage: r.lineage });
+    else Object.assign(o, { pid: r.pid, form: r.form !== r.word ? r.form : undefined });
+    newThing(S, side, o);
+  });
+  event(S, 'separated', { tid: t.id }); return true;
+}
+
 function takeCard(p, pid) { const k = p.hand.findIndex(c => c.pid === pid); if (k < 0) throw new Error('card not in hand ' + pid); return p.hand.splice(k, 1)[0]; }
 
 // ---------- the Clause (§4.8) ----------
@@ -458,12 +707,28 @@ function declare(S, act, side, kind, ctl) {
   const p = S.players[side];
   const node = { type: act.type, side, kind, act, card: null, cancelled: false };
   let d = null;
-  if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; }
+  if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; node.cardPid = node.card.pid; }
   let cost = d ? d.cost : (act.type === 'attack' ? 1 : 0);
+  if (act.type === 'fuse') cost = 0; // priced below once ingredients are known
   const courage = act.type === 'attack' && S.arithmetic === 'legacy' && p.life <= 8 && kind === 'main';
   if (courage) cost = 0;
   if (kind === 'response') { if (cost > p.reserve) throw new Error('reserve'); p.reserve -= cost; }
   else { if (cost > p.breath) throw new Error('cannot afford'); p.breath -= cost; }
+  if (act.type === 'fuse') {
+    const recipe = recipeById(act.recipe), a = refObj(S, side, act.a), b = refObj(S, side, act.b);
+    const pv = previewFusion(S, side, recipe, a, act.a === 'ground', b, act.b === 'ground');
+    if (pv.cost > p.breath) throw new Error('cannot afford'); p.breath -= pv.cost; node.paid = pv.cost;
+    if (pv.catalyst) { p.catalyst--; node.catalyst = true; } // consumed at declaration, never refunded
+    p.fusedTurn = p.personalTurn; // allowance consumed at declaration
+    node.ids = [act.a, act.b]; node.groundPid = p.ground ? p.ground.pid : null;
+    for (const r of [act.a, act.b]) if (r !== 'ground') exhaust(thingById(S, r));
+  }
+  if (d && d.spell === 'separate') p.fusedTurn = p.personalTurn;
+  if (act.sacrifice) { // sacrifice as additional cost: a death, not a Destroy; triggers resolve before the window
+    const v = thingById(S, act.sacrifice); node.sacrificedWasCarrion = card(v).id === 'token.carrion';
+    if (leaveField(S, v, 'sacrificed')) deathTrigger(S, v);
+    event(S, 'sacrifice', { tid: v.id });
+  }
   if (act.subject) { const s = thingById(S, act.subject); exhaust(s); if (side === S.active) s.actions++; }
   if (act.type === 'attack') {
     const s = thingById(S, act.subject), def = 1 - side;
@@ -540,7 +805,7 @@ function resolveClause(S) {
       toGrave(S, n.card, ok ? 'spent' : 'failed'); n.card = null;
     }
     if (n.act.verb && ok) S.players[n.side].usedVerbs[n.act.verb] = true;
-    if (ok) sparkFor(S, n);
+    if (ok) { sparkFor(S, n); mightFor(S, n); }
     stateCheck(S);
   }
   S.clause = null;
@@ -560,8 +825,7 @@ function resolveNode(S, n, k) {
     case 'deploy': {
       if (S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) return false; // never displace
       const c = n.card; n.card = null;
-      const t = { id: 't' + (++S.seq), pid: c.pid, word: c.word, owner: c.owner, ctrl: side, entry: S.seq, damage: 0, counters: {}, status: {}, exhausted: false, fresh: true, actions: 0, arrivedTurn: p.personalTurn, attuned: S.arithmetic === 'legacy' && card(c).school === p.main };
-      S.things.push(t); say(S, `P${side} brings forth ${c.word}.`); event(S, 'arrive', { id: t.id, pid: t.pid });
+      const t = newThing(S, side, { pid: c.pid, word: c.word, owner: c.owner, attuned: S.arithmetic === 'legacy' && card(c).school === p.main }); say(S, `P${side} brings forth ${c.word}.`); event(S, 'arrive', { id: t.id, pid: t.pid });
       return true;
     }
     case 'ground': {
@@ -571,6 +835,7 @@ function resolveNode(S, n, k) {
       return true;
     }
     case 'spell': return resolveSpell(S, n, d, tg);
+    case 'fuse': return resolveFuse(S, n);
     case 'remote': {
       const s = thingById(S, a.subject); if (!s) return false; // subject removed: action fails, costs stay paid
       if (d.verb === 'mend') { if (!tg || tg.ctrl !== side) return false; heal(S, tg, 3); return true; }
@@ -607,7 +872,26 @@ function resolveSpell(S, n, d, tg) {
       bounce(S, tg); break;
     }
     case 'gasp': { const g = Math.min(2, FORMAT.extraBreathCap - p.extraBreath, FORMAT.poolCap - p.breath); p.breath += g; p.extraBreath += g; break; }
-    case 'tonic': p.life = Math.min(FORMAT.life, p.life + 3); if (p.poison) p.poison--; break;
+    case 'tonic': {
+      p.life = Math.min(FORMAT.life, p.life + 3); if (p.poison) p.poison--;
+      if (p.ground && card(p.ground).potionBonus && p.potionTurn !== p.personalTurn) { p.potionTurn = p.personalTurn; p.life = Math.min(FORMAT.life, p.life + 1); }
+      break;
+    }
+    case 'transmute': {
+      if (!friendly || tg.ladderTurn === p.personalTurn || !(METAL_NEXT[card(tg).id] || []).includes(a.branch)) return false;
+      transform(S, tg, a.branch); break;
+    }
+    case 'grow': {
+      if (!friendly || !prop(tg, 'plant')) return false;
+      if ((tg.counters.growth || 0) < FORMAT.growthCap) tg.counters.growth = (tg.counters.growth || 0) + 1;
+      ageUp(S, tg); break;
+    }
+    case 'calcine': {
+      if (a.target === 'rival') loseLife(S, 1 - side, 3, 'calcine');
+      else { if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; damageThing(S, tg, 3); }
+      createToken(S, side, 'token.ash'); break;
+    }
+    case 'separate': if (!resolveSeparate(S, n, tg)) return false; n.noEffect = true; break; // spell-assisted fusion: no sentence spark
     case 'doubt': {
       const k = +String(a.target).split(':')[1], victim = S.clause.nodes[k];
       if (!victim || victim.cancelled || !victim.card) return false;
@@ -621,9 +905,7 @@ function resolveSpell(S, n, d, tg) {
 
 // Push: return to owner's hand with state reset; full hand sends it to Grave (not a death)
 function bounce(S, t) {
-  S.things = S.things.filter(x => x !== t);
-  const o = S.players[t.owner], c = { pid: t.pid, word: t.word, owner: t.owner };
-  if (o.hand.length >= FORMAT.handCap) toGrave(S, c, 'bounced-full-hand'); else o.hand.push(c);
+  leaveField(S, t, 'bounced'); // made forms dissolve to Grave, tokens vanish: no death
   event(S, 'bounce', { id: t.id, pid: t.pid }); say(S, `${t.word} is blown back to P${t.owner}'s hand.`);
 }
 
@@ -660,10 +942,11 @@ function resolveAttack(S, n) {
   if (pk.n > 0) {
     const alive = recipient && remainingOf(S, recipient) > 0;
     if (has(S, att, 'venomous')) { if (!recipient && !ground) addPoison(S, enemy(S, att.ctrl), 1); else if (alive) addPoison(S, recipient, 1); }
-    if ((card(att).igniteOnHit || att.kindled) && alive && prop(recipient, 'flammable') && !recipient.status.wet) recipient.status.burning = 2;
+    if (card(att).wetOnHit && alive) { recipient.status.wet = true; delete recipient.status.burning; }
+    if ((card(att).igniteOnHit || modsOf(att).igniteOnHit || att.kindled) && alive && prop(recipient, 'flammable') && !recipient.status.wet) recipient.status.burning = 2;
     if (card(att).leech && !S.players[att.ctrl].leechUsed && !ground && (!recipient || prop(recipient, 'living'))) { S.players[att.ctrl].leechUsed = true; S.players[att.ctrl].life = Math.min(FORMAT.life, S.players[att.ctrl].life + 1); }
   }
-  if (a.verb === 'crush' && recipient && pk.n > before && before >= 0) { // overflow once, never from Ground
+  if (a.verb === 'crush' && recipient && pk.n > before && before >= 0 && !rebirthAvailable(S, recipient)) { // overflow once, never from Ground
     let over = pk.n - Math.max(0, before);
     if (S.arithmetic === 'legacy') {
       const pl = S.players[att.ctrl];
@@ -677,14 +960,18 @@ function resolveAttack(S, n) {
   return true;
 }
 
-function sameAction(a, b) { return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null); }
+function sameAction(a, b) {
+  return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null)
+    && a.recipe === b.recipe && a.a === b.a && a.b === b.b && a.sacrifice === b.sacrifice && a.branch === b.branch;
+}
 
 function hashState(S) {
-  const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map(o => o && o.word), th: S.things.map(t => [t.id, t.pid, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status]) });
+  const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map(o => o && o.word), th: S.things.map(t => [t.id, t.pid, t.form, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status, t.mods, t.lineage && lineagePids(t.lineage).map(r => r.pid)]) });
   let h = 2166136261; for (let i = 0; i < pub.length; i++) { h ^= pub.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16);
 }
 
 module.exports = {
   FORMAT, INITIATIVE, createMatch, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
+  fusionOptions, previewFusion, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
 };
