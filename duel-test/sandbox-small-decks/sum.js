@@ -1,0 +1,16 @@
+/* Summarise a run: node sum.js out.json [--decks] [--cards deckId] */
+const fs=require('fs');
+function summarise(R){const n=R.ids.length;const rows=R.deck.map((D,i)=>{const sd=Math.sqrt(Math.max(0,D.turns2/D.g-(D.turns/D.g)**2));let H=0,tot=0;for(const k in D.top)tot+=D.top[k];for(const k in D.top){const p=D.top[k]/tot;H-=p*Math.log2(p);}
+    const on=Object.keys(D.open).length;return {id:R.ids[i],wr:D.w/(D.g-D.d||1),g:D.g,first:D.fw/(D.fg||1),second:(D.w-D.fw)/((D.g-D.fg)||1),rounds:D.turns/D.g,sd,fuse:D.fuse/D.g,evo:D.evo/D.g,raised:D.raised/D.g,bought:D.bought/D.g,decided:D.decided/(D.w||1),comeb:D.comeb/(D.w||1),topH:H,openVar:on/(D.openN||1),ag:D.aw/(D.ag||1),cg:D.cw/(D.cg||1),route:D.route,heal:D.heal/D.g};});
+  let g=0,fw=0,dr=0,turns=0;for(const k in R.pair){const P=R.pair[k];g+=P.g;fw+=P.fw;dr+=P.d;turns+=P.turns;}
+  const wr=rows.map(r=>r.wr),mean=a=>a.reduce((x,y)=>x+y,0)/a.length;const sdw=Math.sqrt(mean(wr.map(x=>(x-.5)**2)));
+  const all={name:R.spec.name,games:g,firstWin:fw/(g-dr),draws:dr/g,rounds:turns/g,roundSd:mean(rows.map(r=>r.sd)),fuse:mean(rows.map(r=>r.fuse)),evo:mean(rows.map(r=>r.evo)),raised:mean(rows.map(r=>r.raised)),decided:mean(rows.map(r=>r.decided)),comeb:mean(rows.map(r=>r.comeb)),topH:mean(rows.map(r=>r.topH)),openVar:mean(rows.map(r=>r.openVar)),
+    wrMin:Math.min(...wr),wrMax:Math.max(...wr),wrSd:sdw,outside:rows.filter(r=>r.wr<.45||r.wr>.55).length,n,agg:mean(rows.map(r=>r.ag)),care:mean(rows.map(r=>r.cg))};
+  return {all,rows};}
+function matrix(R){const n=R.ids.length,M=R.ids.map(()=>R.ids.map(()=>null));for(const k in R.pair){const [i,j]=k.split(',').map(Number),P=R.pair[k];const dec=P.g-P.d||1;M[i][j]=P.a/dec;M[j][i]=P.b/dec;}return M;}
+function cards(R,i){const D=R.deck[i],base=D.w/D.g;return Object.entries(D.cards).map(([id,c])=>({id,drawn:c.dr/D.g,playRate:c.pl/(c.dr||1),wrPlayed:c.plW/(c.pl||1),wrNot:(D.w-c.plW)/((D.g-c.pl)||1),lift:c.plW/(c.pl||1)-(D.w-c.plW)/((D.g-c.pl)||1),dmgShare:c.dmg/(D.dmg||1)})).sort((a,b)=>b.lift-a.lift);}
+module.exports={summarise,matrix,cards};
+if(require.main===module){const R=JSON.parse(fs.readFileSync(process.argv[2]));const S=summarise(R),a=S.all,pc=x=>(x*100).toFixed(1)+'%';
+  console.log(`${a.name}: ${a.games} games | first wins ${pc(a.firstWin)} | rounds ${a.rounds.toFixed(1)} (sd ${a.roundSd.toFixed(1)}) | fusions/deck-game ${a.fuse.toFixed(2)} | ladder ${a.evo.toFixed(2)} | raised ${a.raised.toFixed(2)} | one card decides ${pc(a.decided)} | comebacks ${pc(a.comeb)} | finisher entropy ${a.topH.toFixed(2)} | opening variety ${pc(a.openVar)} | deck wr ${pc(a.wrMin)}–${pc(a.wrMax)} sd ${pc(a.wrSd)} | outside 45–55: ${a.outside}/${a.n} | aggr ${pc(a.agg)} careful ${pc(a.care)}`);
+  if(process.argv.includes('--decks'))for(const r of S.rows.slice().sort((x,y)=>y.wr-x.wr))console.log(r.id.padEnd(11),pc(r.wr),'first',pc(r.first),'rounds',r.rounds.toFixed(1),'fuse',r.fuse.toFixed(2),'evo',r.evo.toFixed(2),'decided',pc(r.decided),'comeb',pc(r.comeb),'aggr',pc(r.ag),'care',pc(r.cg));
+  const ci=process.argv.indexOf('--cards');if(ci>0){const i=R.ids.indexOf(process.argv[ci+1]);for(const c of cards(R,i))console.log(c.id.padEnd(16),'drawn',pc(c.drawn),'played|drawn',pc(c.playRate),'wr played',pc(c.wrPlayed),'not',pc(c.wrNot),'lift',(c.lift*100).toFixed(1),'dmg share',pc(c.dmgShare));}}
