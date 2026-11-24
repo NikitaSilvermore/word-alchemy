@@ -5,7 +5,7 @@ Every file here is a byte-identical copy of the built game (`index.html`). Nothi
 - `index.html`: the live Duel Test at artifact version `1795480641-3ee5`, SHA-256 `8aaf44e2bbe6b3a33b3cfc49925a9034d7e314f010e84e19402df949d5dc869f`, 8,028,158 bytes. This is V28 as published (`1795465044-a317`), plus later edits by the card-design chat to the `v21` layer (status chips on the card art).
 - `history/V2x/index.html`: each version as it was built and published.
 
-The layer sources (`src/v21.js` to `src/v28.js`), patch scripts (`build/v22_patch.py` and on) and the simulator tools are on branch `duel-test-source`, in `duel-test/`.
+The layer sources (`src/v21.js` to `src/v28.js`), patch scripts (`build/v22_patch.py` and on) and the simulator tools are not on GitHub yet; the `duel-test-source` branch on GitHub predates them.
 
 | Version | Date | Artifact version | SHA-256 (first 16) | What changed |
 |---|---|---|---|---|
@@ -18,4 +18,4 @@ The layer sources (`src/v21.js` to `src/v28.js`), patch scripts (`build/v22_patc
 | V27 · puzzles and quests | 23 Nov 2026 | `1795464093-167f` | `7f1f89f8c921cb84` | 20 solver-verified puzzles, daily challenges, daily and weekly quests. |
 | V28 · the Book | 23 Nov 2026 | `1795465044-a317` (as published); `1795480641-3ee5` (live, in `index.html`) | `8aaf44e2bbe6b3a3` (live) | One book: learned and made words, silhouettes, sealed families, flavour and history lines, gilding at 10, Lexicon level. |
 
-V28 as I published it (`1795465044-a317`, 8,016,962 bytes) is commit `1c2478b` on `duel-test-source`, at `duel-test/index.html`.
+V28 as first published (`1795465044-a317`, 8,016,962 bytes) differs from the live file only in the `v21` layer.
