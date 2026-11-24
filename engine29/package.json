@@ -1,2 +1,9 @@
-{ "name": "word-alchemy-engine29", "private": true, "version": "0.29.0-a",
-  "scripts": { "test": "node --test test/*.test.js", "sim": "node sim/run.js v29 300 1000 results/stageA_v29.json", "sim:legacy": "node sim/run.js legacy 300 1000 results/stageA_legacy.json", "report": "node sim/report.js results/stageA_legacy.json results/stageA_v29.json" } }
+{ "name": "word-alchemy-engine29", "private": true, "version": "0.29.0-c",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "sim:A": "node sim/run.js v29 300 1000 results/stageC_v29_A.json A on on",
+    "sim:A:legacy": "node sim/run.js legacy 300 1000 results/stageC_legacy_A.json A on on",
+    "sim:R": "node sim/run.js v29 300 1000 results/stageC_v29_R.json R on on on",
+    "sim:R:off": "node sim/run.js v29 300 1000 results/stageC_v29_R_noresp.json R off off",
+    "report": "node sim/report.js results/stageA_v29.json results/stageC_v29_A.json results/stageC_legacy_A.json results/stageC_v29_R_noresp.json results/stageC_v29_R.json"
+  } }

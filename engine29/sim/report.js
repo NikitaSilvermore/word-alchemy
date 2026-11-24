@@ -17,6 +17,11 @@ for (const f of process.argv.slice(2)) {
     halfLifeLostByRound2: ci(r.filter(g => g.halfLostByR2).length, r.length),
     leaderAtRound2Won: ci(dec.filter(g => g.leadR2 === g.win).length, dec.filter(g => g.leadR2 >= 0).length),
   };
+  if (r[0].responses !== undefined) {
+    const avg = k => (r.reduce((a, g) => a + g[k], 0) / r.length).toFixed(2);
+    Object.assign(out, { responsesPerGame: avg('responses'), answersPerGame: avg('answers'), failedPerGame: avg('failed'), cancelledPerGame: avg('cancelled'), groundHitsPerGame: avg('groundHits'),
+      gamesWithResponse: ci(r.filter(g => g.responses > 0).length, r.length) });
+  }
   // per-deck aggregate win rate (mirrors excluded)
   const decks = {};
   for (const g of dec) { if (g.d[0] === g.d[1]) continue; for (const s of [0, 1]) { const k = g.d[s]; decks[k] = decks[k] || [0, 0]; decks[k][1]++; if (g.win === s) decks[k][0]++; } }

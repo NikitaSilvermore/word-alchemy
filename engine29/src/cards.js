@@ -1,4 +1,4 @@
-// V29 "The Grammar" — prototype card registry (subset for stages A–B).
+// V29 "The Grammar" — prototype card registry (subset for stages A–C).
 // Stats and rules follow spec §8. Only effects listed here are implemented;
 // anything else in the spec is disabled for this stage, never approximated.
 'use strict';
@@ -19,7 +19,7 @@ const CARDS = [
   G('fire.torch', 'fire', 1, 2, { upkeep: 'torch' }),
   A('fire.burn', 'fire', 1, { verb: 'burn', remote: true }),
   A('fire.scorch', 'fire', 2, { verb: 'scorch', remote: true, dmg: 2 }),
-  S('fire.kindle', 'fire', 1, { spell: 'kindle' }),
+  S('fire.kindle', 'fire', 1, { spell: 'kindle', r: true }),
   // Air
   T('air.owl', 'air', 2, 2, 2, ['living', 'beast', 'bird', 'winged', 'sharp', 'body', 'flammable'], { kw: ['flying'] }),
   T('air.hawk', 'air', 3, 3, 3, ['living', 'beast', 'bird', 'winged', 'sharp', 'body', 'flammable'], { kw: ['flying'] }),
@@ -27,6 +27,7 @@ const CARDS = [
   T('air.crow', 'air', 2, 1, 3, ['living', 'beast', 'bird', 'winged', 'body', 'flammable'], { kw: ['flying'] }),
   T('air.wind', 'air', 2, 1, 3, ['body'], { kw: ['flying'] }), // wingless flight
   S('air.gasp', 'air', 1, { spell: 'gasp' }),
+  S('air.gust', 'air', 2, { spell: 'gust', r: true }),
   // Earth
   T('earth.boulder', 'earth', 3, 2, 6, ['stone', 'body'], { kw: ['heavy', 'guard', 'bedrock'] }),
   T('earth.stone', 'earth', 2, 1, 4, ['stone', 'body'], { kw: ['heavy'] }),
@@ -34,7 +35,7 @@ const CARDS = [
   T('earth.iron', 'earth', 2, 2, 4, ['metal', 'body'], { kw: ['heavy'] }),
   T('earth.flint', 'earth', 1, 2, 1, ['stone', 'sharp', 'body'], { cap: ['burn'] }),
   G('earth.tower', 'earth', 3, 5, { static: 'heavyReach' }),
-  S('earth.guard', 'earth', 1, { spell: 'guard' }),
+  S('earth.guard', 'earth', 1, { spell: 'guard', r: true }),
   A('earth.crush', 'earth', 2, { verb: 'crush', bonus: 2 }),
   A('earth.cut', 'earth', 1, { verb: 'cut', bonus: 1 }),
   // Life
@@ -45,7 +46,7 @@ const CARDS = [
   T('life.aloe', 'life', 2, 0, 3, ['living', 'plant', 'herb'], { cap: ['mend'], upkeep: 'aloe' }),
   T('life.apothecary', 'life', 3, 2, 3, ['living', 'person', 'body', 'flammable'], { cap: ['mend'] }),
   A('life.bite', 'life', 1, { verb: 'bite', bonus: 1 }),
-  A('life.mend', 'life', 1, { verb: 'mend', remote: true }),
+  A('life.mend', 'life', 1, { verb: 'mend', remote: true, r: true }),
   // Water
   T('water.eel', 'water', 1, 1, 2, ['living', 'beast', 'seaborn', 'body']),
   T('water.otter', 'water', 2, 2, 3, ['living', 'beast', 'seaborn', 'body', 'flammable'], { kw: ['swift'], cap: ['bite'] }),
@@ -53,6 +54,11 @@ const CARDS = [
   T('water.ice', 'water', 2, 0, 4, [], { kw: ['heavy', 'guard'] }),
   A('water.seep', 'water', 1, { verb: 'seep', remote: true, dmg: 2 }),
   S('water.tonic', 'water', 2, { spell: 'tonic' }),
+  S('water.dew', 'water', 1, { spell: 'dew', r: true }),
+  A('water.drench', 'water', 1, { verb: 'drench', remote: true, r: true }),
+  S('water.frozen', 'water', 2, { spell: 'frozen', r: true }),
+  S('water.thaw', 'water', 1, { spell: 'thaw', r: true }),
+  S('water.sleep', 'water', 2, { spell: 'sleep', r: true }),
   // Rot
   T('rot.rat', 'rot', 1, 1, 2, ['living', 'beast', 'body', 'flammable'], { onDeath: 'poison1' }),
   T('rot.adder', 'rot', 2, 2, 2, ['living', 'beast', 'serpent', 'body'], { kw: ['venomous'], cap: ['bite'] }),
@@ -61,6 +67,10 @@ const CARDS = [
   T('rot.yew', 'rot', 3, 1, 4, ['living', 'plant', 'tree', 'toxic', 'body', 'flammable'], { onDeath: 'poison1' }),
   T('rot.wormwood', 'rot', 2, 0, 3, ['living', 'plant', 'herb', 'toxic'], { upkeep: 'wormwood' }),
   A('rot.poison', 'rot', 1, { verb: 'poison', remote: true }),
+  // The Word (fusion text of Familiar is disabled until stage E)
+  T('word.familiar', 'word', 2, 1, 2, ['living', 'beast', 'body', 'flammable']),
+  S('word.protect', 'word', 1, { spell: 'protect', r: true }),
+  S('word.doubt', 'word', 2, { spell: 'doubt', r: true, responseOnly: true }),
 ];
 
 const BY_ID = Object.fromEntries(CARDS.map(c => [c.id, c]));
@@ -72,7 +82,7 @@ function capabilities(card, kws) {
   if (kws.has('heavy')) c.add('crush');
   if (p.includes('sharp')) c.add('cut');
   if (p.includes('hot')) { c.add('burn'); c.add('scorch'); }
-  if (p.includes('seaborn') || p.includes('liquid')) { c.add('seep'); }
+  if (p.includes('seaborn') || p.includes('liquid')) { c.add('seep'); c.add('drench'); }
   if (p.includes('toxic') || kws.has('venomous')) c.add('poison');
   return c;
 }

@@ -1,7 +1,8 @@
-// Reproducible paired benchmark: node sim/run.js <arithmetic> <gamesPerPairing> <seedBase> <out.json>
+// Reproducible paired benchmark:
+// node sim/run.js <arithmetic> <gamesPerPairing> <seedBase> <out.json> [deckSet A|R] [responses on|off] [reserve on|off] [audit on|off]
 'use strict';
 const E = require('../src/engine');
-const { chooseAction, blocker } = require('../src/bots');
+const { chooseAction, controller } = require('../src/bots');
 
 const DECKS = {
   wall: ['earth.boulder', 'earth.stone', 'earth.lead', 'earth.iron', 'earth.flint', 'earth.tower', 'earth.guard', 'earth.crush', 'earth.cut',
@@ -15,13 +16,27 @@ const DECKS = {
   quarry: ['earth.boulder', 'earth.stone', 'earth.lead', 'earth.iron', 'earth.flint', 'earth.tower', 'earth.guard', 'earth.crush', 'earth.cut',
     'fire.smith', 'fire.ember', 'fire.salamander', 'fire.torch', 'fire.burn', 'fire.scorch', 'fire.kindle', 'fire.firebird', 'air.owl', 'air.hawk', 'air.swallow'],
 };
+// Same decks with Response words swapped in (one-for-one, same schools). 'tide' is a Water/Air/Word control deck.
+const swap = (deck, pairs) => deck.map(w => pairs[w] || w);
+const DECKS_R = {
+  wall: swap(DECKS.wall, { 'earth.lead': 'water.sleep', 'water.eel': 'water.drench' }),
+  furnace: swap(DECKS.furnace, { 'air.wind': 'air.gust' }),
+  pack: swap(DECKS.pack, { 'air.wind': 'air.gust' }),
+  venom: swap(DECKS.venom, { 'water.eel': 'water.dew', 'life.hare': 'water.sleep', 'water.ice': 'water.drench' }),
+  quarry: swap(DECKS.quarry, { 'air.swallow': 'air.gust' }),
+  tide: ['water.eel', 'water.otter', 'water.pike', 'water.ice', 'water.seep', 'water.drench', 'water.dew', 'water.sleep', 'water.frozen', 'water.tonic',
+    'air.owl', 'air.hawk', 'air.swallow', 'air.crow', 'air.wind', 'air.gust', 'word.familiar', 'word.protect', 'word.doubt', 'water.thaw'],
+};
+const SETS = { A: DECKS, R: DECKS_R };
 
-function playOne(d0, d1, seed, arithmetic, first, pols) {
-  const S = E.createMatch({ decks: [DECKS[d0], DECKS[d1]], seed, arithmetic, first });
-  const pol = i => pols[i]; const blk = blocker(pol);
+function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
+  const set = SETS[o.set || 'A'];
+  const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false });
+  const pol = i => pols[i]; const ctl = controller(pol, { responses: o.responses !== false });
   const lifeAtRoundEnd = {}; let maxHitToPlayer = 0, lastRound = 0;
   for (let k = 0; k < 2000 && S.over == null; k++) {
-    E.apply(S, chooseAction(S, pol), blk);
+    E.apply(S, chooseAction(S, pol), ctl);
+    if (o.audit) { const z = E.zoneAudit(S); if (z.length) throw new Error('zone audit seed ' + seed + ': ' + z.join('; ')); }
     if (S.round !== lastRound) { lifeAtRoundEnd[lastRound] = S.players.map(p => p.life); lastRound = S.round; }
   }
   lifeAtRoundEnd[lastRound] = S.players.map(p => p.life);
@@ -37,19 +52,22 @@ function playOne(d0, d1, seed, arithmetic, first, pols) {
     halfLostByR2: r2 ? r2.some(l => l <= 15) : false,
     lethalByR3: S.over !== null && S.over !== 'draw' && S.round <= 3,
     leadR2: r2 ? (r2[0] === r2[1] ? -1 : (r2[0] > r2[1] ? 0 : 1)) : -1,
+    responses: S.stats.responses, answers: S.stats.answers, failed: S.stats.failed, cancelled: S.stats.cancelled,
+    groundHits: S.stats.packets.filter(p => p.to === 'ground').length,
   };
 }
 
 function main() {
-  const [arith = 'v29', nStr = '200', seedStr = '1000', out = '/tmp/v29_sim.json'] = process.argv.slice(2);
-  const n = +nStr, seed0 = +seedStr, names = Object.keys(DECKS), res = [];
+  const [arith = 'v29', nStr = '200', seedStr = '1000', out = '/tmp/v29_sim.json', set = 'A', resp = 'on', resv = 'on', audit = 'off'] = process.argv.slice(2);
+  const o = { set, responses: resp === 'on', reserve: resv === 'on', audit: audit === 'on' };
+  const n = +nStr, seed0 = +seedStr, names = Object.keys(SETS[set]), res = [];
   const POLS = [['careful', 'careful'], ['aggressive', 'aggressive'], ['aggressive', 'careful'], ['careful', 'aggressive']];
   for (let i = 0; i < names.length; i++) for (let j = i; j < names.length; j++) for (let g = 0; g < n; g++) {
     const seed = seed0 + i * 100000 + j * 10000 + g; // identical seeds across arithmetic models
-    res.push(playOne(names[i], names[j], seed, arith, g % 2, POLS[(g >> 1) % 4]));
+    res.push(playOne(names[i], names[j], seed, arith, g % 2, POLS[(g >> 1) % 4], o));
   }
   require('fs').writeFileSync(out, JSON.stringify(res));
   console.log(out, res.length);
 }
 if (require.main === module) main();
-module.exports = { playOne, DECKS };
+module.exports = { playOne, DECKS, DECKS_R };
