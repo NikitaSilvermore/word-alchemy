@@ -144,6 +144,7 @@ details.pile div{max-width:60ch;color:var(--light)}
 const E=WAS,H=WAS_CARDS1(E);WAS_CARDS2(E,H);WAS_THEMES(E);const BOT=WAS_BOT(E);const DB=E.DB;
 const TUNE=/*TUNE*/{};for(const id in TUNE)if(DB[id])Object.assign(DB[id],TUNE[id]);E.remake();
 const REC=/*REC*/{deck:10,hand:5,dur:1.5,grave:true,market:false};
+const CHL=/*CHARS*/{};for(const k in CHL)if(E.CHARS[k])E.CHARS[k].list=CHL[k];
 const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let G=null,sel=null,busy=false,style='careful',decks=[[],[]],names=['',''],shown=0;
 /* ---- setup ---- */
