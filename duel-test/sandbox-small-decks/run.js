@@ -18,7 +18,7 @@ function work(spec,part,parts){const E=require('./load.js');applyTune(E,spec.tun
       const G=E.bot.playGame(spec.cfg,decks[i],decks[j],seed,first,st[0],st[1]);games++;const rounds=Math.ceil(G.turn/2);
       P.g++;P.turns+=rounds;if(G.over===0)P.a++;else if(G.over===1)P.b++;else P.d++;if(G.over===G.first)P.fw++;
       for(let s=0;s<2;s++){const D=deck[s?j:i],S=G.st[s],win=G.over===s;D.g++;if(win)D.w++;if(G.over===2)D.d++;if(G.first===s){D.fg++;if(win)D.fw++;}
-        D.turns+=rounds;D.turns2+=rounds*rounds;D.fuse+=S.fuse;D.evo+=S.evo;D.raised+=S.raised;D.bought+=S.bought;D.heal+=S.heal;D.dmg+=S.tot;
+        D.turns+=rounds;D.turns2+=rounds*rounds;D.fuse+=S.fuse;D.lost=(D.lost||0)+S.lost;D.evo+=S.evo;D.raised+=S.raised;D.bought+=S.bought;D.heal+=S.heal;D.dmg+=S.tot;
         if(st[s]==='aggressive'){D.ag++;if(win)D.aw++;}else{D.cg++;if(win)D.cw++;}
         let tc=null,tm=0;for(const c in S.dmg){if(S.dmg[c]>tm){tm=S.dmg[c];tc=c;}}
         if(win){if(tc&&tm>=S.tot*.5)D.decided++;if(S.minDiff<=-Math.round(spec.cfg.life?spec.cfg.life*.27:8))D.comeb++;if(tc)D.top[tc]=(D.top[tc]||0)+1;}

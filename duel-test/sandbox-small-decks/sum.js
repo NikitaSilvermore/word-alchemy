@@ -1,10 +1,10 @@
 /* Summarise a run: node sum.js out.json [--decks] [--cards deckId] */
 const fs=require('fs');
 function summarise(R){const n=R.ids.length;const rows=R.deck.map((D,i)=>{const sd=Math.sqrt(Math.max(0,D.turns2/D.g-(D.turns/D.g)**2));let H=0,tot=0;for(const k in D.top)tot+=D.top[k];for(const k in D.top){const p=D.top[k]/tot;H-=p*Math.log2(p);}
-    const on=Object.keys(D.open).length;return {id:R.ids[i],wr:D.w/(D.g-D.d||1),g:D.g,first:D.fw/(D.fg||1),second:(D.w-D.fw)/((D.g-D.fg)||1),rounds:D.turns/D.g,sd,fuse:D.fuse/D.g,evo:D.evo/D.g,raised:D.raised/D.g,bought:D.bought/D.g,decided:D.decided/(D.w||1),comeb:D.comeb/(D.w||1),topH:H,openVar:on/(D.openN||1),ag:D.aw/(D.ag||1),cg:D.cw/(D.cg||1),route:D.route,heal:D.heal/D.g};});
+    const on=Object.keys(D.open).length;return {id:R.ids[i],wr:D.w/(D.g-D.d||1),g:D.g,first:D.fw/(D.fg||1),second:(D.w-D.fw)/((D.g-D.fg)||1),rounds:D.turns/D.g,sd,fuse:D.fuse/D.g,lost:(D.lost||0)/D.g,evo:D.evo/D.g,raised:D.raised/D.g,bought:D.bought/D.g,decided:D.decided/(D.w||1),comeb:D.comeb/(D.w||1),topH:H,openVar:on/(D.openN||1),ag:D.aw/(D.ag||1),cg:D.cw/(D.cg||1),route:D.route,heal:D.heal/D.g};});
   let g=0,fw=0,dr=0,turns=0;for(const k in R.pair){const P=R.pair[k];g+=P.g;fw+=P.fw;dr+=P.d;turns+=P.turns;}
   const wr=rows.map(r=>r.wr),mean=a=>a.reduce((x,y)=>x+y,0)/a.length;const sdw=Math.sqrt(mean(wr.map(x=>(x-.5)**2)));
-  const all={name:R.spec.name,games:g,firstWin:fw/(g-dr),draws:dr/g,rounds:turns/g,roundSd:mean(rows.map(r=>r.sd)),fuse:mean(rows.map(r=>r.fuse)),evo:mean(rows.map(r=>r.evo)),raised:mean(rows.map(r=>r.raised)),decided:mean(rows.map(r=>r.decided)),comeb:mean(rows.map(r=>r.comeb)),topH:mean(rows.map(r=>r.topH)),openVar:mean(rows.map(r=>r.openVar)),
+  const all={name:R.spec.name,games:g,firstWin:fw/(g-dr),draws:dr/g,rounds:turns/g,roundSd:mean(rows.map(r=>r.sd)),fuse:mean(rows.map(r=>r.fuse)),lost:mean(rows.map(r=>r.lost)),evo:mean(rows.map(r=>r.evo)),raised:mean(rows.map(r=>r.raised)),decided:mean(rows.map(r=>r.decided)),comeb:mean(rows.map(r=>r.comeb)),topH:mean(rows.map(r=>r.topH)),openVar:mean(rows.map(r=>r.openVar)),
     wrMin:Math.min(...wr),wrMax:Math.max(...wr),wrSd:sdw,outside:rows.filter(r=>r.wr<.45||r.wr>.55).length,n,agg:mean(rows.map(r=>r.ag)),care:mean(rows.map(r=>r.cg))};
   return {all,rows};}
 function matrix(R){const n=R.ids.length,M=R.ids.map(()=>R.ids.map(()=>null));for(const k in R.pair){const [i,j]=k.split(',').map(Number),P=R.pair[k];const dec=P.g-P.d||1;M[i][j]=P.a/dec;M[j][i]=P.b/dec;}return M;}
