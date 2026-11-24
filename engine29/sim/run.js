@@ -3,7 +3,7 @@
 // Games come in mirrored pairs: the same seed is played twice with the first player swapped.
 'use strict';
 const E = require('../src/engine');
-const { chooseAction, controller, mulligan } = require('../src/bots');
+const { chooseAction, controller, mulligan, decider } = require('../src/bots');
 
 const DECKS = {
   wall: ['earth.boulder', 'earth.stone', 'earth.lead', 'earth.iron', 'earth.flint', 'earth.tower', 'earth.guard', 'earth.crush', 'earth.cut',
@@ -48,6 +48,7 @@ function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];
   const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false, market: o.market !== false, initiative: o.initiative || 'spec', mulligan: o.mulligan === false ? null : mulligan });
   const pol = i => pols[i]; const ctl = controller(pol, { responses: o.responses !== false });
+  if (o.decider !== false) E.setDecider(S, decider(pol));
   const lifeAtRoundEnd = {}; let maxHitToPlayer = 0, lastRound = 0;
   for (let k = 0; k < 2000 && S.over == null; k++) {
     E.apply(S, chooseAction(S, pol), ctl);
@@ -79,6 +80,11 @@ function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
     deckEnd: [S.first, 1 - S.first].map(i => S.players[i].deck.length),
     fusions: S.stats.fusions, made: S.stats.made, transforms: S.stats.transforms, tokens: S.stats.tokens, catalystRefills: S.events.filter(e => e.type === 'catalyst').length,
     fatigueSeat: [S.first, 1 - S.first].map(i => S.players[i].fatigue),
+    pols, turns: S.turn, res: S.stats.res, hash: S.hashes[S.hashes.length - 1],
+    turnDamage: Object.values(perTurn),
+    verbDamage: S.stats.packets.reduce((a, p) => { a[p.verb] = (a[p.verb] || 0) + p.n; return a; }, {}),
+    decisions: S.events.filter(e => e.type === 'decision').reduce((a, e) => { a[e.kind] = (a[e.kind] || 0) + 1; return a; }, {}),
+    eventTypes: S.events.reduce((a, e) => { a[e.type] = (a[e.type] || 0) + 1; return a; }, {}),
   };
 }
 
@@ -95,4 +101,4 @@ function main() {
   console.log(out, res.length);
 }
 if (require.main === module) main();
-module.exports = { playOne, DECKS, DECKS_R, DECKS_E };
+module.exports = { playOne, DECKS, DECKS_R, DECKS_E, SETS };

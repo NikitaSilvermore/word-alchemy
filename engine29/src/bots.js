@@ -58,6 +58,20 @@ function alchemyWorth(t) {
   return v;
 }
 
+const styleOf = pol => String(pol).split(':')[0];
+const tierOf = pol => String(pol).split(':')[1] || 'journeyman';
+// §10.4 difficulty tiers. depth = own-turn plies searched; beam = children kept per ply; noise = chance of a
+// weaker-but-legal pick; samples = sampled rival hands used to anticipate a reply from reserve.
+const TIERS = {
+  apprentice: { depth: 1, beam: 1, noise: 0.45, responses: false },
+  initiate: { depth: 1, beam: 1, noise: 0.15, responses: true },
+  journeyman: { depth: 1, beam: 1, noise: 0, responses: true },
+  specialist: { depth: 2, beam: 4, noise: 0, responses: true },
+  expert: { depth: 2, beam: 4, noise: 0, responses: true, samples: 2 },
+  master: { depth: 3, beam: 4, noise: 0, responses: true, samples: 3 },
+};
+const TIER_ORDER = Object.keys(TIERS);
+
 const POLICIES = {
   aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35, spark: 0.2, alchemy: 1 },
   careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2, alchemy: 1 },
@@ -66,7 +80,7 @@ const POLICIES = {
 // defender's blocking choice (public information only)
 function blocker(policyOf) {
   return (S, info) => {
-    const me = 1 - info.attacker.ctrl, w = POLICIES[policyOf(me)];
+    const me = 1 - info.attacker.ctrl, w = POLICIES[styleOf(policyOf(me))];
     const dmg = E.curStrike(S, info.attacker) + info.bonus;
     let best = null, bestScore = 0;
     for (const b of info.candidates) {
@@ -106,7 +120,7 @@ function responder(policyOf) {
   return (S, side, kind) => {
     const opts = E.legalResponses(S, side, kind);
     if (!opts.length) return null;
-    const w = POLICIES[policyOf(side)];
+    const w = POLICIES[styleOf(policyOf(side))];
     const run = opt => {
       const c = redact(S, side);
       if (opt) E.addResponse(c, side, opt, { block: null });
@@ -121,22 +135,77 @@ function responder(policyOf) {
 }
 
 function controller(policyOf, { responses = true } = {}) {
-  return { block: blocker(policyOf), respond: responses ? responder(policyOf) : null };
+  const tierResp = side => TIERS[tierOf(policyOf(side))].responses;
+  const r = responder(policyOf);
+  return { block: blocker(policyOf), respond: responses ? (S, side, kind) => (tierResp(side) ? r(S, side, kind) : null) : null };
 }
+
+// Decisions raised during resolution (§4.6). Bots answer from what the deciding player can see.
+function decider(policyOf) {
+  return (S, side, kind, options, dflt) => {
+    if (kind === 'select') { let bk = dflt, bv = -1e9; options.forEach((w, k) => { const v = cardWorth(S, side, w); if (v > bv) { bv = v; bk = k; } }); return bk; }
+    if (kind === 'debt') { const want = options.includes('spark') && (S.players[side].life <= 6 || S.players[side].spark >= 3) ? 'spark' : 'life'; return options.indexOf(want); }
+    return dflt; // documented defaults for the rest
+  };
+}
+
+// deterministic per-state pseudo-random number (keeps every run reproducible)
+function stateRand(S, salt) { let h = parseInt(E.hashState(S), 16) ^ salt; return () => { h = (h + 0x6D2B79F5) | 0; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// Plausible rival hands for anticipation: the rival's declared schools are public; words already seen are excluded (singleton).
+function sampleRivalHand(S, me, r) {
+  const rv = S.players[1 - me];
+  const seen = new Set(rv.grave.map(g => g.word).concat(rv.sealed.map(g => g.word), S.things.filter(t => t.owner === rv.i && t.pid).map(t => t.word)));
+  const pool = Object.values(require('./cards').BY_ID).filter(c => c.deckLegal && rv.schools.includes(c.school) && !seen.has(c.id)).map(c => c.id);
+  return rv.hand.map((x, k) => ({ pid: '?s' + k, word: pool.length ? pool[Math.floor(r() * pool.length)] : HIDDEN, owner: rv.i }));
+}
+
+function stepValue(S0, c, me, w, a) {
+  const bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S0, me, S0.market[a.slot].word) : 0;
+  return value(c, me, w) + holdValue(c, me, w) + bonus;
+}
+function tryApply(c, a, ctl) { try { E.apply(c, a, ctl); return true; } catch (e) { return false; } }
 
 function chooseAction(S, policyOf) {
-  const me = S.active, w = POLICIES[policyOf(me)], blk = blocker(policyOf);
+  const me = S.active, pol = policyOf(me), w = POLICIES[styleOf(pol)], T = TIERS[tierOf(pol)], blk = blocker(policyOf);
   const acts = E.legalActions(S).filter(a => a.type !== 'pass');
   const base = value(S, me, w) + holdValue(S, me, w);
-  let best = null, bestV = base + 0.05; // must strictly improve on doing nothing
-  for (const a of acts) {
-    const c = clone(S);
-    try { E.apply(c, a, { block: blk, respond: null }); } catch (e) { continue; }
-    const bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S, me, S.market[a.slot].word) : 0;
-    const v = value(c, me, w) + holdValue(c, me, w) + bonus;
-    if (v > bestV) { bestV = v; best = a; }
+  // ply 1: every legal sentence, applied to a redacted copy (rival assumed not to respond)
+  const kids = [];
+  for (const a of acts) { const c = clone(S); if (!tryApply(c, a, { block: blk, respond: null })) continue; kids.push({ a, c, v: stepValue(S, c, me, w, a) }); }
+  kids.sort((x, y) => y.v - x.v);
+  // deeper plies: continue each of the best `beam` lines within this turn; a line's worth is its best continuation (or stopping)
+  if (T.depth > 1) {
+    const extend = (node, depth) => {
+      if (depth <= 1 || node.c.over != null || node.c.active !== me) return node.v;
+      const next = E.legalActions(node.c).filter(a => a.type !== 'pass' && a.type !== 'buy');
+      const gs = [];
+      for (const a of next) { const c = clone(node.c); if (!tryApply(c, a, { block: blk, respond: null })) continue; gs.push({ a, c, v: stepValue(node.c, c, me, w, a) + (node.v - value(node.c, me, w) - holdValue(node.c, me, w)) }); }
+      gs.sort((x, y) => y.v - x.v);
+      let best = node.v;
+      for (const g of gs.slice(0, T.beam)) best = Math.max(best, extend(g, depth - 1));
+      return best;
+    };
+    for (const k of kids.slice(0, T.beam)) k.deep = extend(k, T.depth);
+    for (const k of kids) if (k.deep === undefined) k.deep = k.v;
+  } else for (const k of kids) k.deep = k.v;
+  // anticipation: replay the best candidates against sampled rival hands answering from reserve
+  if (T.samples) {
+    const r = stateRand(S, 7);
+    for (const k of kids.slice(0, T.beam)) {
+      let tot = 0;
+      for (let s = 0; s < T.samples; s++) {
+        const c = clone(S); c.players[1 - me].hand = sampleRivalHand(S, me, r);
+        const ctl = { block: blk, respond: (S2, side, kind) => (side !== me ? responder(policyOf)(S2, side, kind) : null) };
+        tot += tryApply(c, k.a, ctl) ? stepValue(S, c, me, w, k.a) : k.v;
+      }
+      k.deep += tot / T.samples - k.v; // adjust the line by the expected cost of a reply
+    }
   }
-  return best || { type: 'pass' };
+  const ranked = kids.filter(k => k.deep > base + 0.05).sort((x, y) => y.deep - x.deep);
+  if (!ranked.length) return { type: 'pass' };
+  if (T.noise) { const r = stateRand(S, 13); if (r() < T.noise) return ranked[Math.min(ranked.length - 1, 1 + Math.floor(r() * 2))].a; }
+  return ranked[0].a;
 }
 
-module.exports = { chooseAction, blocker, responder, controller, mulligan, POLICIES, clone, redact, value };
+module.exports = { chooseAction, blocker, responder, controller, decider, mulligan, POLICIES, TIERS, TIER_ORDER, clone, redact, value, sampleRivalHand };

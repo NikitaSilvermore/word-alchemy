@@ -37,6 +37,20 @@ const INITIATIVE = {
   spark: { p2Reserve: 1, p2Spark: 2 },
 };
 
+// ---------- decisions (§4.6: every choice is a legal decision) ----------
+// A match may carry a decider(S, side, kind, options) -> index. Kept outside the state so copies stay plain data;
+// a copy without one (bot lookahead, replay without input) uses each decision's documented default.
+const DECIDERS = new WeakMap();
+function setDecider(S, fn) { DECIDERS.set(S, fn); }
+function decide(S, side, kind, options, dflt = 0) {
+  if (!options.length) return -1;
+  const fn = DECIDERS.get(S);
+  let k = fn ? fn(S, side, kind, options, dflt) : dflt;
+  if (!Number.isInteger(k) || k < 0 || k >= options.length) k = dflt;
+  event(S, 'decision', { side, kind, n: options.length, k });
+  return k;
+}
+
 // ---------- RNG ----------
 function rng(seed) {
   let a = seed >>> 0;
@@ -76,7 +90,7 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
       hand: [], grave: [], sealed: [], ground: null, main: mainSchool(d), usedVerbs: {}, leechUsed: false,
     })),
     things: [], // field instances
-    stats: { packets: [], firstLethalRound: null, responses: 0, answers: 0, failed: 0, cancelled: 0, made: {}, fusions: 0, transforms: 0, tokens: 0 },
+    stats: { res: [0, 1].map(() => ({ breathSpent: 0, breathWasted: 0, reserveKept: 0, reserveUsed: 0, sparkGained: 0, sparkSpent: 0, drawn: 0, bought: 0, played: {}, lifeLost: {}, healed: 0 })), packets: [], firstLethalRound: null, responses: 0, answers: 0, failed: 0, cancelled: 0, made: {}, fusions: 0, transforms: 0, tokens: 0 },
   };
   for (const p of S.players) for (const c of p.deck) S.registry[c.pid] = true;
   S.active = first != null ? first : (r() < 0.5 ? 0 : 1);
@@ -130,7 +144,7 @@ function newOffer(S, k) {
 }
 function marketStep(S) {
   const p = S.players[S.active];
-  p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); // guaranteed income
+  gainSpark(S, p, 'income'); // guaranteed income
   if (!S.rules.market) return;
   const refresh = (MKT === 'p2refresh' ? S.active !== S.first : S.active === S.first) && FORMAT.marketRefreshRounds.includes(S.round);
   for (let k = 0; k < S.market.length; k++) if (refresh || !S.market[k]) { S.market[k] = null; S.market[k] = newOffer(S, k); }
@@ -140,7 +154,7 @@ function priceOf(S, side, word) { return S.players[side].schools.includes(BY_ID[
 function sparkFor(S, n) { // first qualifying successful paid hand-card sentence this own turn
   const p = S.players[n.side];
   if (NO_SENTENCE_SPARK || n.side !== S.active || n.kind === 'response' || !n.cardUsed || n.noEffect || n.noSpark || p.sentenceSpark) return;
-  p.sentenceSpark = true; p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); event(S, 'spark', { side: n.side, why: 'sentence' });
+  p.sentenceSpark = true; gainSpark(S, p, 'sentence');
 }
 
 function mightFor(S, n) { // Word: first other successful hand-card sentence each own turn grants 1 Might
@@ -220,7 +234,8 @@ function growthGained(S, t) { // Pear: first time another friendly Plant gains G
     if (!S.things.some(o => o.ctrl === t.ctrl && card(o).id === 'token.fruit')) createToken(S, t.ctrl, 'token.fruit');
   }
 }
-function gainAbilitySpark(S, p) { if (p.abilitySpark) return false; p.abilitySpark = true; p.spark = Math.min(FORMAT.sparkCap, p.spark + 1); event(S, 'spark', { side: p.i, why: 'ability' }); return true; }
+function gainAbilitySpark(S, p) { if (p.abilitySpark) return false; p.abilitySpark = true; gainSpark(S, p, 'ability'); return true; }
+function gainSpark(S, p, why) { const g = Math.min(FORMAT.sparkCap, p.spark + 1) - p.spark; p.spark += g; S.stats.res[p.i].sparkGained += g; if (why !== 'income') event(S, 'spark', { side: p.i, why }); }
 function canIgnite(t) { return prop(t, 'flammable') && !t.status.wet; }
 // Ignite = apply/refresh Burning (2 ticks), no implied damage; Wet prevents (§5.5, §5.7)
 function ignite(S, t, bySide) {
@@ -345,7 +360,7 @@ function damageThing(S, t, n, fromResonance) {
   }
 }
 function heal(S, t, n) { t.damage = Math.max(0, t.damage - n); }
-function loseLife(S, pi, n, why) { if (n <= 0) return; S.players[pi].life -= n; say(S, `P${pi} loses ${n} life (${why}).`); }
+function loseLife(S, pi, n, why) { if (n <= 0) return; S.players[pi].life -= n; const L = S.stats.res[pi].lifeLost; L[why] = (L[why] || 0) + n; say(S, `P${pi} loses ${n} life (${why}).`); }
 
 function refreshLaw(S) {
   for (const t of S.things) {
@@ -413,8 +428,9 @@ function deathTrigger(S, t, how) {
   if (card(t).onDeath === 'poison1') poisonTrigger(S, t);
 }
 function poisonTrigger(S, t) {
-  // target chosen at resolution and validated (deterministic policy: strongest enemy Living Thing)
-  const tg = S.things.filter(o => o.ctrl !== t.ctrl && prop(o, 'living')).sort((a, b) => curStrike(S, b) - curStrike(S, a) || a.entry - b.entry)[0];
+  // target chosen by the controller at resolution among eligible visible enemy Living Things (default: strongest)
+  const opts = S.things.filter(o => o.ctrl !== t.ctrl && prop(o, 'living') && !o.status.concealed).sort((a, b) => curStrike(S, b) - curStrike(S, a) || a.entry - b.entry);
+  const tg = opts[decide(S, t.ctrl, 'poisonTarget', opts.map(o => o.id))];
   event(S, 'trigger', { source: t.id, ctrl: t.ctrl, what: 'poison1', target: tg ? tg.id : null });
   if (tg) addPoison(S, tg, 1);
 }
@@ -458,7 +474,7 @@ function startTurn(S) {
       const o = S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'living') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
       if (o) addCounter(S, o, 'growth');
     }
-    if (u === 'stone') { if (p.hand.length <= 3 && p.deck.length) drawCard(S, p); else gainExtraBreath(p, 1); } // owner's choice; deterministic policy here
+    if (u === 'stone') { const k = decide(S, p.i, 'stoneUpkeep', ['draw', 'breath'], p.hand.length <= 3 && p.deck.length ? 0 : 1); if (k === 0) drawCard(S, p); else gainExtraBreath(p, 1); }
     if (card(t).lifespan) { t.age = (t.age || 0) + 1; if (t.age >= card(t).lifespan) { leaveField(S, t, 'expired'); say(S, `${t.word} disperses.`); continue; } }
     if (card(t).ladder === 'plant' && ['life.seed', 'life.sapling'].includes(card(t).id)) ageUp(S, t);
     if (u === 'aloe') { const d = S.things.filter(o => o.ctrl === p.i && o.damage > 0).sort((a, b) => a.entry - b.entry)[0]; if (d) heal(S, d, 1); }
@@ -476,11 +492,13 @@ function startTurn(S) {
   if (gu === 'earthGround') { const pl = S.things.filter(o => o.ctrl === p.i && prop(o, 'plant') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0]; if (pl) addCounter(S, pl, 'growth'); }
   weatherUpkeep(S, p);
   if (p.burden && card(p.burden).burden === 'debt') { // spend 1 spark or lose 1 life (policy: spark when available)
-    if (p.spark > 0) p.spark--; else loseLife(S, p.i, 1, 'debt');
+    const opts = p.spark > 0 ? ['spark', 'life'] : ['life'];
+    if (opts[decide(S, p.i, 'debt', opts)] === 'spark') { p.spark--; S.stats.res[p.i].sparkSpent++; } else loseLife(S, p.i, 1, 'debt');
     if (--p.burden.ticks <= 0) { toGrave(S, p.burden, 'retired'); p.burden = null; }
   }
   if (p.ground && card(p.ground).upkeep === 'waterGround') {
-    const f = S.things.filter(o => o.ctrl === p.i && (o.damage > 0 || o.status.burning)).sort((a, b) => b.damage - a.damage || a.entry - b.entry)[0];
+    const opts = S.things.filter(o => o.ctrl === p.i).sort((a, b) => (b.status.burning ? 1 : 0) - (a.status.burning ? 1 : 0) || b.damage - a.damage || a.entry - b.entry);
+    const f = opts[decide(S, p.i, 'waterGround', opts.map(o => o.id))]; // choose a friendly Thing (default: Burning, then most damaged)
     if (f) { f.status.wet = true; delete f.status.burning; heal(S, f, 1); }
   }
   stateCheck(S); if (S.over != null) return;
@@ -489,12 +507,20 @@ function startTurn(S) {
   marketStep(S);
 }
 // owner's own deck top: inspect and reorder (deterministic policy: cheapest first)
-function reorderTop(S, p, n) { const top = p.deck.splice(0, n).sort((a, b) => card(a).cost - card(b).cost); p.deck.unshift(...top); }
+function perms(a) { return a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map(r => [x].concat(r))); }
+function reorderTop(S, p, n) {
+  const top = p.deck.splice(0, n), orders = perms(top.map((c, i) => i));
+  const dflt = orders.findIndex(o => o.every((v, i) => i === 0 || card(top[o[i - 1]]).cost <= card(top[v]).cost)); // default: cheapest first
+  const k = decide(S, p.i, 'reorder', orders.map(o => o.map(i => top[i].word)), Math.max(0, dflt));
+  p.deck.unshift(...orders[k].map(i => top[i]));
+}
 // inspect top n; take the first card matching `pick` into hand if room; the rest go to the bottom in order
 function selectTop(S, p, n, pick) {
   const top = p.deck.splice(0, n);
-  const k = top.findIndex(pick);
-  if (k >= 0 && p.hand.length < FORMAT.handCap) p.hand.push(top.splice(k, 1)[0]);
+  const elig = top.map((c, i) => i).filter(i => pick(top[i]));
+  const j = elig.length && p.hand.length < FORMAT.handCap ? decide(S, p.i, 'select', elig.map(i => top[i].word)) : -1; // owner sees these
+  const k = j >= 0 ? elig[j] : -1;
+  if (k >= 0) p.hand.push(top.splice(k, 1)[0]);
   p.deck.push(...top); return k >= 0;
 }
 function weatherUpkeep(S, p) {
@@ -534,7 +560,7 @@ function ageUp(S, t) { // one age event; at age 2 advance one edge (max one plan
 function drawCard(S, p) {
   if (p.hand.length >= FORMAT.handCap) return;
   if (!p.deck.length) { p.fatigue++; loseLife(S, p.i, p.fatigue, 'fatigue'); return; }
-  p.hand.push(p.deck.shift());
+  p.hand.push(p.deck.shift()); S.stats.res[p.i].drawn++;
 }
 function endTurn(S) {
   const p = S.players[S.active];
@@ -544,6 +570,7 @@ function endTurn(S) {
   }
   stateCheck(S);
   p.reserve = S.rules.reserve ? Math.min(FORMAT.reserveCap, p.breath) : 0;
+  S.stats.res[p.i].reserveKept += p.reserve; S.stats.res[p.i].breathWasted += p.breath - p.reserve;
   p.breath = 0;
   event(S, 'end', { side: p.i, reserve: p.reserve });
   if (S.over == null && S.active !== S.first && S.round >= FORMAT.roundCap) S.over = 'draw';
@@ -947,7 +974,7 @@ function arrive(S, t) {
   if (oa === 'concealed') t.status.concealed = true;
   if (S.sky && card(S.sky).weather === 'night' && isOriginal(t) && t.ctrl === S.active && p.nightTurn !== p.personalTurn) { p.nightTurn = p.personalTurn; t.status.concealed = true; } // persists after Night leaves
   event(S, 'arrive', { id: t.id, pid: t.concealed || t.status.concealed ? null : t.pid });
-  if (card(t).revealOnArrive) { const h = S.things.find(o => o.ctrl !== t.ctrl && o.status.concealed); if (h) reveal(S, h); } // Owl: optional reveal (policy: always)
+  if (card(t).revealOnArrive) { const hs = S.things.filter(o => o.ctrl !== t.ctrl && o.status.concealed); const k = decide(S, t.ctrl, 'owlReveal', ['none'].concat(hs.map(h => h.id)), hs.length ? 1 : 0); if (k > 0) reveal(S, hs[k - 1]); } // Owl: optional reveal
   if (oa === 'herald') selectTop(S, p, 2, c => true); // policy: the top word
   if (oa === 'reorder2') reorderTop(S, p, 2);
   if (oa === 'rose' && S.things.some(o => o !== t && o.ctrl === t.ctrl && prop(o, 'flower')) && !S.things.some(o => o.ctrl === t.ctrl && card(o).id === 'token.blossom')) {
@@ -1008,15 +1035,16 @@ function declare(S, act, side, kind, ctl) {
   }
   const courage = act.type === 'attack' && S.arithmetic === 'legacy' && p.life <= 8 && kind === 'main';
   if (courage) cost = 0;
-  if (kind === 'response') { if (cost > p.reserve) throw new Error('reserve'); p.reserve -= cost; }
-  else { if (cost > p.breath) throw new Error('cannot afford'); p.breath -= cost; }
+  if (kind === 'response') { if (cost > p.reserve) throw new Error('reserve'); p.reserve -= cost; S.stats.res[side].reserveUsed += cost; }
+  else { if (cost > p.breath) throw new Error('cannot afford'); p.breath -= cost; S.stats.res[side].breathSpent += cost; }
+  if (node.card) { const pl = S.stats.res[side].played; pl[node.card.word] = (pl[node.card.word] || 0) + 1; }
   for (const id of [act.subject, act.payload, act.type === 'fuse' ? act.a : null, act.type === 'fuse' ? act.b : null].concat(act.targets && act.type === 'spell' && d && d.spell === 'squall' ? act.targets : [])) {
     const t = id && id !== 'ground' && thingById(S, id); if (t && t.status.concealed) reveal(S, t); // reveal before it acts or fuses
   }
   if (act.type === 'fuse') {
     const recipe = recipeById(act.recipe), a = refObj(S, side, act.a), b = refObj(S, side, act.b);
     const pv = previewFusion(S, side, recipe, a, act.a === 'ground', b, act.b === 'ground');
-    if (pv.cost > p.breath) throw new Error('cannot afford'); p.breath -= pv.cost; node.paid = pv.cost;
+    if (pv.cost > p.breath) throw new Error('cannot afford'); p.breath -= pv.cost; node.paid = pv.cost; S.stats.res[side].breathSpent += pv.cost;
     if (pv.catalyst) { p.catalyst--; node.catalyst = true; } // consumed at declaration, never refunded
     p.fusedTurn = p.personalTurn; // allowance consumed at declaration
     node.ids = [act.a, act.b]; node.groundPid = p.ground ? p.ground.pid : null;
@@ -1078,9 +1106,9 @@ function apply(S, act, ctl) {
 function economy(S, act) {
   const p = S.players[S.active];
   p.bought = true;
-  if (act.type === 'catalyst') { p.spark -= FORMAT.catalystPrice; p.catalyst = FORMAT.catalystCap; event(S, 'catalyst', { side: p.i }); return; }
+  if (act.type === 'catalyst') { p.spark -= FORMAT.catalystPrice; S.stats.res[p.i].sparkSpent += FORMAT.catalystPrice; p.catalyst = FORMAT.catalystCap; event(S, 'catalyst', { side: p.i }); return; }
   const o = S.market[act.slot], price = priceOf(S, p.i, o.word);
-  p.spark -= price; if (price === FORMAT.offPrice) p.offSchoolBought++;
+  p.spark -= price; S.stats.res[p.i].sparkSpent += price; S.stats.res[p.i].bought++; if (price === FORMAT.offPrice) p.offSchoolBought++;
   p.acquired[o.word] = (p.acquired[o.word] || 0) + 1;
   const c = { pid: 'm' + p.i + '_' + (++S.seq), word: o.word, owner: p.i };
   if (S.registry) S.registry[c.pid] = true;
@@ -1290,7 +1318,7 @@ function resolveSpell(S, n, d, tg) {
       if (!tg || tg.ctrl === side || !prop(tg, 'metal') || has(S, tg, 'incorruptible') || modsOf(tg).rustImmune) return false;
       if (wardBlocks(S, n, tg)) return true;
       const from = card(tg).id; let back = null; // damage and regression in one batch
-      if (from === 'earth.silver') back = (tg.prevForms || []).filter(f => f === 'earth.tin' || f === 'earth.copper').pop() || 'earth.tin';
+      if (from === 'earth.silver') back = (tg.prevForms || []).filter(f => f === 'earth.tin' || f === 'earth.copper').pop() || ['earth.tin', 'earth.copper'][decide(S, side, 'rustBranch', ['earth.tin', 'earth.copper'])]; // effect controller chooses
       if (from === 'earth.tin' || from === 'earth.copper') back = 'earth.lead';
       damageThing(S, tg, 3);
       if (back) { tg.form = back === tg.word ? undefined : back; event(S, 'transform', { tid: tg.id, from, to: back, regress: true }); }
@@ -1318,7 +1346,8 @@ function resolveSpell(S, n, d, tg) {
     case 'loan': gainExtraBreath(p, 2); p.tax = 1; break;
     case 'silence': {
       const r = enemy(S, side); event(S, 'reveal-hand', { side: r.i, n: r.hand.length });
-      const pick = r.hand.filter(c => ['action', 'spell'].includes(card(c).type) && card(c).cost <= 3).sort((x, y) => card(y).cost - card(x).cost)[0];
+      const el = r.hand.filter(c => ['action', 'spell'].includes(card(c).type) && card(c).cost <= 3).sort((x, y) => card(y).cost - card(x).cost);
+      const pick = el[decide(S, side, 'silence', el.map(c => c.word))]; // revealed hand: caster chooses
       if (pick) { r.hand.splice(r.hand.indexOf(pick), 1); toGrave(S, pick, 'discarded'); }
       break;
     }
@@ -1430,7 +1459,7 @@ function hashState(S) {
 }
 
 module.exports = {
-  FORMAT, INITIATIVE, createMatch, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
+  FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
 };

@@ -1,5 +1,12 @@
 # V29 "The Grammar" engine changelog
 
+## 0.29.0-g — Stage G: benchmark (24 Nov 2026)
+- Decisions: every choice raised during resolution goes through `setDecider` with a documented default (poison target, selection, reorder, Silence, Philosopher's Stone, Water Ground, Debt, Owl reveal, Rust branch). Decisions are logged as events.
+- Resource and damage logs per player: breath spent / wasted, reserve kept / used, spark gained / spent, words drawn / bought, words played, life lost by cause.
+- Six AI tiers (§10.4): apprentice, initiate (noisy one-ply), journeyman (one-ply with responses), specialist (own-turn beam search, depth 2), expert (+ anticipated replies from sampled rival hands), master (depth 3). Sampling uses only public information (declared schools, seen words); a test proves the rival's real hand never changes the choice. Bots answer decisions from what they can see.
+- `sim/bench.js`: deterministic deck benchmark (mirrored seeds), tier ladder (same deal four ways: decks and seats swapped), sharding, and a Markdown report: summary, resources, life lost by cause, deck table and matchup matrix, tier ladder, word/school coverage, made forms, decisions, event types, and a digest of all results for reproducibility.
+- 166 tests.
+
 ## 0.29.0-f — Stage F: the full reference catalogue (24 Nov 2026)
 - All 150 §8 words registered and deck-legal; a test checks type, cost, R flag and stats against `data/spec_catalogue.json` (parsed from the spec by `tools/spec_catalogue.js`). A meta-test fails if any deck-legal word is untested.
 - New zones and systems: Quality attachments (max 2, no duplicates, replacement designated at declaration, retire to owner's Grave, follow the host through control change, compositional fusion keeps the host's); shared Sky Weather (replace on resolution, expiry at caster's second Renew, arrival and upkeep effects, Orrery); Burdens (Debt); compound Law (Category + Be + Lawful Quality, virtual Quality on matching Things both sides, Named/Fixed excluded, expiry); standalone Catalogues; native abilities (Willow, Apothecary, Vitriol, Fruit); Concealed (Hermit, Shadow, Night; reveal by Owl, Doubt, Dispel, Gnosis, or on acting, blocking or fusing; bots see a hidden placeholder).

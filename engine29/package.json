@@ -1,7 +1,7 @@
 {
   "name": "word-alchemy-engine29",
   "private": true,
-  "version": "0.29.0-f",
+  "version": "0.29.0-g",
   "scripts": {
     "test": "node --test test/*.test.js",
     "sim:A": "node sim/run.js v29 100 1000 results/stageF_v29_A.json A on on off spec on",
@@ -14,6 +14,9 @@
     "sim:market:diag": "for v in spec norefresh p2refresh from2 nobuy; do WA_MKT=$v node sim/run.js v29 40 5000 results/stageD_diag_$v.json R on on off spec on; done",
     "sim:REF": "node sim/run.js v29 40 1000 results/stageF_v29_REF.json REF on on on spec on",
     "fuzz": "node tools/fuzz.js 1000",
-    "catalogue": "node tools/spec_catalogue.js ../../uploads/spec.md data/spec_catalogue.json"
+    "catalogue": "node tools/spec_catalogue.js ../../uploads/spec.md data/spec_catalogue.json",
+    "bench:decks": "node sim/bench.js decks REF specialist 10 2000 results/stageG_REF_specialist.json",
+    "bench:ladder": "node sim/bench.js ladder REF 16 3000 results/stageG_ladder.json",
+    "bench:report": "node sim/bench.js report results/stageG_benchmark_specialist.md results/stageG_REF_specialist_s0.json results/stageG_REF_specialist_s1.json"
   }
 }

@@ -4,14 +4,11 @@ All 150 catalogue words (§8) are registered with the printed type, cost, R flag
 
 All 150 words are deck-legal and implemented. The ten §10 reference decks (D1–D8, D4-B, D5-B) are legal and run.
 
-## Choices made by fixed policy (spec wants a player decision)
-These resolve deterministically today. Each should become a decision in the event queue before human play.
-- Rat / Yew / Spore / Toadstool poison target: strongest enemy Living Thing.
-- Herald, Omen: take the top inspected word. Scribe, Air (Ground), Grimoire: reorder cheapest first.
-- Silence: discard the highest-cost eligible word.
-- Philosopher's Stone upkeep: draw if hand ≤ 3, else +1 breath. Water Ground: most damaged (or Burning) friendly Thing.
-- Debt: pay spark when available, else life. Owl's optional reveal: always reveals.
-- Rust from a directly deployed Silver: regresses to Tin.
+## Decisions raised during resolution (stage G)
+Every choice the spec gives a player is now a decision: `setDecider(S, fn)` receives `(S, side, kind, options, default)` and returns an index. Kinds: `poisonTarget`, `select` (Herald, Omen, Catalogues, Homunculus), `reorder` (Scribe, Air, Grimoire), `silence`, `stoneUpkeep`, `waterGround`, `debt`, `owlReveal`, `rustBranch`. Without a decider (bot lookahead, replays), each uses its documented default:
+- poison target: strongest eligible visible enemy Living Thing; select: first eligible; reorder: cheapest first; Silence: highest cost;
+- Philosopher's Stone: draw when hand ≤ 3, otherwise breath; Water Ground: Burning, then most damaged friendly Thing (now mandatory, as printed);
+- Debt: spark when available; Owl: reveal; Rust from an undirected Silver: Tin.
 
 ## Interpretations (spec silent or ambiguous)
 - A committed Guard blocker still takes the hit when the attack's direct target has left play.
@@ -20,5 +17,3 @@ These resolve deterministically today. Each should become a decision in the even
 - Blow: Ward applies only when Blow names a single target.
 - Graft: price is the card's 2 breath; no catalyst for Life + Life.
 
-## Not yet decisions-in-queue
-Mulligan, blocking, responses and all Main choices are decisions; the policies above are the remaining gaps.
