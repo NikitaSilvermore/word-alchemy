@@ -41,7 +41,8 @@ const DECKS_E = {
   quarry: DECKS_R.quarry,
   pack: DECKS_R.pack,
 };
-const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E };
+const { REF } = require('../data/reference_decks');
+const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E, REF };
 
 function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];

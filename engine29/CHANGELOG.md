@@ -1,5 +1,16 @@
 # V29 "The Grammar" engine changelog
 
+## 0.29.0-f — Stage F: the full reference catalogue (24 Nov 2026)
+- All 150 §8 words registered and deck-legal; a test checks type, cost, R flag and stats against `data/spec_catalogue.json` (parsed from the spec by `tools/spec_catalogue.js`). A meta-test fails if any deck-legal word is untested.
+- New zones and systems: Quality attachments (max 2, no duplicates, replacement designated at declaration, retire to owner's Grave, follow the host through control change, compositional fusion keeps the host's); shared Sky Weather (replace on resolution, expiry at caster's second Renew, arrival and upkeep effects, Orrery); Burdens (Debt); compound Law (Category + Be + Lawful Quality, virtual Quality on matching Things both sides, Named/Fixed excluded, expiry); standalone Catalogues; native abilities (Willow, Apothecary, Vitriol, Fruit); Concealed (Hermit, Shadow, Night; reveal by Owl, Doubt, Dispel, Gnosis, or on acting, blocking or fusing; bots see a hidden placeholder).
+- Conditions and counters: Bound (Bind, Ivy, Spider, Bramble's Sting rider, Cut frees), Named, Measured, Fixed; Growth/Might/Bedrock through one capped counter path; Quick keyword; Sacred vs Bite; Resonant; Firebrand; Ignite helper (Naphtha, Drought).
+- New verbs and spells: Wash, Dissolve, Blow (payload), Haunt (Salt), Tide, Squall, Wildfire, Memory, Exhume and Echo (Sealed on success), Tame and Summon (control change), Decay, Rust (regression), Wither, Miasma, Omen, Gnosis, Silence, Scream (Voice, Bard), Reckoning, Awaken, Loan (next-turn tax), Graft (Grafted Plant via the Vessel), Abundance.
+- Engines and watchers: Bellows, Ink, Earth, Air, Grimoire, Crucible, Magpie, Saffron, Pear, Rose, Crow, Ice, Amber, Herald, Scribe, Harvest, Spring, Rain, Storm, Winter, Desert.
+- `data/reference_decks.js`: the ten §10 decks, all legal; simulator deck set `REF`.
+- `tools/fuzz.js`: random legal play over every word with a zone audit after each step (1,000 games, 0 errors).
+- `IMPLEMENTATION_STATUS.md`: choices still made by fixed policy and interpretations of ambiguous text.
+- 161 tests.
+
 ## 0.29.0-e — Stage E: alchemy (24 Nov 2026)
 - Vessel fusion as a Main declaration that opens the Clause: two distinct controlled-and-owned ingredients, at least one mature Thing, Things ready and not incapacitated, Ground only where the recipe names it, tokens only where registered, no Final ingredient, lethal preview illegal. Breath, catalyst and the once-per-turn allowance are committed at declaration and never refunded; ingredients are revalidated at resolution.
 - Results enter Fresh and exhausted with summed marked damage; a Made event, never Arrival; no sentence spark. Ingredients are consumed without death or sacrifice and bound in a public lineage.

@@ -13,6 +13,7 @@ function redact(S, viewer) {
     if (p.i !== viewer) p.hand = p.hand.map((x, k) => ({ pid: HIDDEN + p.i + '_' + k, word: HIDDEN, owner: p.i }));
     p.deck = p.deck.map((x, k) => ({ pid: HIDDEN + 'd' + p.i + '_' + k, word: HIDDEN, owner: p.i }));
   }
+  for (const t of c.things) if (t.ctrl !== viewer && t.status.concealed) { t.word = HIDDEN; t.form = undefined; t.mods = undefined; t.quals = []; t.lineage = t.lineage ? [] : t.lineage; } // identity hidden
   c.registry = null; c.mseed = null; c.redacted = true; // future market offers are hidden too
   return c;
 }

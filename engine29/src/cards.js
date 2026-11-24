@@ -9,6 +9,11 @@ const T = (id, school, cost, strike, stand, p, extra = {}) =>
 const A = (id, school, cost, extra) => ({ id, school, type: 'action', cost, deckLegal: true, ...extra });
 const S = (id, school, cost, extra) => ({ id, school, type: 'spell', cost, deckLegal: true, ...extra });
 const G = (id, school, cost, stand, extra) => ({ id, school, type: 'ground', cost, stand, deckLegal: true, ...extra });
+const Q = (id, school, cost, qual, extra) => ({ id, school, type: 'quality', cost, qual, deckLegal: true, ...extra });
+const W = (id, school, cost, extra) => ({ id, school, type: 'weather', cost, deckLegal: true, ...extra });
+const B = (id, school, cost, extra) => ({ id, school, type: 'burden', cost, deckLegal: true, ...extra });
+const C = (id, school, cost, category) => ({ id, school, type: 'category', cost, category, deckLegal: true });
+
 
 const CARDS = [
   // Fire
@@ -22,12 +27,28 @@ const CARDS = [
   S('fire.kindle', 'fire', 1, { spell: 'kindle', r: true }),
   G('fire.fire', 'fire', 2, 3, { upkeep: 'fireGround', reagent: 'fire' }),
   S('fire.calcine', 'fire', 2, { spell: 'calcine', sacrifice: true }),
+  G('fire.bellows', 'fire', 2, 3, { upkeep: 'bellows' }),
+  T('fire.naphtha', 'fire', 2, 0, 3, ['liquid', 'flammable'], { naphtha: true }),
+  S('fire.wildfire', 'fire', 4, { spell: 'wildfire' }),
+  W('fire.drought', 'fire', 2, { weather: 'drought' }),
+  Q('fire.firebrand', 'fire', 1, { props: ['hot'], firebrand: true }, { lawful: true }),
   // Air
-  T('air.owl', 'air', 2, 2, 2, ['living', 'beast', 'bird', 'winged', 'sharp', 'body', 'flammable'], { kw: ['flying'] }),
+  T('air.owl', 'air', 2, 2, 2, ['living', 'beast', 'bird', 'winged', 'sharp', 'body', 'flammable'], { kw: ['flying'], revealOnArrive: true }),
   T('air.hawk', 'air', 3, 3, 3, ['living', 'beast', 'bird', 'winged', 'sharp', 'body', 'flammable'], { kw: ['flying'] }),
   T('air.swallow', 'air', 1, 1, 1, ['living', 'beast', 'bird', 'winged', 'body', 'flammable'], { kw: ['flying', 'swift'] }),
-  T('air.crow', 'air', 2, 1, 3, ['living', 'beast', 'bird', 'winged', 'body', 'flammable'], { kw: ['flying'] }),
-  T('air.wind', 'air', 2, 1, 3, ['body'], { kw: ['flying'] }), // wingless flight
+  T('air.crow', 'air', 2, 1, 3, ['living', 'beast', 'bird', 'winged', 'body', 'flammable'], { kw: ['flying'], crowMight: true }),
+  T('air.wind', 'air', 2, 1, 3, ['body'], { kw: ['flying'], cap: ['blow'] }), // wingless flight
+  T('air.magpie', 'air', 2, 1, 2, ['living', 'beast', 'bird', 'winged', 'body', 'flammable'], { kw: ['flying'], magpie: true }),
+  T('air.herald', 'air', 2, 1, 3, ['living', 'person', 'body', 'flammable'], { onArrive: 'herald' }),
+  G('air.air', 'air', 2, 3, { upkeep: 'reorder2' }),
+  G('air.orrery', 'air', 3, 4, { static: 'orrery' }),
+  Q('air.winged', 'air', 1, { props: ['winged'], kw: ['flying'], cap: ['blow'], notHeavy: true }, { lawful: true }),
+  Q('air.quick', 'air', 2, { kw: ['quick'] }),
+  Q('air.resonant', 'air', 2, { resonant: true }, { anyTarget: true }),
+  A('air.blow', 'air', 2, { verb: 'blow', remote: true }),
+  W('air.storm', 'air', 3, { weather: 'storm' }),
+  S('air.squall', 'air', 4, { spell: 'squall' }),
+  C('air.birds', 'air', 1, 'bird'),
   S('air.gasp', 'air', 1, { spell: 'gasp' }),
   S('air.gust', 'air', 2, { spell: 'gust', r: true }),
   // Earth
@@ -40,6 +61,16 @@ const CARDS = [
   T('earth.gold', 'earth', 4, 2, 4, ['metal', 'body'], { kw: ['incorruptible'], ladder: 'metal', deckLegal: false, ladderOnly: true, upkeep: 'gold' }),
   T('earth.clay', 'earth', 1, 0, 3, ['clay']),
   S('earth.transmute', 'earth', 2, { spell: 'transmute' }),
+  G('earth.crucible', 'earth', 2, 4, { fusionDiscount: 1 }),
+  G('earth.earth', 'earth', 2, 3, { upkeep: 'earthGround' }),
+  G('earth.salt', 'earth', 1, 2, { static: 'salt' }),
+  T('earth.amber', 'earth', 2, 0, 3, ['material'], { amber: true }),
+  Q('earth.temper', 'earth', 2, { stand: 2, rustImmune: true, brittleImmune: true, needsProp: 'metal' }),
+  Q('earth.leaden', 'earth', 1, { kw: ['heavy'], stand: 1, kwRemove: ['flying'] }, { lawful: true, anyTarget: true }),
+  Q('earth.fixed', 'earth', 2, { kw: ['fixed'] }),
+  W('earth.desert', 'earth', 2, { weather: 'desert' }),
+  W('earth.winter', 'earth', 2, { weather: 'winter' }),
+  C('earth.metals', 'earth', 1, 'metal'),
   T('earth.iron', 'earth', 2, 2, 4, ['metal', 'body'], { kw: ['heavy'] }),
   T('earth.flint', 'earth', 1, 2, 1, ['stone', 'sharp', 'body'], { cap: ['burn'] }),
   G('earth.tower', 'earth', 3, 5, { static: 'heavyReach' }),
@@ -50,28 +81,47 @@ const CARDS = [
   T('life.wolf', 'life', 2, 2, 3, ['living', 'beast', 'body', 'flammable'], { cap: ['bite'], packBonus: true }),
   T('life.stag', 'life', 3, 3, 4, ['living', 'beast', 'body', 'sharp', 'flammable']),
   T('life.hare', 'life', 1, 1, 2, ['living', 'beast', 'body', 'flammable'], { kw: ['swift'] }),
-  T('life.bramble', 'life', 2, 1, 4, ['living', 'plant', 'body', 'flammable'], { kw: ['reach'] }),
+  T('life.bramble', 'life', 2, 1, 4, ['living', 'plant', 'body', 'flammable'], { kw: ['reach'], cap: ['bind', 'sting'], stingBind: true }),
   T('life.aloe', 'life', 2, 0, 3, ['living', 'plant', 'herb'], { cap: ['mend'], upkeep: 'aloe' }),
-  T('life.apothecary', 'life', 3, 2, 3, ['living', 'person', 'body', 'flammable'], { cap: ['mend'] }),
+  T('life.apothecary', 'life', 3, 2, 3, ['living', 'person', 'body', 'flammable'], { cap: ['mend'], ability: { id: 'tend', cost: 1 } }),
   A('life.bite', 'life', 1, { verb: 'bite', bonus: 1 }),
   A('life.mend', 'life', 1, { verb: 'mend', remote: true, r: true }),
   T('life.seed', 'life', 1, 0, 2, ['living', 'plant', 'flammable'], { ladder: 'plant' }),
   T('life.sapling', 'life', 2, 1, 3, ['living', 'plant', 'tree', 'body', 'flammable'], { ladder: 'plant' }),
   T('life.oak', 'life', 4, 3, 6, ['living', 'plant', 'tree', 'body', 'flammable'], { kw: ['heavy'] }),
-  T('life.willow', 'life', 3, 1, 5, ['living', 'plant', 'tree', 'herb', 'body', 'flammable'], { cap: ['mend'] }),
+  T('life.willow', 'life', 3, 1, 5, ['living', 'plant', 'tree', 'herb', 'body', 'flammable'], { cap: ['mend'], ability: { id: 'heal2', cost: 1 } }),
   S('life.grow', 'life', 1, { spell: 'grow' }),
   T('life.scarab', 'life', 2, 1, 2, ['living', 'beast', 'insect', 'body'], { kw: ['sacred', 'recurrent'] }),
+  T('life.pear', 'life', 2, 1, 3, ['living', 'plant', 'tree', 'orchard', 'flower', 'body', 'flammable'], { pear: true }),
+  T('life.rose', 'life', 2, 1, 3, ['living', 'plant', 'flower', 'body', 'flammable'], { kw: ['reach'], cap: ['sting'], onArrive: 'rose' }),
+  T('life.saffron', 'life', 2, 0, 2, ['living', 'plant', 'flower', 'herb'], { saffron: true }),
+  T('life.ivy', 'life', 2, 1, 3, ['living', 'plant', 'body', 'flammable'], { kw: ['reach'], cap: ['bind'] }),
+  S('life.graft', 'life', 2, { spell: 'graft' }),
+  S('life.abundance', 'life', 3, { spell: 'abundance' }),
+  W('life.spring', 'life', 2, { weather: 'spring' }),
+  W('life.harvest', 'life', 2, { weather: 'harvest' }),
+  A('life.bind', 'life', 1, { verb: 'bind', r: true }),
+  S('life.tame', 'life', 3, { spell: 'tame' }),
+  Q('life.thorny', 'life', 1, { kw: ['reach'], cap: ['sting'] }, { lawful: true }),
+  Q('life.feral', 'life', 1, { strike: 1, cap: ['bite'] }, { lawful: true }),
+  C('life.beasts', 'life', 1, 'beast'),
+  C('life.plants', 'life', 1, 'plant'),
   // Water
   T('water.eel', 'water', 1, 1, 2, ['living', 'beast', 'seaborn', 'body']),
   T('water.otter', 'water', 2, 2, 3, ['living', 'beast', 'seaborn', 'body', 'flammable'], { kw: ['swift'], cap: ['bite'] }),
   T('water.pike', 'water', 3, 3, 4, ['living', 'beast', 'seaborn', 'body'], { cap: ['bite'] }),
-  T('water.ice', 'water', 2, 0, 4, [], { kw: ['heavy', 'guard'] }),
+  T('water.ice', 'water', 2, 0, 4, [], { kw: ['heavy', 'guard'], wetAttacker: true }),
   A('water.seep', 'water', 1, { verb: 'seep', remote: true, dmg: 2 }),
   S('water.tonic', 'water', 2, { spell: 'tonic', potion: true }),
   G('water.water', 'water', 2, 3, { upkeep: 'waterGround', reagent: 'water' }),
   G('water.flask', 'water', 1, 2, { potionBonus: true }),
-  T('water.vitriol', 'water', 2, 1, 3, ['liquid', 'body']),
+  T('water.vitriol', 'water', 2, 1, 3, ['liquid', 'body'], { cap: ['dissolve'], ability: { id: 'etch', cost: 2 } }),
   T('water.quicksilver', 'water', 1, 0, 2, ['liquid', 'metal'], { kw: ['incorruptible'] }),
+  A('water.wash', 'water', 2, { verb: 'wash', remote: true }),
+  S('water.memory', 'water', 2, { spell: 'memory', seal: true }),
+  W('water.rain', 'water', 2, { weather: 'rain' }),
+  S('water.tide', 'water', 4, { spell: 'tide' }),
+  A('water.dissolve', 'water', 2, { verb: 'dissolve', remote: true }),
   S('water.dew', 'water', 1, { spell: 'dew', r: true }),
   A('water.drench', 'water', 1, { verb: 'drench', remote: true, r: true }),
   S('water.frozen', 'water', 2, { spell: 'frozen', r: true }),
@@ -80,25 +130,57 @@ const CARDS = [
   // Rot
   T('rot.rat', 'rot', 1, 1, 2, ['living', 'beast', 'body', 'flammable'], { onDeath: 'poison1' }),
   T('rot.adder', 'rot', 2, 2, 2, ['living', 'beast', 'serpent', 'body'], { kw: ['venomous'], cap: ['bite'] }),
-  T('rot.spider', 'rot', 2, 2, 2, ['living', 'beast', 'body'], { kw: ['venomous'], cap: ['bite'] }),
+  T('rot.spider', 'rot', 2, 2, 2, ['living', 'beast', 'body'], { kw: ['venomous'], cap: ['bite', 'bind'] }),
   T('rot.leech', 'rot', 2, 1, 3, ['living', 'beast', 'seaborn', 'body'], { cap: ['bite'], leech: true }),
   T('rot.yew', 'rot', 3, 1, 4, ['living', 'plant', 'tree', 'toxic', 'body', 'flammable'], { onDeath: 'poison1' }),
   T('rot.wormwood', 'rot', 2, 0, 3, ['living', 'plant', 'herb', 'toxic'], { upkeep: 'wormwood' }),
   A('rot.poison', 'rot', 1, { verb: 'poison', remote: true }),
   G('rot.barrow', 'rot', 2, 3, { carrionOnDeath: true }),
+  T('rot.spore', 'rot', 1, 0, 1, ['living', 'fungus'], { kw: ['flying'], onDeath: 'poison1' }),
+  T('rot.toadstool', 'rot', 1, 0, 2, ['living', 'fungus', 'toxic'], { onSacrifice: 'poison1' }),
+  T('rot.ghost', 'rot', 3, 2, 3, ['spirit', 'dark', 'body'], { kw: ['flying'], cap: ['haunt'] }),
+  T('rot.shadow', 'rot', 2, 1, 2, ['spirit', 'dark', 'body'], { cap: ['haunt'], onArrive: 'concealed' }),
+  S('rot.decay', 'rot', 2, { spell: 'decay', sacrifice: true }),
+  S('rot.rust', 'rot', 2, { spell: 'rust' }),
+  S('rot.wither', 'rot', 2, { spell: 'wither' }),
+  A('rot.haunt', 'rot', 2, { verb: 'haunt', remote: true }),
+  S('rot.exhume', 'rot', 3, { spell: 'exhume', seal: true }),
+  S('rot.miasma', 'rot', 3, { spell: 'miasma' }),
+  W('rot.night', 'rot', 2, { weather: 'night' }),
+  Q('rot.venomous', 'rot', 2, { kw: ['venomous'] }, { lawful: true, anyTarget: true }),
+  B('rot.debt', 'rot', 2, { burden: 'debt' }),
+  Q('rot.feeble', 'rot', 1, { strike: -1 }, { enemyTarget: true }),
   // The Word
   T('word.word', 'word', 1, 0, 3, ['body'], { mightOnSentence: true }),
   T('word.familiar', 'word', 2, 1, 2, ['living', 'beast', 'body', 'flammable'], { fusionDiscount: 1 }),
   S('word.separate', 'word', 2, { spell: 'separate' }),
+  T('word.scribe', 'word', 2, 1, 3, ['living', 'person', 'body', 'speaker', 'flammable'], { onArrive: 'reorder2' }),
+  T('word.bard', 'word', 3, 2, 3, ['living', 'person', 'body', 'speaker', 'flammable'], { bard: true }),
+  T('word.hermit', 'word', 2, 1, 3, ['living', 'person', 'body', 'speaker', 'flammable'], { onArrive: 'concealed' }),
+  G('word.grimoire', 'word', 2, 2, { onArrive: 'draw1', upkeep: 'reorder2' }),
+  G('word.ink', 'word', 2, 3, { upkeep: 'ink' }),
+  S('word.omen', 'word', 1, { spell: 'omen' }),
+  S('word.name', 'word', 1, { spell: 'name' }),
+  S('word.measure', 'word', 2, { spell: 'measure' }),
+  S('word.dispel', 'word', 2, { spell: 'dispel', r: true }),
+  S('word.echo', 'word', 2, { spell: 'echo', seal: true }),
+  S('word.silence', 'word', 3, { spell: 'silence' }),
+  S('word.scream', 'word', 2, { spell: 'scream', voiced: true }),
+  S('word.reckoning', 'word', 4, { spell: 'reckoning' }),
+  S('word.be', 'word', 2, { spell: 'be', lawOnly: true }),
+  S('word.awaken', 'word', 2, { spell: 'awaken' }),
+  S('word.summon', 'word', 4, { spell: 'summon' }),
+  S('word.loan', 'word', 1, { spell: 'loan' }),
+  S('word.gnosis', 'word', 3, { spell: 'gnosis' }),
   S('word.protect', 'word', 1, { spell: 'protect', r: true }),
-  S('word.doubt', 'word', 2, { spell: 'doubt', r: true, responseOnly: true }),
+  S('word.doubt', 'word', 2, { spell: 'doubt', r: true }),
 ];
 
 // Tokens (§5.13): generated Things, never cards, never market offers
 const TK = (id, school, strike, stand, props, extra = {}) => ({ id, school, type: 'thing', cost: 0, strike, stand, props, token: true, deckLegal: false, market: false, ...extra });
 const TOKENS = [
   TK('token.ash', 'fire', 0, 1, ['material']),
-  TK('token.fruit', 'life', 0, 1, ['food']),
+  TK('token.fruit', 'life', 0, 1, ['food'], { ability: { id: 'eatFruit', cost: 1, sacrificeSelf: true } }),
   TK('token.blossom', 'life', 0, 1, ['living', 'plant', 'flower']),
   TK('token.carrion', 'rot', 0, 2, ['organic']),
 ];
@@ -129,7 +211,9 @@ function capabilities(card, kws) {
   if (kws.has('heavy')) c.add('crush');
   if (p.includes('sharp')) c.add('cut');
   if (p.includes('hot')) { c.add('burn'); c.add('scorch'); }
-  if (p.includes('seaborn') || p.includes('liquid')) { c.add('seep'); c.add('drench'); }
+  if (p.includes('seaborn') || p.includes('liquid')) { c.add('seep'); c.add('drench'); c.add('wash'); }
+  if (p.includes('winged')) c.add('blow');
+  if (p.includes('spirit') || p.includes('dark')) c.add('haunt');
   if (p.includes('toxic') || kws.has('venomous')) c.add('poison');
   return c;
 }
@@ -139,6 +223,9 @@ function validateRegistry() {
   for (const c of CARDS) {
     if (!/^(fire|water|air|earth|life|rot|word)\.[a-z_]+$/.test(c.id)) errs.push('bad id ' + c.id);
     if (c.ladderOnly && c.deckLegal) errs.push('ladder-only form is deck-legal ' + c.id);
+    if (c.type === 'ground' && !Number.isInteger(c.stand)) errs.push('ground stand ' + c.id);
+    if (c.type === 'quality' && !c.qual) errs.push('quality def ' + c.id);
+    if (c.disabled && c.deckLegal) errs.push('disabled word is deck-legal ' + c.id);
     if (c.id.split('.')[0] !== c.school) errs.push('school mismatch ' + c.id);
     if (!Number.isInteger(c.cost) || c.cost < 1) errs.push('cost ' + c.id);
     if (c.type === 'thing' && !(Number.isInteger(c.strike) && Number.isInteger(c.stand))) errs.push('stats ' + c.id);

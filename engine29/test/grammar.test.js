@@ -310,3 +310,14 @@ test('C: deterministic replay with responses on', () => {
   const run = () => playOne('wall', 'tide', 77, 'v29', 0, ['careful', 'aggressive'], { set: 'R', audit: true });
   assert.deepEqual(run(), run());
 });
+
+test('C/F: visibility — a bot decision is identical whatever a Concealed enemy Thing really is', () => {
+  const { fixture, place } = require('./helpers');
+  for (const word of ['word.hermit', 'life.stag', 'rot.ghost']) {
+    const S = fixture(); const h = place(S, 1, word, { status: { concealed: true } }); place(S, 0, 'life.wolf'); place(S, 0, 'fire.ember');
+    const pol = () => 'careful';
+    const pick = B.chooseAction(S, pol);
+    h.word = 'word.hermit'; const ref = B.chooseAction(S, pol);
+    assert.deepEqual(pick, ref, word);
+  }
+});

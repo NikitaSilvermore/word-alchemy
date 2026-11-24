@@ -1,0 +1,1537 @@
+[
+ {
+  "name": "Ember",
+  "school": "fire",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 2,
+  "text": "Non-living, Hot, Body. Can Burn and Scorch. Eligible Energy and Steam ingredient."
+ },
+ {
+  "name": "Torch",
+  "school": "fire",
+  "type": "ground",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": 2,
+  "text": "At your upkeep, deal 1 damage to rival."
+ },
+ {
+  "name": "Fire",
+  "school": "fire",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At your upkeep, Ignite oldest eligible visible enemy Thing which is Flammable, damaged and not already Burning. Reagent for Fireborn recipes."
+ },
+ {
+  "name": "Bellows",
+  "school": "fire",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At your upkeep, gain 1 additional breath."
+ },
+ {
+  "name": "Smith",
+  "school": "fire",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 3,
+  "stand": 3,
+  "text": "Living Person, Body, Flammable. Crush and Burn capabilities."
+ },
+ {
+  "name": "Salamander",
+  "school": "fire",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 3,
+  "text": "Living Beast, Body, Hot, Flammable. Bite. After dealing positive combat damage to a flammable Thing, Ignite it if it survives."
+ },
+ {
+  "name": "Firebird",
+  "school": "fire",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 2,
+  "text": "Living Beast, Bird, Winged, Flying, Swift, Hot, Body. After dealing positive combat damage to a flammable Thing, Ignite it if it survives. Phoenix ingredient."
+ },
+ {
+  "name": "Naphtha",
+  "school": "fire",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 3,
+  "text": "Non-living Liquid, Flammable. First time this physical card is Ignited in duel, deal 2 damage to every enemy Thing simultaneously, then destroy Naphtha if still present."
+ },
+ {
+  "name": "Burn",
+  "school": "fire",
+  "type": "action",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Hot or ignition-capable subject. Remote: Ignite a flammable Thing not Wet and not already at 2 burning ticks."
+ },
+ {
+  "name": "Scorch",
+  "school": "fire",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Hot subject. Remote: deal 2 damage to enemy Thing or rival; cannot be blocked."
+ },
+ {
+  "name": "Kindle",
+  "school": "fire",
+  "type": "spell",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Friendly Thing +1 strike until end of current turn. If it deals positive combat damage to a flammable Thing this turn, Ignite surviving target."
+ },
+ {
+  "name": "Calcine",
+  "school": "fire",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Sacrifice friendly Thing as additional cost. Deal 3 damage to enemy Thing or rival. Create Ash if space."
+ },
+ {
+  "name": "Wildfire",
+  "school": "fire",
+  "type": "spell",
+  "r": false,
+  "cost": 4,
+  "strike": null,
+  "stand": null,
+  "text": "Deal 2 damage to every Burning Thing on both sides. Also rival takes 1 damage for each enemy Burning Thing at beginning of resolution, max 3. Simultaneous damage."
+ },
+ {
+  "name": "Drought",
+  "school": "fire",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Each upkeep remove Wet from active player's Things. First time each player during own turn Ignites enemy Thing, that Thing takes 1 additional damage."
+ },
+ {
+  "name": "Firebrand",
+  "school": "fire",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Thing. Grants Hot; +1 damage on first unblocked combat hit against rival each own turn. Lawful."
+ },
+ {
+  "name": "Eel",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Sea-born, Body."
+ },
+ {
+  "name": "Otter",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 3,
+  "text": "Living Beast, Sea-born, Swift, Body, Flammable. Bite."
+ },
+ {
+  "name": "Pike",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 3,
+  "stand": 4,
+  "text": "Living Beast, Sea-born, Body. Bite."
+ },
+ {
+  "name": "Ice",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 4,
+  "text": "Non-living, Heavy, Guard. After receiving combat damage, make attacker Wet if still in play. Once per turn."
+ },
+ {
+  "name": "Water",
+  "school": "water",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At your upkeep choose friendly Thing, make Wet and heal 1 marked damage. Aquatic reagent."
+ },
+ {
+  "name": "Dew",
+  "school": "water",
+  "type": "spell",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Choose friendly Thing: make Wet and remove 1 poison dose; alternatively remove 1 poison dose from yourself."
+ },
+ {
+  "name": "Tonic",
+  "school": "water",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Potion. Heal yourself 3 life, remove 1 poison dose from yourself."
+ },
+ {
+  "name": "Drench",
+  "school": "water",
+  "type": "action",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Liquid or Sea-born subject. Remote: make target Thing Wet. If Hot, deal 1 damage to it."
+ },
+ {
+  "name": "Seep",
+  "school": "water",
+  "type": "action",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Liquid or Sea-born subject. Remote: deal 2 damage to enemy Thing or rival; cannot be blocked."
+ },
+ {
+  "name": "Wash",
+  "school": "water",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Liquid or Sea-born subject. Push: return enemy non-Heavy Thing with maximum stand <= 4."
+ },
+ {
+  "name": "Frozen",
+  "school": "water",
+  "type": "spell",
+  "r": true,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Apply Frozen to a Wet Thing."
+ },
+ {
+  "name": "Memory",
+  "school": "water",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Recover one of your Action or Spell cards printed cost <= 2, excluding Memory. Seal this Memory on successful resolution."
+ },
+ {
+  "name": "Rain",
+  "school": "water",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "On arrival make every Thing Wet. At each upkeep heal 1 damage from active player's oldest damaged Thing."
+ },
+ {
+  "name": "Vitriol",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Non-living Liquid, Body, Dissolve. Main, 2 breath, exhaust: deal 3 damage to Metal or Stone Thing. Alkahest ingredient."
+ },
+ {
+  "name": "Quicksilver",
+  "school": "water",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 2,
+  "text": "Non-living Liquid, Metal, Incorruptible. Alkahest ingredient."
+ },
+ {
+  "name": "Flask",
+  "school": "water",
+  "type": "ground",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": 2,
+  "text": "First Potion successfully played each own turn heals you for 1 additional life. Homunculus ingredient."
+ },
+ {
+  "name": "Tide",
+  "school": "water",
+  "type": "spell",
+  "r": false,
+  "cost": 4,
+  "strike": null,
+  "stand": null,
+  "text": "Push: return up to 2 enemy non-Heavy Things, each maximum stand <= 4. At least one target required."
+ },
+ {
+  "name": "Sleep",
+  "school": "water",
+  "type": "spell",
+  "r": true,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Apply Asleep to Living Beast or Person."
+ },
+ {
+  "name": "Dissolve",
+  "school": "water",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Dissolve-capable subject. Remote: deal 3 damage to Metal, Stone or Liquid target Thing or Ground; otherwise 2 damage to target Thing."
+ },
+ {
+  "name": "Thaw",
+  "school": "water",
+  "type": "spell",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Remove Frozen from target Thing. If friendly, heal 1 damage."
+ },
+ {
+  "name": "Owl",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 2,
+  "text": "Living Beast, Bird, Winged, Flying, Sharp, Body, Flammable. On arrival optionally reveal enemy Concealed Thing."
+ },
+ {
+  "name": "Hawk",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 3,
+  "stand": 3,
+  "text": "Living Beast, Bird, Winged, Flying, Sharp, Body, Flammable."
+ },
+ {
+  "name": "Swallow",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 1,
+  "text": "Living Beast, Bird, Winged, Flying, Swift, Body, Flammable."
+ },
+ {
+  "name": "Crow",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Beast, Bird, Winged, Flying, Body, Flammable. First time a Living Thing dies during each own turn, gain 1 Might counter."
+ },
+ {
+  "name": "Magpie",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Bird, Winged, Flying, Body, Flammable. First time it deals combat damage to rival each own turn, gain 1 spark subject to additional-income cap."
+ },
+ {
+  "name": "Wind",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Non-living, Flying (wingless), Body. Blow capability. Winged recipe reagent."
+ },
+ {
+  "name": "Air",
+  "school": "air",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At your upkeep inspect and reorder top 2 words of your deck."
+ },
+ {
+  "name": "Gust",
+  "school": "air",
+  "type": "spell",
+  "r": true,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Push: return enemy non-Heavy Thing with current strike <= 2."
+ },
+ {
+  "name": "Winged",
+  "school": "air",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to compatible friendly Thing. Grants Winged, Flying, Blow. Lawful."
+ },
+ {
+  "name": "Quick",
+  "school": "air",
+  "type": "quality",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Thing. Grants Quick."
+ },
+ {
+  "name": "Resonant",
+  "school": "air",
+  "type": "quality",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to Thing. First time it takes damage each turn, deal 1 damage to every other Thing sharing base word. Resonance damage cannot trigger further Resonance."
+ },
+ {
+  "name": "Blow",
+  "school": "air",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Blow-capable subject. Choose distinct ready friendly Thing with Hot, Liquid or Toxic; exhaust payload as additional cost. Choose qualifying property and up to 2 eligible enemy Things. Apply Burning, Wet or 1 poison dose respectively. Both subject and payload must remain present."
+ },
+ {
+  "name": "Storm",
+  "school": "air",
+  "type": "weather",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Each upkeep deal 1 damage to active player's oldest non-Flying Thing, or 2 if Wet."
+ },
+ {
+  "name": "Squall",
+  "school": "air",
+  "type": "spell",
+  "r": false,
+  "cost": 4,
+  "strike": null,
+  "stand": null,
+  "text": "Exhaust 1–3 friendly Flying Things eligible to act as additional cost. Deal 2 non-combat damage to rival per Thing exhausted, one batch."
+ },
+ {
+  "name": "Gasp",
+  "school": "air",
+  "type": "spell",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Gain 2 additional breath, subject to generation cap."
+ },
+ {
+  "name": "Herald",
+  "school": "air",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Person, Body, Flammable. On arrival inspect top 2 deck cards and select 1 into hand."
+ },
+ {
+  "name": "Orrery",
+  "school": "air",
+  "type": "ground",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": 4,
+  "text": "Your Things cannot take damage directly from Sky effects. Other Weather effects still apply."
+ },
+ {
+  "name": "Birds",
+  "school": "air",
+  "type": "category",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Catalogue: inspect top 3 deck words; select Bird Thing if present. Category = intrinsic Bird."
+ },
+ {
+  "name": "Boulder",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 6,
+  "text": "Non-living Stone, Heavy, Body, Guard, Bedrock."
+ },
+ {
+  "name": "Stone",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 4,
+  "text": "Non-living Stone, Heavy, Body. Stonebound reagent."
+ },
+ {
+  "name": "Clay",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 3,
+  "text": "Non-living Clay. Golem and Swamp ingredient."
+ },
+ {
+  "name": "Lead",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 3,
+  "text": "Non-living Metal, Heavy, Body. Metal ladder lowest form."
+ },
+ {
+  "name": "Tin",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Non-living Metal, Body. Intermediate metal form."
+ },
+ {
+  "name": "Copper",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 2,
+  "text": "Non-living Metal, Body. Alternative intermediate form."
+ },
+ {
+  "name": "Silver",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 4,
+  "text": "Non-living Metal, Body, Sacred. Intermediate metal form."
+ },
+ {
+  "name": "Iron",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 4,
+  "text": "Non-living Metal, Heavy, Body. Not in standard metal ladder."
+ },
+ {
+  "name": "Flint",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 2,
+  "stand": 1,
+  "text": "Non-living Stone, Sharp, Body. Burn capability."
+ },
+ {
+  "name": "Crucible",
+  "school": "earth",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 4,
+  "text": "First fusion each own turn costs 1 less breath, minimum 2."
+ },
+ {
+  "name": "Earth",
+  "school": "earth",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At your upkeep give 1 Growth counter to oldest eligible friendly Plant."
+ },
+ {
+  "name": "Salt",
+  "school": "earth",
+  "type": "ground",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": 2,
+  "text": "Enemy Haunt actions cannot target your Things."
+ },
+ {
+  "name": "Amber",
+  "school": "earth",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 3,
+  "text": "Non-living material. First time another friendly original Living Thing dies while Amber remains, recover its original card if possible, then sacrifice Amber. Once per physical Amber card per duel."
+ },
+ {
+  "name": "Guard",
+  "school": "earth",
+  "type": "spell",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Friendly Thing gains +2 maximum stand until end of current turn. Gains Guard until it next exhausts or reaches applicable End."
+ },
+ {
+  "name": "Crush",
+  "school": "earth",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Heavy or Crush-capable subject. Combat: strike +2. Excess beyond stand required to destroy defending Thing carries through to rival once. No overflow from directly attacking Ground."
+ },
+ {
+  "name": "Cut",
+  "school": "earth",
+  "type": "action",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Sharp or Cut-capable subject. Combat: strike +1. Alternatively remove Bound from reachable friendly Thing instead of damage."
+ },
+ {
+  "name": "Temper",
+  "school": "earth",
+  "type": "quality",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Metal Thing. +2 maximum stand, immune to Rust and Brittle. Remove existing Brittle condition/attachment on resolution."
+ },
+ {
+  "name": "Transmute",
+  "school": "earth",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Advance friendly Thing one permitted metal ladder edge; choose branch at declaration."
+ },
+ {
+  "name": "Desert",
+  "school": "earth",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "While present, wing-dependent flight suppressed. Does not ground wingless atmospheric Things/spirits."
+ },
+ {
+  "name": "Tower",
+  "school": "earth",
+  "type": "ground",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": 5,
+  "text": "Your Heavy Things gain Reach."
+ },
+ {
+  "name": "Winter",
+  "school": "earth",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "On arrival freeze all Wet Things and remove their Wet. At each upkeep freeze active player's oldest Wet Thing, then remove Wet."
+ },
+ {
+  "name": "Leaden",
+  "school": "earth",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to Thing. Heavy, +1 maximum stand, loses Flying. Lawful."
+ },
+ {
+  "name": "Fixed",
+  "school": "earth",
+  "type": "quality",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Thing; Fixed while attached."
+ },
+ {
+  "name": "Metals",
+  "school": "earth",
+  "type": "category",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Catalogue: inspect top 3 words; select Metal Thing if present. Category = intrinsic Metal."
+ },
+ {
+  "name": "Wolf",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 3,
+  "text": "Living Beast, Body, Flammable. Bite. +1 strike while controlling another Beast."
+ },
+ {
+  "name": "Stag",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 3,
+  "stand": 4,
+  "text": "Living Beast, Body, Sharp, Flammable."
+ },
+ {
+  "name": "Hare",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Body, Swift, Flammable."
+ },
+ {
+  "name": "Seed",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 2,
+  "text": "Living Plant, Flammable. At upkeep gain 1 age; at 2 transform into Sapling."
+ },
+ {
+  "name": "Sapling",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Plant, Tree, Body, Flammable. At upkeep gain 1 age; at 2 transform into Willow with Water Ground, otherwise Oak."
+ },
+ {
+  "name": "Oak",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 4,
+  "strike": 3,
+  "stand": 6,
+  "text": "Living Plant, Tree, Body, Heavy, Flammable. World Tree ingredient."
+ },
+ {
+  "name": "Willow",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 1,
+  "stand": 5,
+  "text": "Living Plant, Tree, Herb, Body, Flammable. Mend. Main, 1 breath, exhaust: heal friendly Thing 2."
+ },
+ {
+  "name": "Pear",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Plant, Tree, Orchard, Flower, Body, Flammable. First time another friendly Plant gains a Growth counter during own turn, create Fruit if controlling none and space available. New collectible word."
+ },
+ {
+  "name": "Rose",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Plant, Flower, Body, Reach, Flammable. Sting. On arrival, if controlling another Flower and no Blossom, create Blossom if space. New collectible word."
+ },
+ {
+  "name": "Saffron",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 2,
+  "text": "Living Plant, Flower, Herb. First time another Flower enters your field each own turn, gain 1 spark subject to additional-income cap."
+ },
+ {
+  "name": "Aloe",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 3,
+  "text": "Living Plant, Herb. Mend. At upkeep heal 1 damage from oldest damaged friendly Thing."
+ },
+ {
+  "name": "Bramble",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 4,
+  "text": "Living Plant, Body, Reach, Flammable. Bind, Sting. After dealing positive retaliation damage to surviving Living attacker, apply Bound."
+ },
+ {
+  "name": "Apothecary",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 3,
+  "text": "Living Person, Body, Flammable. Mend. Main, 1 breath, exhaust: heal friendly Thing 2 or remove 1 poison dose from it."
+ },
+ {
+  "name": "Graft",
+  "school": "life",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Registered Grafted Plant recipe on two compatible friendly Plants. Counts as Vessel use. Pay catalyst if required. Printed price is entire recipe price before discount."
+ },
+ {
+  "name": "Grow",
+  "school": "life",
+  "type": "spell",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Give friendly Plant 1 Growth counter. If unfinished plant ladder, also advance age by 1 subject to ladder rules."
+ },
+ {
+  "name": "Mend",
+  "school": "life",
+  "type": "action",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Mend-capable subject. Heal damaged friendly Thing 3."
+ },
+ {
+  "name": "Bite",
+  "school": "life",
+  "type": "action",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Bite-capable subject. Combat against Living Thing or rival: strike +1. No damage to Sacred/non-living interceptor."
+ },
+ {
+  "name": "Abundance",
+  "school": "life",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Up to 3 distinct friendly Living Things gain 1 Growth counter each. Give 1 of those selected Things 1 Might counter."
+ },
+ {
+  "name": "Spring",
+  "school": "life",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Each upkeep advance age of active player's oldest unfinished plant ladder by 1; heal 1 damage from their oldest damaged Living Thing."
+ },
+ {
+  "name": "Harvest",
+  "school": "life",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Each upkeep, if active player controls Plant and no Fruit, create Fruit if space."
+ },
+ {
+  "name": "Beasts",
+  "school": "life",
+  "type": "category",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Catalogue: inspect top 3 deck words; select Beast Thing if present. Category = intrinsic Beast."
+ },
+ {
+  "name": "Plants",
+  "school": "life",
+  "type": "category",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Catalogue: inspect top 3 deck words; select Plant Thing if present. Category = intrinsic Plant."
+ },
+ {
+  "name": "Scarab",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Insect, Body, Sacred, Recurrent. Ouroboros ingredient."
+ },
+ {
+  "name": "Ivy",
+  "school": "life",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Plant, Body, Reach, Flammable. Bind."
+ },
+ {
+  "name": "Bind",
+  "school": "life",
+  "type": "action",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Bind-capable subject. Contact: apply Bound to enemy Thing within reach."
+ },
+ {
+  "name": "Tame",
+  "school": "life",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Take control of enemy original Beast Thing, current strike <= 2, not Named, empty destination slot required."
+ },
+ {
+  "name": "Thorny",
+  "school": "life",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Thing. Reach, Sting. Lawful."
+ },
+ {
+  "name": "Feral",
+  "school": "life",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to friendly Thing. +1 strike, Bite. Lawful."
+ },
+ {
+  "name": "Rat",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Body, Flammable. On death apply 1 poison dose to eligible visible enemy Living Thing chosen by controller."
+ },
+ {
+  "name": "Adder",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 2,
+  "text": "Living Beast, Serpent, Body, Venomous. Bite. Ouroboros ingredient."
+ },
+ {
+  "name": "Spider",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 2,
+  "stand": 2,
+  "text": "Living Beast, Body, Venomous. Bite, Bind."
+ },
+ {
+  "name": "Spore",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 1,
+  "text": "Living Fungus, Flying (wingless). On death apply 1 poison dose to eligible visible enemy Living Thing."
+ },
+ {
+  "name": "Leech",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Beast, Sea-born, Body. Bite. First positive combat damage to Living Thing or rival each own turn, heal controller 1 life."
+ },
+ {
+  "name": "Barrow",
+  "school": "rot",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "First time an original friendly Living Thing dies during each own turn, create Carrion if space."
+ },
+ {
+  "name": "Ghost",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 3,
+  "text": "Non-living Spirit, Dark, Flying (wingless), Body. Haunt."
+ },
+ {
+  "name": "Wormwood",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 0,
+  "stand": 3,
+  "text": "Living Plant, Herb, Toxic. At upkeep remove 1 poison dose from yourself or chosen friendly Thing."
+ },
+ {
+  "name": "Yew",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 1,
+  "stand": 4,
+  "text": "Living Plant, Tree, Toxic, Body, Flammable. On death apply 1 poison dose to eligible visible enemy Living Thing."
+ },
+ {
+  "name": "Decay",
+  "school": "rot",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Sacrifice friendly Thing as additional cost. Deal 3 damage to enemy Thing, 4 if sacrificed Thing was Carrion."
+ },
+ {
+  "name": "Poison",
+  "school": "rot",
+  "type": "action",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Toxic subject. Remote: apply 2 poison doses to enemy Living Thing or rival, normal cap 3."
+ },
+ {
+  "name": "Rust",
+  "school": "rot",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Target enemy non-Incorruptible Metal Thing. Deal 3 damage and regress one permitted metal-ladder edge if possible, simultaneous batch."
+ },
+ {
+  "name": "Wither",
+  "school": "rot",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Enemy Living Thing: if Plant, remove up to 2 Growth counters and deal 2 damage; otherwise deal 1 damage."
+ },
+ {
+  "name": "Haunt",
+  "school": "rot",
+  "type": "action",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Spirit/Dark subject. Remote: return enemy non-Sacred Thing with maximum stand <= 4. Not Push. Salt prevents targeting."
+ },
+ {
+  "name": "Exhume",
+  "school": "rot",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Revive one of your original Thing cards printed cost <= 2. Seal Exhume on successful resolution. New collectible word."
+ },
+ {
+  "name": "Miasma",
+  "school": "rot",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Apply 1 poison dose simultaneously to every enemy Living Thing and rival."
+ },
+ {
+  "name": "Night",
+  "school": "rot",
+  "type": "weather",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "First original Thing each player deploys during their own turn enters Concealed. Concealment persists after Night leaves Sky."
+ },
+ {
+  "name": "Venomous",
+  "school": "rot",
+  "type": "quality",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to Thing; grants Venomous. Lawful."
+ },
+ {
+  "name": "Debt",
+  "school": "rot",
+  "type": "burden",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Each of affected rival's next 2 upkeeps they spend 1 spark or lose 1 life. If no spark, lose life. Retire after second tick."
+ },
+ {
+  "name": "Feeble",
+  "school": "rot",
+  "type": "quality",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Attach to enemy Thing; −1 strike while attached."
+ },
+ {
+  "name": "Toadstool",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 2,
+  "text": "Living Fungus, Toxic. When sacrificed, apply 1 poison dose to eligible visible enemy Living Thing."
+ },
+ {
+  "name": "Shadow",
+  "school": "rot",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 2,
+  "text": "Non-living Spirit, Dark, Body. Enters Concealed. Haunt."
+ },
+ {
+  "name": "Word",
+  "school": "word",
+  "type": "thing",
+  "r": false,
+  "cost": 1,
+  "strike": 0,
+  "stand": 3,
+  "text": "Non-living, Body. First other successful hand-card sentence each own turn grants 1 Might counter. Golem/Homunculus ingredient."
+ },
+ {
+  "name": "Scribe",
+  "school": "word",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Person, Body, Speaker, Flammable. On arrival inspect/reorder top 2 deck cards."
+ },
+ {
+  "name": "Bard",
+  "school": "word",
+  "type": "thing",
+  "r": false,
+  "cost": 3,
+  "strike": 2,
+  "stand": 3,
+  "text": "Living Person, Body, Speaker, Flammable. First successful Voiced spell each own turn: draw 1."
+ },
+ {
+  "name": "Hermit",
+  "school": "word",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 3,
+  "text": "Living Person, Body, Speaker, Flammable. Enters Concealed."
+ },
+ {
+  "name": "Familiar",
+  "school": "word",
+  "type": "thing",
+  "r": false,
+  "cost": 2,
+  "strike": 1,
+  "stand": 2,
+  "text": "Living Beast, Body, Flammable. First fusion each own turn costs 1 less, minimum 2. Does not stack with Crucible."
+ },
+ {
+  "name": "Grimoire",
+  "school": "word",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 2,
+  "text": "On arrival draw 1. At upkeep inspect/reorder top 2 deck words."
+ },
+ {
+  "name": "Ink",
+  "school": "word",
+  "type": "ground",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": 3,
+  "text": "At upkeep gain 1 extra spark subject to additional-income cap."
+ },
+ {
+  "name": "Omen",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Inspect top 3 deck words, select 1 to hand, others to bottom in chosen order."
+ },
+ {
+  "name": "Name",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Give friendly Thing Named. No automatic Golem in this candidate."
+ },
+ {
+  "name": "Protect",
+  "school": "word",
+  "type": "spell",
+  "r": true,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Give friendly Thing Ward if not already Ward."
+ },
+ {
+  "name": "Measure",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Give enemy Thing Measured."
+ },
+ {
+  "name": "Dispel",
+  "school": "word",
+  "type": "spell",
+  "r": true,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Retire one standing Quality attachment, Burden, Weather or Law. Alternatively reveal enemy Concealed Thing."
+ },
+ {
+  "name": "Doubt",
+  "school": "word",
+  "type": "spell",
+  "r": true,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Response: cancel pending rival Spell, Quality, Weather, Burden or Law total printed card cost <= 3. Main alternative: reveal enemy Concealed Thing."
+ },
+ {
+  "name": "Echo",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Next successful Action card this turn returns to hand instead of being spent, if room. Does not repeat action automatically. Seal Echo on successful resolution."
+ },
+ {
+  "name": "Silence",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Reveal rival's current hand. Choose 1 Action or Spell there cost <= 3 and discard it. If none qualifies only reveal."
+ },
+ {
+  "name": "Scream",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Voice. Deal 2 damage to rival; remove Asleep from all Things."
+ },
+ {
+  "name": "Reckoning",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 4,
+  "strike": null,
+  "stand": null,
+  "text": "Destroy all enemy Things maximum stand <= 2 simultaneously."
+ },
+ {
+  "name": "Be",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Only compound Law, Category + Be + Lawful Quality. Pay all three printed costs. Shared Law per §5.9."
+ },
+ {
+  "name": "Awaken",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Give friendly non-living Thing Body and 1 Might counter, persist until leaves play. Does not automatically make Golem."
+ },
+ {
+  "name": "Separate",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 2,
+  "strike": null,
+  "stand": null,
+  "text": "Separate eligible friendly non-Final Made Thing per §7, sufficient slots required; consumes fusion allowance."
+ },
+ {
+  "name": "Summon",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 4,
+  "strike": null,
+  "stand": null,
+  "text": "Take control of enemy original Thing printed cost <= 2, not Named, requires empty Field slot."
+ },
+ {
+  "name": "Loan",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 1,
+  "strike": null,
+  "stand": null,
+  "text": "Gain 2 additional breath subject to cap; reduce next turn's base breath by 1."
+ },
+ {
+  "name": "Gnosis",
+  "school": "word",
+  "type": "spell",
+  "r": false,
+  "cost": 3,
+  "strike": null,
+  "stand": null,
+  "text": "Draw 2 words, reveal all enemy Concealed Things."
+ },
+ {
+  "name": "Word",
+  "school": "legacy",
+  "raw": "School / type / cost | Proposed effect"
+ },
+ {
+  "name": "Sting",
+  "school": "legacy",
+  "raw": "Life / Action 1 | Sting-capable subject, combat vs Living Thing or rival: strike +1. Venomous applies normally."
+ },
+ {
+  "name": "Eat",
+  "school": "legacy",
+  "raw": "Life / Action 2 | Explicit Eat-capable subject, contact: consume friendly Fruit (remove it) or destroy non-Sacred enemy Living Thing with 1 remaining stand; heal subject 2. Toxic consumed target gives eater 1 poison dose."
+ },
+ {
+  "name": "Petrify",
+  "school": "legacy",
+  "raw": "Earth / Action 3 | Explicit Petrify-capable subject; contact; apply Petrified to Living Thing."
+ },
+ {
+  "name": "Blind",
+  "school": "legacy",
+  "raw": "Fire / Action 1 | Explicit Blinding-capable subject; apply Blinded to visible enemy Thing."
+ },
+ {
+  "name": "Fog",
+  "school": "legacy",
+  "raw": "Rot / Weather 2 | On arrival conceal caster's oldest eligible visible Thing; each upkeep conceal active player's oldest eligible visible Thing; persists after Fog ends."
+ },
+ {
+  "name": "Flux",
+  "school": "legacy",
+  "raw": "Air / Weather 2 | Each upkeep clear temporary movement/incapacitation conditions, Wet and Burning from active player's oldest affected Thing; remove 1 poison dose from it if present."
+ }
+]

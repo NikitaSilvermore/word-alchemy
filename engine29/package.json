@@ -1,16 +1,19 @@
 {
   "name": "word-alchemy-engine29",
   "private": true,
-  "version": "0.29.0-e",
+  "version": "0.29.0-f",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "sim:A": "node sim/run.js v29 100 1000 results/stageE_v29_A.json A on on off spec on",
-    "sim:A:legacy": "node sim/run.js legacy 100 1000 results/stageE_legacy_A.json A on on off spec on",
+    "sim:A": "node sim/run.js v29 100 1000 results/stageF_v29_A.json A on on off spec on",
+    "sim:A:legacy": "node sim/run.js legacy 100 1000 results/stageF_legacy_A.json A on on off spec on",
     "sim:R": "node sim/run.js v29 100 1000 results/stageE_v29_R.json R on on off spec on",
     "sim:initiative": "for v in spec none reserve2 card breath spark; do node sim/run.js v29 70 5000 results/stageD_init_$v.json R on on off $v on; done",
     "sim:market:off": "node sim/run.js v29 70 5000 results/stageD_market_off.json R on on off spec off",
-    "report": "node sim/report.js results/stageE_v29_E.json results/stageE_v29_A.json results/stageE_legacy_A.json results/stageE_v29_R.json",
+    "report": "node sim/report.js results/stageF_v29_REF.json results/stageF_v29_A.json results/stageF_legacy_A.json",
     "sim:E": "node sim/run.js v29 100 1000 results/stageE_v29_E.json E on on on spec on",
-    "sim:market:diag": "for v in spec norefresh p2refresh from2 nobuy; do WA_MKT=$v node sim/run.js v29 40 5000 results/stageD_diag_$v.json R on on off spec on; done"
+    "sim:market:diag": "for v in spec norefresh p2refresh from2 nobuy; do WA_MKT=$v node sim/run.js v29 40 5000 results/stageD_diag_$v.json R on on off spec on; done",
+    "sim:REF": "node sim/run.js v29 40 1000 results/stageF_v29_REF.json REF on on on spec on",
+    "fuzz": "node tools/fuzz.js 1000",
+    "catalogue": "node tools/spec_catalogue.js ../../uploads/spec.md data/spec_catalogue.json"
   }
 }
