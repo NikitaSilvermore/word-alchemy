@@ -1,0 +1,3 @@
+errors 0 []
+non-permanent words never resolved/played: word.be
+events: {"mulligan":1200,"renew":17809,"market":17805,"declare":43791,"grave":21523,"spark":13269,"buy":10774,"arrive":11812,"end":17764,"death":8074,"sacrifice":539,"token":497,"token-gone":394,"decision":3330,"attach":2098,"sky":1613,"sealed":569,"made":307,"catalyst":40,"sky-expired":1026,"transform":341,"reveal":552,"recover":364,"trigger":428,"unmade":146,"control":254,"bounce":687,"revive":198,"quick":286,"reveal-hand":149,"ignite":434,"ward":42,"cancelled":106,"failed":31,"token-failed":34,"separated":8,"rebirth":3,"echoed":1}

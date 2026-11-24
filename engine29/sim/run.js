@@ -46,7 +46,7 @@ const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E, REF };
 
 function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];
-  const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false, market: o.market !== false, initiative: o.initiative || 'spec', mulligan: o.mulligan === false ? null : mulligan });
+  const S = E.createMatch({ decks: [set[d0], set[d1]], seed, arithmetic, first, reserve: o.reserve !== false, market: o.market !== false, initiative: o.initiative || 'spec', mulligan: o.mulligan === false ? null : mulligan, marketBreath: o.marketBreath || 0, variant: o.variant || {} });
   const pol = i => pols[i]; const ctl = controller(pol, { responses: o.responses !== false });
   if (o.decider !== false) E.setDecider(S, decider(pol));
   const lifeAtRoundEnd = {}; let maxHitToPlayer = 0, lastRound = 0;

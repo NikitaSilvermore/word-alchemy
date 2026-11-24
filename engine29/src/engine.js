@@ -35,6 +35,12 @@ const INITIATIVE = {
   card: { p2Reserve: 1, p2ExtraCard: 1 },
   breath: { p2Reserve: 1, p2FirstTurnBreath: 1 },
   spark: { p2Reserve: 1, p2Spark: 2 },
+  // stage H candidates
+  p1slow: { p2Reserve: 1, p1FirstTurnBreath: -1 },          // starting player's first turn has 2 breath, not 3
+  p1hand4: { p2Reserve: 1, p1HandMinus: 1 },               // starting player opens with 4 words
+  breath2: { p2Reserve: 1, p2FirstTurnBreath: 2 },
+  combo: { p2Reserve: 1, p2FirstTurnBreath: 1, p1FirstTurnBreath: -1 },
+  combo2: { p2Reserve: 1, p2FirstTurnBreath: 2, p1FirstTurnBreath: -1 },
 };
 
 // ---------- decisions (§4.6: every choice is a legal decision) ----------
@@ -74,13 +80,13 @@ function mainSchool(deck) {
   return Object.entries(n).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
 }
 
-function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserve = true, market = true, initiative = 'spec', mulligan = null }) {
+function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserve = true, market = true, initiative = 'spec', mulligan = null, marketBreath = 0, variant = {} }) {
   decks.forEach((d, i) => { const e = deckErrors(d); if (e.length) throw new Error('deck ' + i + ': ' + e.join('; ')); });
   const r = rng(seed);
   let nextId = 1;
   const S = {
     format: FORMAT.id, arithmetic, seed, turn: 0, round: 0, active: 0, over: null, seq: 0, ev: 0,
-    rules: { reserve, market, initiative }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
+    rules: { reserve, market, initiative, marketBreath, freeStrike: !!variant.freeStrike, draws: variant.draws || 1 }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
     rand: r, log: [], events: [], hashes: [], clause: null, registry: {}, flags: {},
     players: decks.map((d, i) => ({
       i, life: FORMAT.life, breath: 0, reserve: 0, extraBreath: 0, personalTurn: 0, fatigue: 0, poison: 0,
@@ -97,7 +103,7 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
   S.first = S.active;
   const ini = INITIATIVE[initiative], p2 = S.players[1 - S.first];
   if (reserve) p2.reserve = ini.p2Reserve; // §3.2 second-player compensation
-  for (const p of S.players) for (let k = 0; k < FORMAT.openingHand + (p === p2 ? ini.p2ExtraCard || 0 : 0); k++) p.hand.push(p.deck.shift());
+  for (const p of S.players) for (let k = 0; k < FORMAT.openingHand + (p === p2 ? ini.p2ExtraCard || 0 : -(ini.p1HandMinus || 0)); k++) p.hand.push(p.deck.shift());
   if (ini.p2Spark) p2.spark = ini.p2Spark;
   // one partial mulligan each, starting player first (§3.2)
   for (const i of [S.first, 1 - S.first]) applyMulligan(S, i, mulligan ? mulligan(S, i) : []);
@@ -450,6 +456,7 @@ function startTurn(S) {
   p.breath = Math.max(0, Math.min(FORMAT.breathCap, 2 + p.personalTurn) - (p.tax || 0)); p.tax = 0; p.extraBreath = 0; p.leechUsed = false; // Loan's one-use tax
   p.sentenceSpark = false; p.abilitySpark = false; p.bought = false; p.discountUsed = 0;
   if (p.personalTurn === 1 && S.active !== S.first) p.breath += INITIATIVE[S.rules.initiative].p2FirstTurnBreath || 0;
+  if (p.personalTurn === 1 && S.active === S.first) p.breath = Math.max(0, p.breath + (INITIATIVE[S.rules.initiative].p1FirstTurnBreath || 0));
   for (const t of S.things) if (t.ctrl === S.active) { t.exhausted = false; t.fresh = false; t.actions = 0; t.quickUsed = false; }
   event(S, 'renew', { side: p.i });
   // Sky and Law expire at the caster's second subsequent Renew, before upkeep
@@ -502,7 +509,7 @@ function startTurn(S) {
     if (f) { f.status.wet = true; delete f.status.burning; heal(S, f, 1); }
   }
   stateCheck(S); if (S.over != null) return;
-  if (!(S.active === S.first && p.personalTurn === 1)) drawCard(S, p);
+  if (!(S.active === S.first && p.personalTurn === 1)) for (let k = 0; k < S.rules.draws; k++) { drawCard(S, p); stateCheck(S); if (S.over != null) return; } // §15 Q1 experiment: draws per turn
   stateCheck(S); if (S.over != null) return;
   marketStep(S);
 }
@@ -765,6 +772,7 @@ function legalActions(S) {
       if (!o) continue;
       const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
       if (p.spark < price || (off && p.offSchoolBought >= FORMAT.offSchoolBuysPerDuel) || (p.acquired[o.word] || 0) >= FORMAT.copyLimit) continue;
+      if (p.breath < S.rules.marketBreath) continue; // stage H variant: buying also costs breath
       out.push({ type: 'buy', slot: o.slot });
     }
     if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
@@ -772,7 +780,7 @@ function legalActions(S) {
   out.push(...fusionOptions(S, p.i));
   out.push(...abilityOptions(S, p.i));
   const foes = S.things.filter(t => t.ctrl !== p.i && !t.status.concealed);
-  if (p.breath >= 1) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0)) {
+  if (p.breath >= (S.rules.freeStrike ? 0 : 1)) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0)) {
     out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'rival' });
     for (const f of foes) if (contactReach(S, s, f)) out.push({ type: 'attack', subject: s.id, verb: 'strike', target: f.id });
     if (enemy(S, p.i).ground) out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'ground' });
@@ -1026,7 +1034,7 @@ function declare(S, act, side, kind, ctl) {
   const node = { type: act.type, side, kind, act, card: null, cancelled: false };
   let d = null;
   if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; node.cardPid = node.card.pid; }
-  let cost = d ? d.cost : (act.type === 'attack' ? 1 : 0);
+  let cost = d ? d.cost : (act.type === 'attack' ? (S.rules.freeStrike ? 0 : 1) : 0); // §15 Q4 experiment: free basic Strike
   if (act.type === 'fuse') cost = 0; // priced below once ingredients are known
   if (act.type === 'ability') cost = card(thingById(S, act.subject)).ability.cost;
   if (act.type === 'law') { // compound: Category + Be + Lawful Quality; one sentence, all three costs
@@ -1108,6 +1116,7 @@ function economy(S, act) {
   p.bought = true;
   if (act.type === 'catalyst') { p.spark -= FORMAT.catalystPrice; S.stats.res[p.i].sparkSpent += FORMAT.catalystPrice; p.catalyst = FORMAT.catalystCap; event(S, 'catalyst', { side: p.i }); return; }
   const o = S.market[act.slot], price = priceOf(S, p.i, o.word);
+  p.breath -= S.rules.marketBreath; S.stats.res[p.i].breathSpent += S.rules.marketBreath;
   p.spark -= price; S.stats.res[p.i].sparkSpent += price; S.stats.res[p.i].bought++; if (price === FORMAT.offPrice) p.offSchoolBought++;
   p.acquired[o.word] = (p.acquired[o.word] || 0) + 1;
   const c = { pid: 'm' + p.i + '_' + (++S.seq), word: o.word, owner: p.i };

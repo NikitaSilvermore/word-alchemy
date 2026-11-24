@@ -202,6 +202,13 @@ const MADE = [
   MD('made.philosophers_stone', ['earth', 'word', 'fire', 'air', 'water'], 3, 6, ['stone', 'metal', 'body'], { kw: ['final'], upkeep: 'stone' }),
 ];
 
+// Stage H experiments only (never in normal play): WA_PATCH=miasma4,oak3 adjusts printed costs for a controlled test.
+for (const patch of String(process.env.WA_PATCH || '').split(',').filter(Boolean)) {
+  const f = patch.match(/^([a-z_]+):([a-z]+)=(\d+)$/); // name:field=value, e.g. boulder:stand=5
+  if (f) { const c = CARDS.find(x => x.id.split('.')[1] === f[1]); if (c) c[f[2]] = +f[3]; continue; }
+  const m = patch.match(/^([a-z_]+?)(\d+)$/); if (!m) continue;
+  const c = CARDS.find(x => x.id.split('.')[1] === m[1]); if (c) c.cost = +m[2];
+}
 const BY_ID = Object.fromEntries(CARDS.concat(TOKENS, MADE).map(c => [c.id, c]));
 
 // Derived capabilities (spec §5.3). Explicit `cap` adds to these.

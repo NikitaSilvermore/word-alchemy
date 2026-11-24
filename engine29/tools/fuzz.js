@@ -7,7 +7,7 @@ const legal = CARDS.filter(c => c.deckLegal);
 const SCH = ['fire', 'water', 'air', 'earth', 'life', 'rot', 'word'];
 function rnd(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function run(games) {
-  const played = {}, events = {}, errors = [];
+  const played = {}, events = {}, errors = []; let maxPerTurn = 0;
   for (let g = 1; g <= games; g++) {
     const r = rnd(g);
     const deck = () => { const sch = SCH.slice().sort(() => r() - 0.5).slice(0, 3); const pool = legal.filter(c => sch.includes(c.school)).map(c => c.id).sort(() => r() - 0.5); return pool.slice(0, 20); };
@@ -23,13 +23,15 @@ function run(games) {
         const z = E.zoneAudit(S); if (z.length) { errors.push({ g, k, z: z.slice(0, 3), a }); break; }
       }
     } catch (e) { errors.push({ g, k, err: e.message.slice(0, 300) }); }
+    const perTurn = {}; for (const e of S.events) if (e.type === 'declare' && e.kind === 'main') { perTurn[e.turn] = (perTurn[e.turn] || 0) + 1; }
+    maxPerTurn = Math.max(maxPerTurn, ...Object.values(perTurn), 0);
     for (const e of S.events) {
       events[e.type] = (events[e.type] || 0) + 1;
       if (e.type === 'declare' && e.act.card) { const w = (S.players[e.side].grave.concat(S.players[e.side].sealed, S.players[e.side].hand).find(c => c.pid === e.act.card) || {}).word; if (w) played[w] = (played[w] || 0) + 1; }
     }
     for (const t of S.things) played[t.word] = (played[t.word] || 0) + 0;
   }
-  return { played, events, errors };
+  return { played, events, errors, maxPerTurn };
 }
 if (require.main === module) {
   const res = run(+(process.argv[2] || 200));

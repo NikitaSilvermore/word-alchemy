@@ -1,0 +1,62 @@
+[
+ {
+  "deck": "D1_living_sky",
+  "fastestKillRound": 5,
+  "medianKillRound": 6,
+  "maxTurnDamage": 11
+ },
+ {
+  "deck": "D2_lockkeepers_wall",
+  "fastestKillRound": 5,
+  "medianKillRound": 6,
+  "maxTurnDamage": 12
+ },
+ {
+  "deck": "D3_furnace_wind",
+  "fastestKillRound": 6,
+  "medianKillRound": 7,
+  "maxTurnDamage": 8
+ },
+ {
+  "deck": "D4_orchard",
+  "fastestKillRound": 6,
+  "medianKillRound": 7,
+  "maxTurnDamage": 13
+ },
+ {
+  "deck": "D5_clay_and_gold",
+  "fastestKillRound": 6,
+  "medianKillRound": 7,
+  "maxTurnDamage": 10
+ },
+ {
+  "deck": "D6_returning_earth",
+  "fastestKillRound": 5,
+  "medianKillRound": 6,
+  "maxTurnDamage": 9
+ },
+ {
+  "deck": "D7_speaking_house",
+  "fastestKillRound": 7,
+  "medianKillRound": 7,
+  "maxTurnDamage": 8
+ },
+ {
+  "deck": "D8_garden_of_endings",
+  "fastestKillRound": 6,
+  "medianKillRound": 6,
+  "maxTurnDamage": 12
+ },
+ {
+  "deck": "D4B_experimentalist",
+  "fastestKillRound": 6,
+  "medianKillRound": 6,
+  "maxTurnDamage": 13
+ },
+ {
+  "deck": "D5B_patient_ruin",
+  "fastestKillRound": 6,
+  "medianKillRound": 7,
+  "maxTurnDamage": 9
+ }
+]

@@ -1,0 +1,2260 @@
+{
+ "source": "duel-test-source:duel-test/build/web21.json",
+ "summary": {
+  "kept": 101,
+  "legacy": 181,
+  "now made-only / token": 13,
+  "school changed": 22
+ },
+ "newInV29": [
+  "fire.torch",
+  "fire.scorch",
+  "fire.wildfire",
+  "fire.firebrand",
+  "air.hawk",
+  "air.swallow",
+  "air.squall",
+  "earth.boulder",
+  "life.wolf",
+  "life.hare",
+  "life.pear",
+  "life.rose",
+  "life.plants",
+  "water.eel",
+  "water.otter",
+  "water.pike",
+  "water.seep",
+  "water.flask",
+  "water.wash",
+  "water.tide",
+  "rot.rat",
+  "rot.ghost",
+  "rot.exhume",
+  "rot.miasma",
+  "word.bard",
+  "word.dispel",
+  "word.summon",
+  "word.protect"
+ ],
+ "rows": [
+  {
+   "word": "abundance",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": "life.abundance",
+   "status": "kept"
+  },
+  {
+   "word": "abyss",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "adder",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.adder",
+   "status": "kept"
+  },
+  {
+   "word": "air",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.air",
+   "status": "kept"
+  },
+  {
+   "word": "alchemist",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "alkahest",
+   "v21School": "water",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "aloe",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.aloe",
+   "status": "kept"
+  },
+  {
+   "word": "amber",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.amber",
+   "status": "kept"
+  },
+  {
+   "word": "amnesty",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "amphisbaena",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "ancient",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "angel",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "apothecary",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": "life.apothecary",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "aqua fortis",
+   "v21School": "water",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "architect",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "ash",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "attractor",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "automaton",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "avalanche",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "awaken",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.awaken",
+   "status": "kept"
+  },
+  {
+   "word": "azoth",
+   "v21School": "water",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "barrow",
+   "v21School": "rot",
+   "v21Tier": 3,
+   "v29Id": "rot.barrow",
+   "status": "kept"
+  },
+  {
+   "word": "basilisk",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "bat",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "be",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.be",
+   "status": "kept"
+  },
+  {
+   "word": "beasts",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "life.beasts",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "behemoth",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "bellows",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "fire.bellows",
+   "status": "school changed (earth → fire)"
+  },
+  {
+   "word": "bind",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "life.bind",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "birds",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "air.birds",
+   "status": "school changed (word → air)"
+  },
+  {
+   "word": "bite",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "life.bite",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "black sun",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "blind",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "blow",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.blow",
+   "status": "kept"
+  },
+  {
+   "word": "boar",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "bog hag",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "bramble",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.bramble",
+   "status": "kept"
+  },
+  {
+   "word": "brimstone",
+   "v21School": "fire",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "brine",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "brittle",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "burn",
+   "v21School": "fire",
+   "v21Tier": 1,
+   "v29Id": "fire.burn",
+   "status": "kept"
+  },
+  {
+   "word": "burning",
+   "v21School": "fire",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "calcine",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.calcine",
+   "status": "kept"
+  },
+  {
+   "word": "carrion",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "cedar",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "centaur",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "chimera",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "cinnabar",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "claim",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "clay",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.clay",
+   "status": "kept"
+  },
+  {
+   "word": "cloud",
+   "v21School": "water",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "coagulate",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "cockatrice",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "colossus",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "copper",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.copper",
+   "status": "kept"
+  },
+  {
+   "word": "cordial",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "corrosive",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "coven",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "crow",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.crow",
+   "status": "kept"
+  },
+  {
+   "word": "crown",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "crucible",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.crucible",
+   "status": "kept"
+  },
+  {
+   "word": "crush",
+   "v21School": "earth",
+   "v21Tier": 1,
+   "v29Id": "earth.crush",
+   "status": "kept"
+  },
+  {
+   "word": "cut",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "earth.cut",
+   "status": "school changed (word → earth)"
+  },
+  {
+   "word": "daemon",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "debt",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.debt",
+   "status": "kept"
+  },
+  {
+   "word": "decay",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.decay",
+   "status": "kept"
+  },
+  {
+   "word": "desert",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "earth.desert",
+   "status": "school changed (fire → earth)"
+  },
+  {
+   "word": "dew",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.dew",
+   "status": "kept"
+  },
+  {
+   "word": "dissolve",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.dissolve",
+   "status": "kept"
+  },
+  {
+   "word": "distil",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "doubt",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.doubt",
+   "status": "kept"
+  },
+  {
+   "word": "dream",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "drench",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.drench",
+   "status": "kept"
+  },
+  {
+   "word": "drink",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "drought",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.drought",
+   "status": "kept"
+  },
+  {
+   "word": "druid",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "dryad",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "dust",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "earth",
+   "v21School": "earth",
+   "v21Tier": 1,
+   "v29Id": "earth.earth",
+   "status": "kept"
+  },
+  {
+   "word": "eat",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "echo",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": "word.echo",
+   "status": "school changed (air → word)"
+  },
+  {
+   "word": "egg",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "elixir",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "ember",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.ember",
+   "status": "kept"
+  },
+  {
+   "word": "enchant",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "energy",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "erosion",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "eternal",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "familiar",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": "word.familiar",
+   "status": "kept"
+  },
+  {
+   "word": "feeble",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "rot.feeble",
+   "status": "school changed (word → rot)"
+  },
+  {
+   "word": "feral",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "life.feral",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "ferment",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "fire",
+   "v21School": "fire",
+   "v21Tier": 1,
+   "v29Id": "fire.fire",
+   "status": "kept"
+  },
+  {
+   "word": "firebird",
+   "v21School": "fire",
+   "v21Tier": 4,
+   "v29Id": "fire.firebird",
+   "status": "kept"
+  },
+  {
+   "word": "firedrake",
+   "v21School": "fire",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "firewater",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "fixed",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "earth.fixed",
+   "status": "school changed (word → earth)"
+  },
+  {
+   "word": "flames",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "flint",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "earth.flint",
+   "status": "school changed (fire → earth)"
+  },
+  {
+   "word": "flood",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "flux",
+   "v21School": "air",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "fog",
+   "v21School": "air",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "forget",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "foundry",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "frozen",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.frozen",
+   "status": "kept"
+  },
+  {
+   "word": "gargoyle",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "gasp",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": "air.gasp",
+   "status": "kept"
+  },
+  {
+   "word": "geyser",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "gild",
+   "v21School": "earth",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "glass",
+   "v21School": "fire",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "gnome",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "gnosis",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": "word.gnosis",
+   "status": "kept"
+  },
+  {
+   "word": "gold",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": "earth.gold",
+   "status": "kept (transformed-only)"
+  },
+  {
+   "word": "golem",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "graft",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.graft",
+   "status": "kept"
+  },
+  {
+   "word": "green lion",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "griffin",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "grimoire",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": "word.grimoire",
+   "status": "kept"
+  },
+  {
+   "word": "grow",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": "life.grow",
+   "status": "kept"
+  },
+  {
+   "word": "guard",
+   "v21School": "earth",
+   "v21Tier": 1,
+   "v29Id": "earth.guard",
+   "status": "kept"
+  },
+  {
+   "word": "gunpowder",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "gust",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": "air.gust",
+   "status": "kept"
+  },
+  {
+   "word": "harpy",
+   "v21School": "air",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "harvest",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.harvest",
+   "status": "kept"
+  },
+  {
+   "word": "haunt",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.haunt",
+   "status": "kept"
+  },
+  {
+   "word": "hellebore",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "hemlock",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "herald",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": "air.herald",
+   "status": "kept"
+  },
+  {
+   "word": "hermetic",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "hermit",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.hermit",
+   "status": "kept"
+  },
+  {
+   "word": "hex",
+   "v21School": "rot",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "homunculus",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "hunger",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "hydra",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "ice",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.ice",
+   "status": "kept"
+  },
+  {
+   "word": "ink",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.ink",
+   "status": "kept"
+  },
+  {
+   "word": "iron",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": "earth.iron",
+   "status": "kept"
+  },
+  {
+   "word": "ivy",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.ivy",
+   "status": "kept"
+  },
+  {
+   "word": "kindle",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.kindle",
+   "status": "kept"
+  },
+  {
+   "word": "knife",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "knight",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "kraken",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "laurel",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lava",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lead",
+   "v21School": "earth",
+   "v21Tier": 1,
+   "v29Id": "earth.lead",
+   "status": "kept"
+  },
+  {
+   "word": "leaden",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "earth.leaden",
+   "status": "school changed (word → earth)"
+  },
+  {
+   "word": "leech",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.leech",
+   "status": "kept"
+  },
+  {
+   "word": "lethe",
+   "v21School": "water",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "leviathan",
+   "v21School": "water",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lich",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lichen",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "life",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "lightning",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "liquids",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "loan",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.loan",
+   "status": "kept"
+  },
+  {
+   "word": "locust",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lodestone",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lullaby",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "lure",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "magpie",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": "air.magpie",
+   "status": "kept"
+  },
+  {
+   "word": "mandrake",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "manticore",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "masked",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "measure",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": "word.measure",
+   "status": "school changed (earth → word)"
+  },
+  {
+   "word": "memory",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.memory",
+   "status": "kept"
+  },
+  {
+   "word": "mend",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "life.mend",
+   "status": "school changed (water → life)"
+  },
+  {
+   "word": "metals",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "earth.metals",
+   "status": "school changed (word → earth)"
+  },
+  {
+   "word": "mirror",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "miser",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "mistletoe",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "mortals",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "moth",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "muse",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "myrrh",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "name",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.name",
+   "status": "kept"
+  },
+  {
+   "word": "naphtha",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.naphtha",
+   "status": "kept"
+  },
+  {
+   "word": "nemesis",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "nettle",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "night",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.night",
+   "status": "kept"
+  },
+  {
+   "word": "nightmare",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "nightshade",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "noon",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "oak",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": "life.oak",
+   "status": "kept"
+  },
+  {
+   "word": "obsidian",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "occult",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "omen",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": "word.omen",
+   "status": "kept"
+  },
+  {
+   "word": "oracle",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "ordeal",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "orrery",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": "air.orrery",
+   "status": "school changed (earth → air)"
+  },
+  {
+   "word": "ouroboros",
+   "v21School": "life",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "owl",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.owl",
+   "status": "kept"
+  },
+  {
+   "word": "panacea",
+   "v21School": "water",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "peacock",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "pelican",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "pestilence",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "petrify",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "philosopher’s stone",
+   "v21School": "earth",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "philosophical egg",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "philtre",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "phoenix",
+   "v21School": "fire",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "phosphorus",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "pitch",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "plague",
+   "v21School": "rot",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "poison",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.poison",
+   "status": "kept"
+  },
+  {
+   "word": "quick",
+   "v21School": "air",
+   "v21Tier": 3,
+   "v29Id": "air.quick",
+   "status": "kept"
+  },
+  {
+   "word": "quickening",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "quicklime",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "quicksilver",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.quicksilver",
+   "status": "kept"
+  },
+  {
+   "word": "quintessence",
+   "v21School": "air",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "radiant",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rain",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.rain",
+   "status": "kept"
+  },
+  {
+   "word": "realgar",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rebis",
+   "v21School": "word",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "reckoning",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": "word.reckoning",
+   "status": "kept"
+  },
+  {
+   "word": "red king",
+   "v21School": "fire",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "resonant",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": "air.resonant",
+   "status": "school changed (word → air)"
+  },
+  {
+   "word": "ripen",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "roc",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rue",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rumour",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rune",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "rust",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.rust",
+   "status": "kept"
+  },
+  {
+   "word": "sacred",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "saffron",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.saffron",
+   "status": "kept"
+  },
+  {
+   "word": "sage",
+   "v21School": "word",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "salamander",
+   "v21School": "fire",
+   "v21Tier": 3,
+   "v29Id": "fire.salamander",
+   "status": "kept"
+  },
+  {
+   "word": "salt",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.salt",
+   "status": "kept"
+  },
+  {
+   "word": "saltpetre",
+   "v21School": "fire",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sand",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sapling",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.sapling",
+   "status": "kept"
+  },
+  {
+   "word": "scarab",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.scarab",
+   "status": "kept"
+  },
+  {
+   "word": "scintilla",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "scorpion",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "scream",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "word.scream",
+   "status": "kept"
+  },
+  {
+   "word": "scribe",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.scribe",
+   "status": "kept"
+  },
+  {
+   "word": "sculpt",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "seed",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.seed",
+   "status": "kept"
+  },
+  {
+   "word": "separate",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.separate",
+   "status": "kept"
+  },
+  {
+   "word": "shadow",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.shadow",
+   "status": "kept"
+  },
+  {
+   "word": "shepherdess",
+   "v21School": "life",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sigil",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "silence",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.silence",
+   "status": "kept"
+  },
+  {
+   "word": "silver",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.silver",
+   "status": "kept"
+  },
+  {
+   "word": "siren",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "slag",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sleep",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": "water.sleep",
+   "status": "school changed (word → water)"
+  },
+  {
+   "word": "sleepers",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "smith",
+   "v21School": "fire",
+   "v21Tier": 2,
+   "v29Id": "fire.smith",
+   "status": "kept"
+  },
+  {
+   "word": "sodden",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sphinx",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "spider",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.spider",
+   "status": "kept"
+  },
+  {
+   "word": "spirits",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "spore",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": "rot.spore",
+   "status": "kept"
+  },
+  {
+   "word": "spring",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": "life.spring",
+   "status": "kept"
+  },
+  {
+   "word": "stag",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.stag",
+   "status": "kept"
+  },
+  {
+   "word": "stammer",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "steal",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "steam",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "steel",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "sting",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "stone",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.stone",
+   "status": "kept"
+  },
+  {
+   "word": "stones",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "storm",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": "air.storm",
+   "status": "kept"
+  },
+  {
+   "word": "strike",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "swamp",
+   "v21School": "water",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "sylph",
+   "v21School": "air",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "tame",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": "life.tame",
+   "status": "kept"
+  },
+  {
+   "word": "temper",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.temper",
+   "status": "kept"
+  },
+  {
+   "word": "thaw",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.thaw",
+   "status": "kept"
+  },
+  {
+   "word": "thief",
+   "v21School": "rot",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "thorny",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "life.thorny",
+   "status": "school changed (word → life)"
+  },
+  {
+   "word": "thunderbird",
+   "v21School": "air",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "time",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "tin",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.tin",
+   "status": "kept"
+  },
+  {
+   "word": "tincture",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "toad",
+   "v21School": "life",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "toadstool",
+   "v21School": "rot",
+   "v21Tier": 3,
+   "v29Id": "rot.toadstool",
+   "status": "kept"
+  },
+  {
+   "word": "tonic",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": "water.tonic",
+   "status": "kept"
+  },
+  {
+   "word": "torpid",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "tower",
+   "v21School": "earth",
+   "v21Tier": 2,
+   "v29Id": "earth.tower",
+   "status": "kept"
+  },
+  {
+   "word": "transmute",
+   "v21School": "earth",
+   "v21Tier": 3,
+   "v29Id": "earth.transmute",
+   "status": "kept"
+  },
+  {
+   "word": "treant",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "troll",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "true name",
+   "v21School": "word",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "twin",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "undine",
+   "v21School": "water",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "unicorn",
+   "v21School": "life",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "unnamed",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "vampire",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "vast",
+   "v21School": "word",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "venom",
+   "v21School": "water",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "venomous",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.venomous",
+   "status": "kept"
+  },
+  {
+   "word": "vessel",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "vitriol",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.vitriol",
+   "status": "kept"
+  },
+  {
+   "word": "void",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "volatile",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "volcano",
+   "v21School": "earth",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "wake",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "wasp",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "water",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "water.water",
+   "status": "kept"
+  },
+  {
+   "word": "werewolf",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "white queen",
+   "v21School": "water",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "wight",
+   "v21School": "rot",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "will-o-wisp",
+   "v21School": "fire",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "willow",
+   "v21School": "life",
+   "v21Tier": 2,
+   "v29Id": "life.willow",
+   "status": "kept"
+  },
+  {
+   "word": "wind",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.wind",
+   "status": "kept"
+  },
+  {
+   "word": "windfall",
+   "v21School": "air",
+   "v21Tier": 2,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "winged",
+   "v21School": "air",
+   "v21Tier": 1,
+   "v29Id": "air.winged",
+   "status": "kept"
+  },
+  {
+   "word": "winter",
+   "v21School": "water",
+   "v21Tier": 1,
+   "v29Id": "earth.winter",
+   "status": "school changed (water → earth)"
+  },
+  {
+   "word": "wither",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.wither",
+   "status": "kept"
+  },
+  {
+   "word": "word",
+   "v21School": "word",
+   "v21Tier": 2,
+   "v29Id": "word.word",
+   "status": "kept"
+  },
+  {
+   "word": "world tree",
+   "v21School": "life",
+   "v21Tier": 5,
+   "v29Id": null,
+   "status": "now made-only / token"
+  },
+  {
+   "word": "wormwood",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.wormwood",
+   "status": "kept"
+  },
+  {
+   "word": "worts",
+   "v21School": "word",
+   "v21Tier": 1,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "wraith",
+   "v21School": "rot",
+   "v21Tier": 3,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "wyvern",
+   "v21School": "fire",
+   "v21Tier": 4,
+   "v29Id": null,
+   "status": "legacy — not in the 150 (keep ID, disable in V29 format)"
+  },
+  {
+   "word": "yew",
+   "v21School": "rot",
+   "v21Tier": 1,
+   "v29Id": "rot.yew",
+   "status": "kept"
+  }
+ ]
+}

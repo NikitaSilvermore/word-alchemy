@@ -1,5 +1,13 @@
 # V29 "The Grammar" engine changelog
 
+## 0.30.0-rc1 — Stage H balance and V30 foundation (25 Nov 2026)
+- Stage H: paired experiments on first-player fairness, §15 questions Q1/Q4/Q6/Q7 and deck balance (`BALANCE.md`, `results/stageH_*`). Adopted for the candidate format: opening turns are 2 breath for the starting player and 5 for the second (first player wins 50.7% ±3.0 Journeyman, 51.6% ±5.6 Specialist). Rejected: market breath cost, draw 2, free Strike, Boulder 2/5, Oak 3 / Miasma 4.
+- Adversarial tests (`test/adversarial.test.js`) and a speed probe (`tools/probe.js`): no runaway amplification.
+- Bots value lasting Weather and Burdens.
+- Experiment switches (test only): initiative variants `p1slow`, `p1hand4`, `breath2`, `combo`, `combo2`; `marketBreath`; `variant.freeStrike`, `variant.draws`; `WA_PATCH` for cost/stat patches.
+- V30 foundation: versioned formats (`src/formats.js`: `grammar_v29_spec`, `grammar_v30_rc1`, `journey_standard`, `legacy_v28_maths`); reproducible replays with per-action hash checks (`src/replay.js`); Journey encounter contract with idempotent rewards and separate learnt/scribed/owned/mastered/discovered flags (`src/journey.js`); release-gate review (`RELEASE_GATES.md`); migration table from the V21 card list (`MIGRATION.md`, `data/migration_v21_to_v29.json`).
+- The live game is unchanged; V30 rules are not enabled by default (§15).
+
 ## 0.29.0-g — Stage G: benchmark (24 Nov 2026)
 - Decisions: every choice raised during resolution goes through `setDecider` with a documented default (poison target, selection, reorder, Silence, Philosopher's Stone, Water Ground, Debt, Owl reveal, Rust branch). Decisions are logged as events.
 - Resource and damage logs per player: breath spent / wasted, reserve kept / used, spark gained / spent, words drawn / bought, words played, life lost by cause.

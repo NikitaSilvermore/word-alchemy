@@ -1,7 +1,7 @@
 {
   "name": "word-alchemy-engine29",
   "private": true,
-  "version": "0.29.0-g",
+  "version": "0.30.0-rc1",
   "scripts": {
     "test": "node --test test/*.test.js",
     "sim:A": "node sim/run.js v29 100 1000 results/stageF_v29_A.json A on on off spec on",
@@ -17,6 +17,9 @@
     "catalogue": "node tools/spec_catalogue.js ../../uploads/spec.md data/spec_catalogue.json",
     "bench:decks": "node sim/bench.js decks REF specialist 10 2000 results/stageG_REF_specialist.json",
     "bench:ladder": "node sim/bench.js ladder REF 16 3000 results/stageG_ladder.json",
-    "bench:report": "node sim/bench.js report results/stageG_benchmark_specialist.md results/stageG_REF_specialist_s0.json results/stageG_REF_specialist_s1.json"
+    "bench:report": "node sim/bench.js report results/stageG_benchmark_specialist.md results/stageG_REF_specialist_s0.json results/stageG_REF_specialist_s1.json",
+    "probe": "node tools/probe.js specialist 4",
+    "migration": "node tools/migration.js /tmp/web21.json",
+    "bench:H": "node sim/bench.js decks REF journeyman 20 9000 results/stageH_confirm_combo2.json 0/1 combo2 0"
   }
 }

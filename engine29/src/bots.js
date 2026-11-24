@@ -29,7 +29,8 @@ function value(S, me, w) {
   };
   const board = i => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E.groundRemaining(P[i].ground) : 0);
   return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
-    - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst) + (P[1 - me].life <= 0 ? 1e5 : 0);
+    - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst)
+    + (S.sky ? (S.sky.caster === me ? 1.2 : -1.2) : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0) // lasting effects a one-ply view under-rates + (P[1 - me].life <= 0 ? 1e5 : 0);
 }
 
 // worth of a known card in hand beyond the flat hand-size term: cheap Things and in-school words are easiest to use

@@ -12,14 +12,14 @@ const { CARDS } = require('../src/cards');
 const STYLES = ['careful', 'aggressive'];
 const shardOf = arg => { if (!arg) return [0, 1]; const [i, n] = arg.split('/').map(Number); return [i, n]; };
 
-function deckBench(set, tier, n, seed0, shard) {
+function deckBench(set, tier, n, seed0, shard, opts = {}) {
   const names = Object.keys(SETS[set]), out = [];
   const [si, sn] = shardOf(shard); let job = 0;
   for (let i = 0; i < names.length; i++) for (let j = i; j < names.length; j++) for (let g = 0; g < n; g++) {
     if (job++ % sn !== si) continue;
     const seed = seed0 + i * 100000 + j * 1000 + (g >> 1); // mirrored pairs: same seed, starting player swapped
     const st = STYLES[(g >> 1) % 2], pols = [st + ':' + tier, st + ':' + tier];
-    out.push({ mode: 'decks', ...playOne(names[i], names[j], seed, 'v29', g % 2, pols, { set }) });
+    out.push({ mode: 'decks', variant: opts.label || 'spec', ...playOne(names[i], names[j], seed, 'v29', g % 2, pols, { set, ...opts }) });
   }
   return out;
 }
@@ -115,8 +115,9 @@ function percentile(a, q) { const s = a.slice().sort((x, y) => x - y); return s.
 if (require.main === module) {
   const [mode, ...rest] = process.argv.slice(2);
   if (mode === 'decks') {
-    const [set, tier, n, seed, out, shard] = rest;
-    const r = deckBench(set, tier, +n, +seed, shard).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
+    const [set, tier, n, seed, out, shard, initiative = 'spec', marketBreath = '0', variantJson = '{}'] = rest;
+    const variant = JSON.parse(variantJson);
+    const r = deckBench(set, tier, +n, +seed, shard, { initiative, marketBreath: +marketBreath, variant, label: initiative + (+marketBreath ? '+mb' + marketBreath : '') + (variantJson !== '{}' ? variantJson : '') + (process.env.WA_PATCH ? '+' + process.env.WA_PATCH : '') }).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
   } else if (mode === 'ladder') {
     const [set, n, seed, out, tiers, shard] = rest;
     const r = ladder(set, +n, +seed, (tiers || TIER_ORDER.join(',')).split(','), shard).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
