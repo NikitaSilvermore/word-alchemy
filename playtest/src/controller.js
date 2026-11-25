@@ -98,6 +98,7 @@ function createController(cfg, hooks = {}) {
   C.start = () => run({ kind: 'create' });
   C.act = act => run({ kind: 'act', act });
   C.answer = value => { C.queue.push(value); const op = C.op; C.pending = null; return run(op); };
+  C.answerMany = values => { C.queue.push(...values); const op = C.op; C.pending = null; return run(op); }; // several answers confirmed together (End cleanup)
   C.botAct = () => run({ kind: 'act', act: B.chooseAction(C.S, polOf) });
   C.isBotTurn = () => C.S && C.S.over == null && !C.pending && C.S.active === bot;
   C.state = () => C.view || C.S;

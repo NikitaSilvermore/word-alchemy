@@ -221,6 +221,11 @@ function controller(policyOf, { responses = true } = {}) {
 function decider(policyOf) {
   return (S, side, kind, options, dflt) => {
     if (kind === 'select') { let bk = dflt, bv = -1e9; options.forEach((w, k) => { const v = cardWorth(S, side, w); if (v > bv) { bv = v; bk = k; } }); return bk; }
+    if (kind === 'cleanup') { // Room to Grow End cleanup: discard the word in hand worth least to me now (own hand is my own information)
+      const hand = S.players[side].hand; let bk = dflt, bv = 1e9;
+      options.forEach((pid, k) => { const c = hand.find(h => h.pid === pid); const v = c ? cardWorth(S, side, c.word) : 1e9; if (v < bv) { bv = v; bk = k; } });
+      return bk;
+    }
     if (kind === 'debt') { const want = options.includes('spark') && (S.players[side].life <= 6 || S.players[side].spark >= 3) ? 'spark' : 'life'; return options.indexOf(want); }
     return dflt; // documented defaults for the rest
   };

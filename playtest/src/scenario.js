@@ -37,7 +37,7 @@ function validate(spec) {
   const errors = [], notes = [];
   let f; try { f = F.resolveFormat(spec.format); } catch (e) { return { errors: ['unknown rules version ' + spec.format], notes }; }
   const mods = (f.variant && f.variant.modules) || [];
-  const FMT = E.FORMAT, cap = { general: mods.includes('cap6') ? 6 : mods.includes('supply4') ? 4 : FMT.slots, supply: mods.includes('supply') || mods.includes('supply4') ? 1 : 0 };
+  const FMT = E.FORMAT, cap = { general: mods.includes('room7') ? E.ROOM.slots : mods.includes('cap6') ? 6 : mods.includes('supply4') ? 4 : FMT.slots, supply: mods.includes('supply') || mods.includes('supply4') ? 1 : 0 };
   if (![0, 1].includes(spec.active)) errors.push('choose which side acts first');
   spec.sides.forEach((sd, i) => {
     const who = i === 0 ? 'You' : 'Rival', words = listWords(sd.list);
@@ -60,7 +60,7 @@ function validate(spec) {
     for (const w of sd.grave || []) use(w, 'grave');
     for (const w of sd.deckTop || []) use(w, 'deck top');
     if (sd.ground) { if (!BY_ID[sd.ground] || BY_ID[sd.ground].type !== 'ground') errors.push(`${who}: ${sd.ground} is not a Ground`); else use(sd.ground, 'Ground'); }
-    if ((sd.hand || []).length > FMT.handCap) errors.push(`${who}: hand over ${FMT.handCap}`);
+    if (!mods.includes('room7') && (sd.hand || []).length > FMT.handCap) errors.push(`${who}: hand over ${FMT.handCap}`);
     for (const w of (sd.hand || []).concat(sd.deckTop || [], sd.grave || [])) if (BY_ID[w] && !cardLegal(w, mods)) errors.push(`${who}: ${w} is not legal under ${spec.format}`);
     const life = sd.life == null ? FMT.life : sd.life; if (!(life >= 1 && life <= FMT.life)) errors.push(`${who}: life must be 1–${FMT.life}`);
     if (!(sd.breath >= 0 && sd.breath <= FMT.poolCap)) errors.push(`${who}: breath must be 0–${FMT.poolCap}`);

@@ -886,7 +886,7 @@
         }
         if (how === "bounced") {
           const o = S.players[t.owner], c = { pid: t.pid, word: t.word, owner: t.owner };
-          if (o.hand.length >= FORMAT.handCap) toGrave(S, c, "bounced-full-hand");
+          if (o.hand.length >= handCap(S)) toGrave(S, c, "bounced-full-hand");
           else o.hand.push(c);
           return false;
         }
@@ -909,7 +909,7 @@
           p.grave.forEach((c) => put(c.pid, "grave" + p.i));
           p.sealed.forEach((c) => put(c.pid, "sealed" + p.i));
           if (p.ground) put(p.ground.pid, "ground" + p.i);
-          if (p.hand.length > FORMAT.handCap) errs.push("hand over cap P" + p.i);
+          if (p.hand.length > handCap(S)) errs.push("hand over cap P" + p.i);
           if (S.things.filter((t) => t.ctrl === p.i).length > capTotal(S)) errs.push("field over slots P" + p.i);
           if (p.reserve > S.rules.reserveCap) errs.push("reserve over cap P" + p.i);
           if (p.spark > FORMAT.sparkCap || p.spark < 0) errs.push("spark out of range P" + p.i);
@@ -1050,7 +1050,7 @@
       }
       function recoverFromGrave(S, pid, owner) {
         const p = S.players[owner], k = p.grave.findIndex((g2) => g2.pid === pid);
-        if (k < 0 || p.hand.length >= FORMAT.handCap) return false;
+        if (k < 0 || p.hand.length >= handCap(S)) return false;
         const g = p.grave.splice(k, 1)[0];
         p.hand.push({ pid: g.pid, word: g.word, owner: g.owner });
         event(S, "recover", { pid });
@@ -1272,7 +1272,7 @@
       function selectTop(S, p, n, pick) {
         const top = p.deck.splice(0, n);
         const elig = top.map((c, i) => i).filter((i) => pick(top[i]));
-        const j = elig.length && p.hand.length < FORMAT.handCap ? decide(S, p.i, "select", elig.map((i) => top[i].word)) : -1;
+        const j = elig.length && p.hand.length < handCap(S) ? decide(S, p.i, "select", elig.map((i) => top[i].word)) : -1;
         const k = j >= 0 ? elig[j] : -1;
         if (k >= 0) p.hand.push(top.splice(k, 1)[0]);
         p.deck.push(...top);
@@ -1347,7 +1347,7 @@
         }
       }
       function drawCard(S, p) {
-        if (p.hand.length >= FORMAT.handCap) {
+        if (p.hand.length >= handCap(S)) {
           S.stats.res[p.i].blockedDraws = (S.stats.res[p.i].blockedDraws || 0) + 1;
           return;
         }
@@ -1358,6 +1358,23 @@
         }
         p.hand.push(p.deck.shift());
         S.stats.res[p.i].drawn++;
+      }
+      var roomOn = (S) => !!(S && S.rules && S.rules.modules && S.rules.modules.includes("room7"));
+      var ROOM = { handKeep: 7, slots: 7 };
+      function handCap(S) {
+        return roomOn(S) ? Infinity : FORMAT.handCap;
+      }
+      function handCleanup(S, p) {
+        const over = p.hand.length - ROOM.handKeep;
+        if (over <= 0) return;
+        event(S, "cleanup", { side: p.i, hand: p.hand.length, discard: over });
+        for (let n = 0; n < over; n++) {
+          const k = decide(S, p.i, "cleanup", p.hand.map((c2) => c2.pid), p.hand.length - 1);
+          const c = p.hand.splice(k, 1)[0];
+          toGrave(S, c, "discarded");
+          event(S, "cleanup-discard", { side: p.i, pid: c.pid, word: c.word });
+          S.log.push(`P${p.i} discards ${c.word.split(".").pop()} at End (hand above ${ROOM.handKeep})`);
+        }
       }
       function endTurn(S) {
         const p = S.players[S.active];
@@ -1377,6 +1394,7 @@
         p.breath = 0;
         if (S.processes) for (const pr of S.processes.filter((x) => x.owner === p.i && x.open && p.personalTurn >= x.earliest)) closeProcess(S, p.i, "lapsed");
         if (p.invitePlan) openInvitation(S, p);
+        if (roomOn(S)) handCleanup(S, p);
         event(S, "end", { side: p.i, reserve: p.reserve });
         if (S.over == null && S.active !== S.first && S.round >= FORMAT.roundCap) S.over = "draw";
         if (S.over != null) return;
@@ -1456,7 +1474,7 @@
           case "wildfire":
             return mode === "main" && all.some((t) => t.status.burning) ? [null] : [];
           case "memory":
-            return mode === "main" && p.hand.length - 1 < FORMAT.handCap ? p.grave.filter((g) => ["action", "spell"].includes(BY_ID2[g.word].type) && BY_ID2[g.word].cost <= 2 && g.word !== "water.memory").map((g) => "g:" + g.pid) : [];
+            return mode === "main" && p.hand.length - 1 < handCap(S) ? p.grave.filter((g) => ["action", "spell"].includes(BY_ID2[g.word].type) && BY_ID2[g.word].cost <= 2 && g.word !== "water.memory").map((g) => "g:" + g.pid) : [];
           case "tame":
             return mode === "main" && mine.length < capTotal(S) ? foes.filter((t) => isOriginal(t) && prop(t, "beast") && curStrike(S, t) <= 2 && !t.status.named).map((t) => t.id) : [];
           case "summon":
@@ -1649,7 +1667,7 @@
         const p = S.players[S.active], out = [{ type: "pass" }];
         out.push(...cardPlays(S, S.active, "main"));
         if (!p.bought && MKT !== "nobuy" && !(MKT === "from2" && S.round < 2)) {
-          if (S.rules.market && p.hand.length < FORMAT.handCap) for (const o of S.market) {
+          if (S.rules.market && p.hand.length < handCap(S)) for (const o of S.market) {
             if (!o) continue;
             const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
             if (p.spark < price || off && p.offSchoolBought >= FORMAT.offSchoolBuysPerDuel || (p.acquired[o.word] || 0) >= FORMAT.copyLimit) continue;
@@ -1874,7 +1892,7 @@
         say(S, `P${side} fuses ${recipe.id}.`);
         if (card(t).onMade === "seekSpell") {
           const top = p.deck.splice(0, 3), k = top.findIndex((c) => card(c).type === "spell");
-          if (k >= 0 && p.hand.length < FORMAT.handCap) p.hand.push(top.splice(k, 1)[0]);
+          if (k >= 0 && p.hand.length < handCap(S)) p.hand.push(top.splice(k, 1)[0]);
           p.deck.push(...top);
         }
         return true;
@@ -2370,8 +2388,8 @@
           const ids = combatants(S, side).map((t) => t.id);
           for (const g of combos(ids, 1, ids.length)) out.push({ type: "combat", attackers: g });
         }
-        if (p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length < FORMAT.handCap) out.push({ type: "study" });
-        if (exchangeOn(S) && p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length >= FORMAT.handCap) for (const c of p.hand) out.push({ type: "study", discard: c.pid });
+        if (p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length < handCap(S)) out.push({ type: "study" });
+        if (exchangeOn(S) && p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length >= handCap(S)) for (const c of p.hand) out.push({ type: "study", discard: c.pid });
         return out;
       }
       var CORE = { studyCost: 2 };
@@ -2660,7 +2678,7 @@
       var SUPPLY_OK = /* @__PURE__ */ new Set(["earth.clay", "earth.copper", "earth.silver", "earth.garnet", "earth.setting", "made.signet", "token.fruit", "token.cider"]);
       function capGeneral(S) {
         const m = S.rules.modules || [];
-        return m.includes("cap6") ? 6 : m.includes("supply4") ? 4 : FORMAT.slots;
+        return m.includes("room7") ? ROOM.slots : m.includes("cap6") ? 6 : m.includes("supply4") ? 4 : FORMAT.slots;
       }
       function capSupply(S) {
         const m = S.rules.modules || [];
@@ -2766,7 +2784,7 @@
         if (hasFruit(S, host.ctrl)) return "the host already has a Fruit";
         if (!hasRoom(S, host.ctrl, "token.fruit")) return "the host has no room for the Fruit";
         if (p.deck.length < 2) return "you need at least two cards in your deck to read";
-        if (folioOn(S, "visit_draw") && p.hand.length >= FORMAT.handCap) return "your hand is full, so you could not draw";
+        if (folioOn(S, "visit_draw") && p.hand.length >= handCap(S)) return "your hand is full, so you could not draw";
         if (p.visitTurn === p.personalTurn) return "you have already tried a visit this turn";
         if (p.breath < 1) return "a visit costs 1 breath";
         return null;
@@ -3214,7 +3232,7 @@
             event(S, "sealed", { pid: n.card.pid });
             n.card = null;
           }
-          if (n.card && ok && card(n.card).type === "action" && n.side === S.active && sp.echo === sp.personalTurn && sp.hand.length < FORMAT.handCap) {
+          if (n.card && ok && card(n.card).type === "action" && n.side === S.active && sp.echo === sp.personalTurn && sp.hand.length < handCap(S)) {
             sp.echo = 0;
             sp.hand.push(n.card);
             event(S, "echoed", { pid: n.card.pid });
@@ -3887,6 +3905,9 @@
         permWhy,
         hasRoom,
         capGeneral,
+        roomOn,
+        handCap,
+        ROOM,
         capSupply,
         invitationWhy,
         visitWhy,
@@ -4192,6 +4213,19 @@
             });
             return bk;
           }
+          if (kind === "cleanup") {
+            const hand = S.players[side].hand;
+            let bk = dflt, bv = 1e9;
+            options.forEach((pid, k) => {
+              const c = hand.find((h) => h.pid === pid);
+              const v = c ? cardWorth(S, side, c.word) : 1e9;
+              if (v < bv) {
+                bv = v;
+                bk = k;
+              }
+            });
+            return bk;
+          }
           if (kind === "debt") {
             const want = options.includes("spark") && (S.players[side].life <= 6 || S.players[side].spark >= 3) ? "spark" : "life";
             return options.indexOf(want);
@@ -4426,6 +4460,7 @@
         v33_core: { version: "0.33.0-core.1", status: "research", arithmetic: "v29", initiative: "combo2", reserve: true, market: false, marketBreath: 0, variant: { modules: ["orchard", "core"] } },
         // Core Duel trial "Three Decks Worth Mastering" — the one player-facing Core Duel; 'exchange' is the isolatable full-hand Study option
         v33_core3: { version: "0.33.0-core.2-3dm", status: "research", arithmetic: "v29", initiative: "combo2", reserve: true, market: false, marketBreath: 0, variant: { modules: ["orchard", "core", "three", "exchange"] } },
+        v33_core3_room: { version: "0.33.0-core.3-room", status: "research", arithmetic: "v29", initiative: "combo2", reserve: true, market: false, marketBreath: 0, variant: { modules: ["orchard", "core", "three", "room7"] } },
         v33_core3_noex: { version: "0.33.0-core.2-3dm-noex", status: "research", arithmetic: "v29", initiative: "combo2", reserve: true, market: false, marketBreath: 0, variant: { modules: ["orchard", "core", "three"] } },
         v32_b: { version: "0.32.0-b", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["orchard", "workshop", "decay"] } },
         v32_visit: { version: "0.32.0-visit", status: "experiment", base: "grammar_v30_rc1", variant: { modules: [...["orchard", "workshop", "decay"], "visit"] } },
@@ -6573,6 +6608,12 @@
           C.pending = null;
           return run(op);
         };
+        C.answerMany = (values) => {
+          C.queue.push(...values);
+          const op = C.op;
+          C.pending = null;
+          return run(op);
+        };
         C.botAct = () => run({ kind: "act", act: B2.chooseAction(C.S, polOf) });
         C.isBotTurn = () => C.S && C.S.over == null && !C.pending && C.S.active === bot;
         C.state = () => C.view || C.S;
@@ -6717,7 +6758,7 @@
           return { errors: ["unknown rules version " + spec.format], notes };
         }
         const mods = f.variant && f.variant.modules || [];
-        const FMT = E2.FORMAT, cap = { general: mods.includes("cap6") ? 6 : mods.includes("supply4") ? 4 : FMT.slots, supply: mods.includes("supply") || mods.includes("supply4") ? 1 : 0 };
+        const FMT = E2.FORMAT, cap = { general: mods.includes("room7") ? E2.ROOM.slots : mods.includes("cap6") ? 6 : mods.includes("supply4") ? 4 : FMT.slots, supply: mods.includes("supply") || mods.includes("supply4") ? 1 : 0 };
         if (![0, 1].includes(spec.active)) errors.push("choose which side acts first");
         spec.sides.forEach((sd, i) => {
           const who2 = i === 0 ? "You" : "Rival", words = listWords(sd.list);
@@ -6767,7 +6808,7 @@
             if (!BY_ID2[sd.ground] || BY_ID2[sd.ground].type !== "ground") errors.push(`${who2}: ${sd.ground} is not a Ground`);
             else use(sd.ground, "Ground");
           }
-          if ((sd.hand || []).length > FMT.handCap) errors.push(`${who2}: hand over ${FMT.handCap}`);
+          if (!mods.includes("room7") && (sd.hand || []).length > FMT.handCap) errors.push(`${who2}: hand over ${FMT.handCap}`);
           for (const w of (sd.hand || []).concat(sd.deckTop || [], sd.grave || [])) if (BY_ID2[w] && !cardLegal(w, mods)) errors.push(`${who2}: ${w} is not legal under ${spec.format}`);
           const life = sd.life == null ? FMT.life : sd.life;
           if (!(life >= 1 && life <= FMT.life)) errors.push(`${who2}: life must be 1\u2013${FMT.life}`);
@@ -7599,7 +7640,7 @@
   var { V2_DECKS } = require_v32_decks();
   var { V33_DECKS: V33_OLD, THREE_DECKS } = require_v33_decks();
   var V33_DECKS = THREE_DECKS;
-  var CORE_FMT = "v33_core3";
+  var CORE_FMT = "v33_core3_room";
   var isCore = () => !!(A.cfg && /^v33_core/.test(A.cfg.format));
   var isThree = () => !!(A.C && A.C.S && A.C.S.rules.modules && A.C.S.rules.modules.includes("three"));
   var SC = require_scenario();
@@ -7612,7 +7653,7 @@
     ["Other test variants", [["grammar_v30_exp_nosentence", "No spark from sentences"], ["grammar_v30_exp_income2", "Spark income every second turn"], ["grammar_v30_exp_buy2", "Buy every second turn"], ["grammar_v30_exp_reserve3", "Reserve cap 3"], ["grammar_v30_exp_cheapresp", "Cheaper responses"]]],
     ["V31 Living Folio \xB7 Expanded Grammar (experiment)", [["folio_b_all", "All three modules: orchard, workshop, decay"], ["folio_b_orchard", "Orchard only (Bee, Hazel, Feast)"], ["folio_b_workshop", "Workshop only (Shape, Garnet, Signet, Writ)"], ["folio_b_garden", "Orchard + decay (Mould)"], ["folio_b_decay", "Decay only (Mould)"]]],
     ["V31 C-life \xB7 persistent processes (isolated experiment)", [["folio_c_life", "Bear and Shape as public processes (ordinary victory only)"]]],
-    ["Core Duel", [["v33_core3", "Core Duel, three decks \u2014 the game"], ["v33_core3_noex", "Three decks, Study exchange off (internal toggle)"], ["v33_core", "V33 Core Duel (archived build rules)"]]],
+    ["Core Duel", [["v33_core3_room", "Core Duel \u2014 Room to Grow (the game)"], ["v33_core3", "Core Duel, three decks (frozen previous build)"], ["v33_core3_noex", "Three decks, Study exchange off (internal toggle)"], ["v33_core", "V33 Core Duel (archived build rules)"]]],
     ["V32 Workshop \xB7 B control", [["v32_b", "B modules only (orchard, workshop, decay) \u2014 the V32 control"]]],
     ["V32 \xB7 V visit an opposing orchard", [["v32_visit", "V \u2014 visitor reorders its top two"], ["v32_visit_draw", "V \u2014 visitor draws 1 instead (separate arm)"]]],
     ["V32 \xB7 H borrow the rival's heat", [["v32_heat", "H \u2014 1 breath + 1 spark fee to the host"]]],
@@ -7622,7 +7663,7 @@
     ["V32 \xB7 W5 alternative victory (concept test)", [["v32_w5", "W5 \u2014 World Tree life-plus-work"]]],
     ["Earlier", [["grammar_v29_spec", "V29 specification"]]]
   ];
-  var VERSION = "Core Duel \u2014 three decks \xB7 rules " + F.resolveFormat("v33_core3").version;
+  var VERSION = "Core Duel \u2014 Room to Grow \xB7 rules " + F.resolveFormat("v33_core3_room").version;
   var SCHOOLS = ["fire", "water", "air", "earth", "life", "rot", "word"];
   var SCHOOL_NAME = { fire: "Fire", water: "Water", air: "Air", earth: "Earth", life: "Life", rot: "Rot", word: "The Word" };
   var TIERS = B.TIER_ORDER;
@@ -7737,10 +7778,10 @@
   }
   var esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   var TYPE_NAME = { thing: "Thing", action: "Action", spell: "Spell", ground: "Ground", quality: "Quality", weather: "Weather", burden: "Burden", category: "Category" };
-  var A = { view: store.get("wa34.view") || "art", names: {}, screen: "core", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-  var lobby = Object.assign({ ra: "ra", mine: "V01_neighbours_orchard", theirs: "V04_orchard_cellar", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "v32_visit" }, store.get("wa34.lobby") || {});
+  var A = { view: store.get("wa35.view") || "art", names: {}, screen: "core", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+  var lobby = Object.assign({ ra: "ra", mine: "V01_neighbours_orchard", theirs: "V04_orchard_cellar", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "v32_visit" }, store.get("wa35.lobby") || {});
   function allDecks() {
-    const custom = store.get("wa34.custom") || {};
+    const custom = store.get("wa35.custom") || {};
     const out = [];
     for (const [k, v] of Object.entries(REFERENCE_DECKS)) out.push({ id: k, group: "Reference decks (frozen)", label: k.replace(/_/g, " ") + " \u2014 " + v.rival, words: v.words });
     for (const [k, v] of Object.entries(THEMED)) out.push({ id: k, group: "Themed test decks", label: k.slice(2).replace(/_/g, " "), words: v });
@@ -7799,8 +7840,8 @@
     if (!A.C || A.review) return;
     const rep = A.C.replay();
     rep.deckNames = A.cfg.deckNames;
-    store.set("wa34.last", rep);
-    store.set("wa34.left", false);
+    store.set("wa35.last", rep);
+    store.set("wa35.left", false);
   }
   function stopBot() {
     if (A.botTimer) {
@@ -7994,7 +8035,7 @@
     if (p.studyTurn === p.personalTurn) return "You have studied this turn (once per turn).";
     if (p.breath < 2) return `Study costs 2 breath; you have ${p.breath}.`;
     if (!p.deck.length) return "Your deck is empty: nothing to draw (no fatigue from Study).";
-    if (p.hand.length >= E.FORMAT.handCap && !(S.rules.modules || []).includes("exchange")) return `Your hand is full (${E.FORMAT.handCap}).`;
+    if (p.hand.length >= E.handCap(S) && !(S.rules.modules || []).includes("exchange")) return `Your hand is full (${E.handCap(S)}).`;
     return "";
   }
   function exchangeHTML(S) {
@@ -8064,7 +8105,7 @@
       if (c.players[me].hand.length !== S0.players[me].hand.length) out.push(`Your hand ${S0.players[me].hand.length} \u2192 ${c.players[me].hand.length}`);
       {
         const f0 = S0.things.filter((t) => t.ctrl === me).length, f1 = c.things.filter((t) => t.ctrl === me).length;
-        if (f0 !== f1) out.push(`Your field ${f0} \u2192 ${f1} of ${E.FORMAT ? E.FORMAT.slots : 5} places`);
+        if (f0 !== f1) out.push(`Your field ${f0} \u2192 ${f1} of ${E.capGeneral(c)} places`);
       }
       for (const t of S0.things) {
         const n = c.things.find((x) => x.id === t.id);
@@ -8260,7 +8301,7 @@
   function renderLobby() {
     const decks = allDecks(), groups = [...new Set(decks.map((d) => d.group))];
     const opts = (sel) => groups.map((g) => `<optgroup label="${esc(g)}">${decks.filter((d) => d.group === g).map((d) => `<option value="${esc(d.id)}"${d.id === sel ? " selected" : ""}>${esc(d.label)}</option>`).join("")}</optgroup>`).join("");
-    const last = store.get("wa34.last");
+    const last = store.get("wa35.last");
     root().innerHTML = `<main class="lobby">
     <header class="lob-head"><p><button class="lnk" id="l-back">\u2190 Back to the game</button></p><h1>Developer tools</h1><p class="small">Not part of the game. Earlier research versions, seeds, replays, fixtures and the scenario editor.</p>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ""}<p>${esc(VERSION)} \xB7 experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
     <form id="lob" class="lob-grid">
@@ -8282,7 +8323,7 @@
   </main>`;
     const upd = () => {
       Object.assign(lobby, { mine: v("l-mine"), theirs: v("l-theirs"), tier: v("l-tier"), style: v("l-style"), seat: v("l-seat"), seed: +v("l-seed") || 1, format: v("l-format"), ra: v("l-ra") });
-      store.set("wa34.lobby", lobby);
+      store.set("wa35.lobby", lobby);
     };
     const v = (id) => document.getElementById(id).value;
     for (const id of ["l-mine", "l-theirs", "l-tier", "l-style", "l-ra", "l-seat", "l-seed", "l-format"]) document.getElementById(id).addEventListener("change", () => {
@@ -8314,7 +8355,7 @@
       render();
     };
     document.getElementById("l-scen").onclick = () => {
-      A.scen = A.scen || store.get("wa34.scenario") || SC.blank();
+      A.scen = A.scen || store.get("wa35.scenario") || SC.blank();
       A.screen = "scenario";
       render();
     };
@@ -8329,7 +8370,7 @@
     };
     if (last) document.getElementById("l-resume").onclick = () => resumeFrom(last, last.result != null);
   }
-  var core = Object.assign({ mine: "orchard", theirs: "furnace", skill: "journeyman", seat: "random" }, store.get("wa34.core") || {});
+  var core = Object.assign({ mine: "orchard", theirs: "furnace", skill: "journeyman", seat: "random" }, store.get("wa35.core") || {});
   var SKILL = [["initiate", "Gentle", "Plays fair but misses things"], ["journeyman", "Steady", "Plays solidly, answers when it can"], ["expert", "Sharp", "Looks a turn ahead"]];
   function startCore() {
     stopBot();
@@ -8349,14 +8390,14 @@
     render();
   }
   function renderCoreLobby() {
-    const last = store.get("wa34.last");
+    const last = store.get("wa35.last");
     const deckCard = (k, sel, name) => {
       const d = V33_DECKS[k];
       const sch = [...new Set(d.words.map((w) => schoolOf(w)))];
       return `<button class="deckpick${sel === k ? " on" : ""}" data-pick="${name}:${k}" aria-pressed="${sel === k}"><span class="dp-n">${esc(d.name)}</span><span class="dp-s">${sch.map((x) => `<span class="dot s-${x}"></span>${SCHOOL_NAME[x]}`).join(" ")}</span><span class="dp-p">${esc(d.pitch)}</span>${name === "mine" && d.plan ? `<span class="dp-plan"><b>Plan</b> ${esc(d.plan)}</span>` : ""}</button>`;
     };
     root().innerHTML = `<main class="lobby corelob">
-    <header class="lob-head"><h1>Word Alchemy</h1><p class="sub">The Core Duel \xB7 three decks</p>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ""}</header>
+    <header class="lob-head"><h1>Word Alchemy</h1><p class="sub">The Core Duel \xB7 Room to Grow</p>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ""}</header>
     <section><h2>Your deck</h2><div class="picks">${Object.keys(V33_DECKS).map((k) => deckCard(k, core.mine, "mine")).join("")}</div></section>
     <section><h2>Your opponent</h2><div class="picks">${Object.keys(V33_DECKS).map((k) => deckCard(k, core.theirs, "theirs")).join("")}</div>
       <div class="optrow"><span>Skill</span>${SKILL.map(([v, l, t]) => `<button class="seg${core.skill === v ? " on" : ""}" data-skill="${v}" title="${esc(t)}">${l}</button>`).join("")}
@@ -8367,13 +8408,15 @@
       <li>Bring forth Things, lay a Ground, speak Spells and Actions. Each word does exactly what it says.</li>
       <li><b>Attack</b> once per turn, for free: choose any of your ready Things. They all go at the rival and become exhausted, so they cannot block on the rival's turn. The rival chooses blockers.</li>
       <li>Attacks never pick a Thing. To hit a Thing you need a word that says so \u2014 Bite, Crush, Scorch, Burn, Calcine, Gust\u2026</li>
-      <li><b>Study</b>: 2 breath, once per turn, draw a word. With a full hand (7) Study becomes an <b>exchange</b>: discard one word, then draw one.</li>
+      <li><b>Study</b>: 2 breath, once per turn, draw a word \u2014 at any hand size.</li>
+      <li><b>Hand</b>: no limit during play. At the end of your own turn, if you hold more than 7 words, you choose which to discard down to 7.</li>
+      <li><b>Field</b>: seven Thing spaces each, all ordinary and targetable. Ground stays one.</li>
       <li>Click any card's <b>i</b> to see what it can become, what it needs, and why something is not possible now.</li>
       <li>Words marked Response can be spoken on the rival's turn using reserve (breath you kept).</li>
     </ul></details>
     <p class="devlink"><button class="lnk" id="c-dev">Developer tools</button> <small>${esc(VERSION)}</small></p>
   </main>`;
-    const save2 = () => store.set("wa34.core", core);
+    const save2 = () => store.set("wa35.core", core);
     for (const b of document.querySelectorAll("[data-pick]")) b.onclick = () => {
       const [w, k] = b.dataset.pick.split(":");
       core[w] = k;
@@ -8467,7 +8510,7 @@
       const fixedVals = A.sel ? Object.values(A.sel.fixed) : [];
       slots.push(`<div class="slot">${thingCard(S, t, { hi: hiSet.has(t.id), sel: isSel || fixedVals.includes(J(t.id)) })}</div>`);
     }
-    return `<div class="row ${side === A.C.human ? "mine" : "theirs"}">${groundSlot(S, side, side === A.C.human ? hiSet : new Set(hiSet.has("ground") && A.sel && A.sel.anchor && A.sel.anchor.kind !== "vessel" && A.sel.anchor.kind !== "ground" ? ["ground"] : []))}${slots.join("")}</div>`;
+    return `<div class="row ${side === A.C.human ? "mine" : "theirs"}${gen + sup > 5 ? " wide" : ""}" style="--cols:${gen + sup + 1}">${groundSlot(S, side, side === A.C.human ? hiSet : new Set(hiSet.has("ground") && A.sel && A.sel.anchor && A.sel.anchor.kind !== "vessel" && A.sel.anchor.kind !== "ground" ? ["ground"] : []))}${slots.join("")}</div>`;
   }
   function renderMatch() {
     const C = A.C, S = C.state();
@@ -8484,8 +8527,11 @@
     }
     if (C.pending && C.pending.type === "block") for (const id of C.pending.candidates) hiSet.add(id);
     if (C.pending && C.pending.type === "decide" && ["poisonTarget", "waterGround"].includes(C.pending.kind)) for (const id of C.pending.options) hiSet.add(id);
+    const cleanQ = C.pending && C.pending.type === "decide" && C.pending.kind === "cleanup";
     const handHi = /* @__PURE__ */ new Set();
-    if (A.exch) {
+    if (cleanQ) {
+      for (const id of C.pending.options) if (!(A.clean && A.clean.has(id))) handHi.add(id);
+    } else if (A.exch) {
       for (const a of E.legalActions(S)) if (a.type === "study" && a.discard) handHi.add(a.discard);
     } else for (const a of sel.all) {
       if (a.card) handHi.add(a.card);
@@ -8513,7 +8559,7 @@
       <div class="mid">${centre(S)}</div>
       ${row(S, me, sel, hiSet)}
       ${infoStrip(S, me)}
-      <div class="hand mine">${S.players[me].hand.map((c) => handCard(S, c, { hi: handHi.has(c.pid) && !A.sel && !(A.exch && A.exch.pick), sel: A.sel && A.sel.anchor && A.sel.anchor.id === c.pid || A.exch && A.exch.pick === c.pid, dim: !handHi.has(c.pid) && !C.pending })).join("") || '<span class="empty">Your hand is empty.</span>'}</div>
+      <div class="hand mine">${S.players[me].hand.map((c) => handCard(S, c, { hi: handHi.has(c.pid) && !A.sel && !(A.exch && A.exch.pick), sel: A.sel && A.sel.anchor && A.sel.anchor.id === c.pid || A.exch && A.exch.pick === c.pid || cleanQ && !!A.clean && A.clean.has(c.pid), dim: !handHi.has(c.pid) && !C.pending })).join("") || '<span class="empty">Your hand is empty.</span>'}</div>
     </section>
     <aside class="side">
       <div class="panel act" aria-live="polite">${actionPanel(S, sel, vesselN)}</div>
@@ -8632,6 +8678,7 @@
       if (A.sel) return head + builderHTML(S, sel, true);
       return head + `<div class="choices">${q.options.map((a, k) => `<button data-respond="${k}">${esc(describe(S, a))} \xB7 ${esc(costOf(S, a))}</button>`).join("")}<button data-respond="pass" class="go">Pass</button></div>`;
     }
+    if (q.type === "decide" && q.kind === "cleanup") return cleanupHTML(S);
     if (q.type === "decide") {
       const lbl = (o) => {
         if (q.kind === "reorder") return "Top: " + o.map(nm).join(", then ");
@@ -8644,6 +8691,33 @@
       return `<h3>${esc(title)}</h3><div class="choices">${q.options.map((o, k) => `<button data-decide="${k}"${k === q.dflt ? ' class="go"' : ""}>${esc(lbl(o))}</button>`).join("")}</div>`;
     }
     return "";
+  }
+  function cleanupNeed(S) {
+    return Math.max(0, S.players[A.C.human].hand.length - E.ROOM.handKeep);
+  }
+  function cleanupHTML(S) {
+    const p = S.players[A.C.human], need = cleanupNeed(S), picked = A.clean || (A.clean = /* @__PURE__ */ new Set());
+    const left = need - picked.size;
+    return `<h3>End of turn \u2014 discard down to ${E.ROOM.handKeep}</h3>
+    <p class="reader">You hold <b>${p.hand.length}</b> words. You keep at most <b>${E.ROOM.handKeep}</b>, so choose <b>${need}</b> to discard to your Grave (a discard, not a death).</p>
+    <p class="step" aria-live="polite">${picked.size} of ${need} chosen${left > 0 ? ` \u2014 choose ${left} more` : left < 0 ? ` \u2014 ${-left} too many, deselect ${-left}` : " \u2014 ready to confirm"}</p>
+    <div class="choices clean">${p.hand.map((c) => `<button data-clean="${esc(c.pid)}" aria-pressed="${picked.has(c.pid)}" class="${picked.has(c.pid) ? "on" : ""}">${picked.has(c.pid) ? "\u2715 " : ""}${esc(nm(c.word))} <small>${BY_ID[c.word].cost} breath \xB7 ${esc(BY_ID[c.word].type)}</small></button>`).join("")}</div>
+    <div class="btns"><button id="cl-go" class="go"${left === 0 ? "" : " disabled"}>Discard ${need} and end turn</button><button id="cl-clear"${picked.size ? "" : " disabled"}>Clear choices</button></div>
+    <p class="small">You can also click words in your hand to choose them. Nothing is discarded until you confirm.</p>`;
+  }
+  function cleanupConfirm() {
+    const q = A.C.pending, S = A.C.state();
+    if (!q || q.kind !== "cleanup") return;
+    const picked = [...A.clean || []];
+    if (picked.length !== cleanupNeed(S)) return;
+    const order = S.players[A.C.human].hand.map((c) => c.pid), ks = [];
+    for (const pid of picked) {
+      const k = order.indexOf(pid);
+      ks.push(k);
+      order.splice(k, 1);
+    }
+    A.clean = null;
+    A.C.answerMany(ks);
   }
   function blockReason(S, b, att, q) {
     if (b.exhausted) return "exhausted";
@@ -8914,7 +8988,7 @@
     };
     on("m-lobby", () => {
       stopBot();
-      store.set("wa34.left", true);
+      store.set("wa35.left", true);
       A.screen = isCore() ? "core" : "lobby";
       A.sel = null;
       A.combat = null;
@@ -8957,7 +9031,7 @@
     const vw = document.getElementById("m-view");
     if (vw) vw.onchange = () => {
       A.view = vw.value;
-      store.set("wa34.view", A.view);
+      store.set("wa35.view", A.view);
       render();
     };
     const sp = document.getElementById("m-speed");
@@ -9076,6 +9150,17 @@
       render();
     };
     for (const b of document.querySelectorAll("[data-decide]")) b.onclick = () => C.answer(+b.dataset.decide);
+    for (const b of document.querySelectorAll("[data-clean]")) b.onclick = () => {
+      A.clean = A.clean || /* @__PURE__ */ new Set();
+      const id = b.dataset.clean;
+      A.clean.has(id) ? A.clean.delete(id) : A.clean.add(id);
+      render();
+    };
+    on("cl-go", cleanupConfirm);
+    on("cl-clear", () => {
+      A.clean = /* @__PURE__ */ new Set();
+      render();
+    });
     for (const b of document.querySelectorAll("[data-buy]")) b.onclick = () => {
       A.sel = { anchor: { kind: "market", id: +b.dataset.buy }, fixed: {} };
       render();
@@ -9113,6 +9198,14 @@
       if (q.candidates.includes(id)) C.answer(id);
       else if (kind === "thing") {
         A.why = "That Thing cannot block this attack.";
+        render();
+      }
+      return;
+    }
+    if (q && q.type === "decide" && q.kind === "cleanup") {
+      if (kind === "card" && q.options.includes(id)) {
+        A.clean = A.clean || /* @__PURE__ */ new Set();
+        A.clean.has(id) ? A.clean.delete(id) : A.clean.add(id);
         render();
       }
       return;
@@ -9242,11 +9335,11 @@
       renderInspect();
     };
     on("ed-save", () => {
-      const c = store.get("wa34.custom") || {};
+      const c = store.get("wa35.custom") || {};
       c[ed.name] = ed.words.slice();
-      store.set("wa34.custom", c);
+      store.set("wa35.custom", c);
       lobby.mine = "custom:" + ed.name;
-      store.set("wa34.lobby", lobby);
+      store.set("wa35.lobby", lobby);
       A.screen = "lobby";
       render();
     });
@@ -9322,7 +9415,7 @@
       <p class="small">Replays of a scenario carry the whole position, so they always re-run. You play side "You"; the rival uses the lobby's skill and style.</p>
     </section>${sideHTML(0)}${sideHTML(1)}</div></main>`;
     const upd = () => {
-      store.set("wa34.scenario", sp);
+      store.set("wa35.scenario", sp);
       render();
     };
     const g = (id) => document.getElementById(id);
@@ -9361,12 +9454,12 @@
       upd();
     };
     g("sc-save").onclick = () => {
-      store.set("wa34.scenario", sp);
+      store.set("wa35.scenario", sp);
       A.flash = "Saved in this browser.";
       render();
     };
     g("sc-play").onclick = () => {
-      store.set("wa34.scenario", sp);
+      store.set("wa35.scenario", sp);
       startFixture("scenario", SC.asFixture(JSON.parse(JSON.stringify(sp))));
     };
     g("sc-export").onclick = () => {
@@ -9468,7 +9561,7 @@
         if (!x.sides || x.sides.length !== 2) throw new Error("needs two sides");
         A.scen = x;
         close();
-        store.set("wa34.scenario", x);
+        store.set("wa35.scenario", x);
         render();
       } catch (e) {
         el.querySelector("#sx-msg").textContent = "Not a scenario: " + e.message;
@@ -9476,9 +9569,9 @@
     };
   }
   function boot(data) {
-    if (data && data.last) store.set("wa34.last", data.last);
-    const last = store.get("wa34.last");
-    if (last && last.result == null && !store.get("wa34.left")) {
+    if (data && data.last) store.set("wa35.last", data.last);
+    const last = store.get("wa35.last");
+    if (last && last.result == null && !store.get("wa35.left")) {
       resumeFrom(last, false);
       return;
     }
@@ -9486,7 +9579,7 @@
   }
   if (typeof window !== "undefined") {
     window.WA30 = { A, render, startMatch, startFixture, selection, E, SC };
-    if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get("wa34.last") }));
+    if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get("wa35.last") }));
     const start = (d) => boot(d || {});
     if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
     else start(window.claude && window.claude.hot ? window.claude.hot.data : {});

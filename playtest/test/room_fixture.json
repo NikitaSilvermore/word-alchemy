@@ -1,0 +1,8 @@
+{"title":"Room to Grow check","text":"Constructed: seventh Thing and End cleanup","format":"v33_core3_room","active":0,"seed":7,"market":"empty","invites":[],
+ "sides":[
+  {"list":["life.bee","life.pear","life.hazel","life.feast","life.seed","life.sapling","life.grow","life.abundance","life.graft3","life.wolf","life.bramble","life.bite","life.bind","water.water","water.dew","life.apple","water.otter","air.wind","air.gust","air.owl"],
+   "field":[{"word":"life.bee"},{"word":"life.pear"},{"word":"life.hazel"},{"word":"life.wolf"},{"word":"life.bramble"},{"word":"water.otter"}],
+   "hand":["air.owl","life.seed","life.sapling","life.grow","life.bite","life.bind","water.dew","life.feast","air.gust"],"grave":[],"deckTop":[],"deckRest":"rest","ground":null,"life":30,"breath":8,"reserve":0,"spark":0},
+  {"list":["earth.clay","earth.lead","earth.copper","earth.silver","earth.iron","earth.flint","earth.boulder","earth.crucible","earth.transmute","earth.guard","earth.crush","earth.shape3","word.word","word.scribe","earth.hammer","word.writ3","word.omen","word.protect","word.doubt","word.awaken"],
+   "field":[{"word":"earth.lead"},{"word":"earth.flint"}],
+   "hand":["earth.clay","earth.copper","earth.iron","earth.guard","earth.crush"],"grave":[],"deckTop":[],"deckRest":"rest","ground":null,"life":30,"breath":0,"reserve":0,"spark":0}]}

@@ -320,7 +320,7 @@ function leaveField(S, t, how) {
   }
   if (how === 'bounced') {
     const o = S.players[t.owner], c = { pid: t.pid, word: t.word, owner: t.owner };
-    if (o.hand.length >= FORMAT.handCap) toGrave(S, c, 'bounced-full-hand'); else o.hand.push(c);
+    if (o.hand.length >= handCap(S)) toGrave(S, c, 'bounced-full-hand'); else o.hand.push(c);
     return false;
   }
   if (how === 'sealed') { S.players[t.owner].sealed.push({ pid: t.pid, word: t.word, owner: t.owner }); return false; }
@@ -336,7 +336,7 @@ function zoneAudit(S) {
     p.deck.forEach(c => put(c.pid, 'deck' + p.i)); p.hand.forEach(c => put(c.pid, 'hand' + p.i));
     p.grave.forEach(c => put(c.pid, 'grave' + p.i)); p.sealed.forEach(c => put(c.pid, 'sealed' + p.i));
     if (p.ground) put(p.ground.pid, 'ground' + p.i);
-    if (p.hand.length > FORMAT.handCap) errs.push('hand over cap P' + p.i);
+    if (p.hand.length > handCap(S)) errs.push('hand over cap P' + p.i);
     if (S.things.filter(t => t.ctrl === p.i).length > capTotal(S)) errs.push('field over slots P' + p.i);
     if (p.reserve > S.rules.reserveCap) errs.push('reserve over cap P' + p.i);
     if (p.spark > FORMAT.sparkCap || p.spark < 0) errs.push('spark out of range P' + p.i);
@@ -424,7 +424,7 @@ function naphthaVictims(S, t) { return S.things.filter(o => o.ctrl !== t.ctrl &&
 function rebirthAvailable(S, t) { return !!card(t).rebirth && !S.players[t.ctrl].phoenixUsed; }
 function recoverFromGrave(S, pid, owner) {
   const p = S.players[owner], k = p.grave.findIndex(g => g.pid === pid);
-  if (k < 0 || p.hand.length >= FORMAT.handCap) return false;
+  if (k < 0 || p.hand.length >= handCap(S)) return false;
   const g = p.grave.splice(k, 1)[0]; p.hand.push({ pid: g.pid, word: g.word, owner: g.owner }); event(S, 'recover', { pid }); return true;
 }
 function deathTrigger(S, t, how) {
@@ -551,7 +551,7 @@ function reorderTop(S, p, n) {
 function selectTop(S, p, n, pick) {
   const top = p.deck.splice(0, n);
   const elig = top.map((c, i) => i).filter(i => pick(top[i]));
-  const j = elig.length && p.hand.length < FORMAT.handCap ? decide(S, p.i, 'select', elig.map(i => top[i].word)) : -1; // owner sees these
+  const j = elig.length && p.hand.length < handCap(S) ? decide(S, p.i, 'select', elig.map(i => top[i].word)) : -1; // owner sees these
   const k = j >= 0 ? elig[j] : -1;
   if (k >= 0) p.hand.push(top.splice(k, 1)[0]);
   p.deck.push(...top); return k >= 0;
@@ -591,9 +591,25 @@ function ageUp(S, t) { // one age event; at age 2 advance one edge (max one plan
 }
 
 function drawCard(S, p) {
-  if (p.hand.length >= FORMAT.handCap) { S.stats.res[p.i].blockedDraws = (S.stats.res[p.i].blockedDraws || 0) + 1; return; }
+  if (p.hand.length >= handCap(S)) { S.stats.res[p.i].blockedDraws = (S.stats.res[p.i].blockedDraws || 0) + 1; return; }
   if (!p.deck.length) { p.fatigue++; loseLife(S, p.i, p.fatigue, 'fatigue'); return; }
   p.hand.push(p.deck.shift()); S.stats.res[p.i].drawn++;
+}
+// Room to Grow ('room7'): no hard hand cap during play; at the end of your own turn you discard down to seven.
+const roomOn = S => !!(S && S.rules && S.rules.modules && S.rules.modules.includes('room7'));
+const ROOM = { handKeep: 7, slots: 7 };
+function handCap(S) { return roomOn(S) ? Infinity : FORMAT.handCap; }
+function handCleanup(S, p) {
+  const over = p.hand.length - ROOM.handKeep;
+  if (over <= 0) return;
+  event(S, 'cleanup', { side: p.i, hand: p.hand.length, discard: over });
+  for (let n = 0; n < over; n++) {
+    const k = decide(S, p.i, 'cleanup', p.hand.map(c => c.pid), p.hand.length - 1); // documented default: the last word in hand
+    const c = p.hand.splice(k, 1)[0];
+    toGrave(S, c, 'discarded'); // the existing discard: not a death, sacrifice or seal
+    event(S, 'cleanup-discard', { side: p.i, pid: c.pid, word: c.word });
+    S.log.push(`P${p.i} discards ${c.word.split('.').pop()} at End (hand above ${ROOM.handKeep})`);
+  }
 }
 function endTurn(S) {
   const p = S.players[S.active];
@@ -607,6 +623,7 @@ function endTurn(S) {
   p.breath = 0;
   if (S.processes) for (const pr of S.processes.filter(x => x.owner === p.i && x.open && p.personalTurn >= x.earliest)) closeProcess(S, p.i, 'lapsed');
   if (p.invitePlan) openInvitation(S, p);
+  if (roomOn(S)) handCleanup(S, p); // after every End effect, before the rival's turn
   event(S, 'end', { side: p.i, reserve: p.reserve });
   if (S.over == null && S.active !== S.first && S.round >= FORMAT.roundCap) S.over = 'draw';
   if (S.over != null) return;
@@ -669,7 +686,7 @@ function spellTargets(S, side, d, mode) {
         && ['spell', 'quality', 'weather', 'burden', 'category'].includes(card(n.card).type) && (n.totalCost || card(n.card).cost) <= 3).map(({ k }) => 'node:' + k);
     }
     case 'wildfire': return mode === 'main' && all.some(t => t.status.burning) ? [null] : [];
-    case 'memory': return mode === 'main' && p.hand.length - 1 < FORMAT.handCap ? p.grave.filter(g => ['action', 'spell'].includes(BY_ID[g.word].type) && BY_ID[g.word].cost <= 2 && g.word !== 'water.memory').map(g => 'g:' + g.pid) : [];
+    case 'memory': return mode === 'main' && p.hand.length - 1 < handCap(S) ? p.grave.filter(g => ['action', 'spell'].includes(BY_ID[g.word].type) && BY_ID[g.word].cost <= 2 && g.word !== 'water.memory').map(g => 'g:' + g.pid) : [];
     case 'tame': return mode === 'main' && mine.length < capTotal(S) ? foes.filter(t => isOriginal(t) && prop(t, 'beast') && curStrike(S, t) <= 2 && !t.status.named).map(t => t.id) : [];
     case 'summon': return mode === 'main' && mine.length < capTotal(S) ? foes.filter(t => isOriginal(t) && BY_ID[t.word].cost <= 2 && !t.status.named).map(t => t.id) : [];
     case 'rust': return mode === 'main' ? foes.filter(t => prop(t, 'metal') && !has(S, t, 'incorruptible') && !modsOf(t).rustImmune).map(t => t.id) : [];
@@ -800,7 +817,7 @@ function legalActions(S) {
   const p = S.players[S.active], out = [{ type: 'pass' }];
   out.push(...cardPlays(S, S.active, 'main'));
   if (!p.bought && MKT !== 'nobuy' && !(MKT === 'from2' && S.round < 2)) {
-    if (S.rules.market && p.hand.length < FORMAT.handCap) for (const o of S.market) {
+    if (S.rules.market && p.hand.length < handCap(S)) for (const o of S.market) {
       if (!o) continue;
       const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
       if (p.spark < price || (off && p.offSchoolBought >= FORMAT.offSchoolBuysPerDuel) || (p.acquired[o.word] || 0) >= FORMAT.copyLimit) continue;
@@ -995,7 +1012,7 @@ function resolveFuse(S, n) {
   event(S, 'made', { side, recipe: recipe.id, tid: t.id }); say(S, `P${side} fuses ${recipe.id}.`);
   if (card(t).onMade === 'seekSpell') { // Homunculus: inspect top 3, take a Spell if present
     const top = p.deck.splice(0, 3), k = top.findIndex(c => card(c).type === 'spell');
-    if (k >= 0 && p.hand.length < FORMAT.handCap) p.hand.push(top.splice(k, 1)[0]);
+    if (k >= 0 && p.hand.length < handCap(S)) p.hand.push(top.splice(k, 1)[0]);
     p.deck.push(...top);
   }
   return true;
@@ -1297,8 +1314,8 @@ function combatants(S, side) { return S.things.filter(t => t.ctrl === side && ca
 function coreOptions(S, side) {
   const p = S.players[side], out = [];
   if (p.combatTurn !== p.personalTurn) { const ids = combatants(S, side).map(t => t.id); for (const g of combos(ids, 1, ids.length)) out.push({ type: 'combat', attackers: g }); }
-  if (p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length < FORMAT.handCap) out.push({ type: 'study' });
-  if (exchangeOn(S) && p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length >= FORMAT.handCap) for (const c of p.hand) out.push({ type: 'study', discard: c.pid }); // full hand: Study — exchange
+  if (p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length < handCap(S)) out.push({ type: 'study' });
+  if (exchangeOn(S) && p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length >= handCap(S)) for (const c of p.hand) out.push({ type: 'study', discard: c.pid }); // full hand: Study — exchange
   return out;
 }
 const CORE = { studyCost: 2 };
@@ -1486,7 +1503,7 @@ const V32_MODS = new Set(['visit', 'visit_draw', 'heat', 'w5']);
 // Field capacity: five general spaces (rc1); 'cap6' six general; 'supply' five general + one supply space restricted to
 // stock and products; 'supply4' four general + one supply. Every space is an ordinary public, targetable Thing space.
 const SUPPLY_OK = new Set(['earth.clay', 'earth.copper', 'earth.silver', 'earth.garnet', 'earth.setting', 'made.signet', 'token.fruit', 'token.cider']);
-function capGeneral(S) { const m = S.rules.modules || []; return m.includes('cap6') ? 6 : m.includes('supply4') ? 4 : FORMAT.slots; }
+function capGeneral(S) { const m = S.rules.modules || []; return m.includes('room7') ? ROOM.slots : m.includes('cap6') ? 6 : m.includes('supply4') ? 4 : FORMAT.slots; }
 function capSupply(S) { const m = S.rules.modules || []; return m.includes('supply') || m.includes('supply4') ? 1 : 0; }
 function capTotal(S) { return capGeneral(S) + capSupply(S); }
 // can `side` take one more Thing of current form `id` (null = any form)?
@@ -1573,7 +1590,7 @@ function visitWhy(S, side, bee, host) {
   if (hasFruit(S, host.ctrl)) return 'the host already has a Fruit';
   if (!hasRoom(S, host.ctrl, 'token.fruit')) return 'the host has no room for the Fruit';
   if (p.deck.length < 2) return 'you need at least two cards in your deck to read';
-  if (folioOn(S, 'visit_draw') && p.hand.length >= FORMAT.handCap) return 'your hand is full, so you could not draw';
+  if (folioOn(S, 'visit_draw') && p.hand.length >= handCap(S)) return 'your hand is full, so you could not draw';
   if (p.visitTurn === p.personalTurn) return 'you have already tried a visit this turn';
   if (p.breath < 1) return 'a visit costs 1 breath';
   return null;
@@ -1847,7 +1864,7 @@ function resolveClause(S) {
     if (!ok) { S.stats.failed++; event(S, 'failed', { k, act: n.act }); }
     const sp = S.players[n.side];
     if (n.card && ok && card(n.card).seal) { sp.sealed.push(n.card); event(S, 'sealed', { pid: n.card.pid }); n.card = null; } // Memory, Exhume, Echo
-    if (n.card && ok && card(n.card).type === 'action' && n.side === S.active && sp.echo === sp.personalTurn && sp.hand.length < FORMAT.handCap) {
+    if (n.card && ok && card(n.card).type === 'action' && n.side === S.active && sp.echo === sp.personalTurn && sp.hand.length < handCap(S)) {
       sp.echo = 0; sp.hand.push(n.card); event(S, 'echoed', { pid: n.card.pid }); n.card = null; // returns instead of being spent
     }
     flush(ok ? 'spent' : 'failed'); // spent one-use word (deploy/ground/quality/weather moved theirs already)
@@ -2212,7 +2229,7 @@ const REVISION = { id: 'r30.1', log: [
 
 module.exports = {
   threeOn, naphthaVictims, shape3Why, igniteWhy, abSpec, ESPALIER, SHAPE3, pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost, processOptions,
-  perm, permWhy, hasRoom, capGeneral, capSupply, invitationWhy, visitWhy, hotworkWhy, w5Why, w5Chain,
+  perm, permWhy, hasRoom, capGeneral, roomOn, handCap, ROOM, capSupply, invitationWhy, visitWhy, hotworkWhy, w5Why, w5Chain,
   REVISION, FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
