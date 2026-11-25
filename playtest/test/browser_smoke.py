@@ -9,6 +9,11 @@ threading.Thread(target=srv.serve_forever, daemon=True).start()
 url = f'http://127.0.0.1:{srv.server_port}/index.html'
 errors = []; rnd = random.Random(7); report = []
 
+def lobby(page):  # an unfinished match now resumes on load: go back to the lobby on purpose
+    page.goto(url); page.wait_for_selector('#lob, .match')
+    if page.query_selector('.match'): page.click('#m-lobby')
+    page.wait_for_selector('#lob')
+
 def visible(page, sel):
     return [e for e in page.query_selector_all(sel) if e.is_visible() and e.is_enabled()]
 
@@ -48,10 +53,10 @@ with sync_playwright() as p:
     for width in (1280, 400):
         page = br.new_page(viewport={'width': width, 'height': 900})
         page.on('console', lambda m: m.type == 'error' and 'fonts.g' not in m.text and errors.append(m.text))
-        page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))
-        page.goto(url); page.wait_for_selector('#lob')
+        page.on('pageerror', lambda e: errors.append('pageerror: ' + (e.stack or str(e))[:600]))
+        lobby(page)
         for g in range(games if width == 1280 else 1):
-            page.goto(url); page.wait_for_selector('#lob')
+            lobby(page)
             decks = page.eval_on_selector_all('#l-mine option', 'o => o.map(x => x.value)')
             page.select_option('#l-mine', rnd.choice(decks)); page.select_option('#l-theirs', rnd.choice(decks))
             page.select_option('#l-tier', rnd.choice(['apprentice', 'journeyman', 'expert']))
@@ -68,24 +73,24 @@ with sync_playwright() as p:
             assert st['over'] is not None, ('game did not finish', st, kinds)
             # export, reload, resume
             page.click('#m-export'); txt = page.input_value('#ex-t'); rep = json.loads(txt); page.keyboard.press('Escape')
-            page.goto(url); page.wait_for_selector('#lob'); page.click('#l-resume'); page.wait_for_selector('.reviewbar')
+            lobby(page); page.click('#l-resume'); page.wait_for_selector('.reviewbar')
             h = page.evaluate('() => WA30.A.C.S.hashes.slice(-1)[0]')
             assert h == rep['finalHash'], ('resume hash mismatch', h, rep['finalHash'])
             page.click('#rv-0'); page.click('#rv-n'); page.click('#rv-e')
         # fixtures and inspector
-        page.goto(url); page.wait_for_selector('#lob'); page.click('#l-fix')
+        lobby(page); page.click('#l-fix')
         n = len(page.query_selector_all('[data-fx]'))
         for k in range(n):
-            page.goto(url); page.wait_for_selector('#lob'); page.click('#l-fix'); page.query_selector_all('[data-fx]')[k].click()
+            lobby(page); page.click('#l-fix'); page.query_selector_all('[data-fx]')[k].click()
             page.wait_for_selector('.match'); page.evaluate('() => { WA30.A.speed = 0 }')
             info = visible(page, '.info')
             if info: info[0].click(); page.wait_for_selector('.inspect'); page.keyboard.press('Escape')
             for j in range(40):
                 if step(page) == 'over': break
         report.append({'width': width, 'fixtures': n})
-        page.goto(url); page.click('#l-editor'); page.wait_for_selector('.ed-grid'); page.click('[data-f=fire]')
+        lobby(page); page.click('#l-editor'); page.wait_for_selector('.ed-grid'); page.click('[data-f=fire]')
         page.screenshot(path=f'/tmp/smoke_{width}_editor.png')
-        page.goto(url); page.wait_for_selector('#lob'); page.click('#l-start'); page.wait_for_timeout(400)
+        lobby(page); page.click('#l-start'); page.wait_for_timeout(400)
         page.screenshot(path=f'/tmp/smoke_{width}_match.png', full_page=True)
         page.close()
     # artifact viewers run the page in a sandboxed frame without form submission: start a match there too
