@@ -1,0 +1,13 @@
+// Volume II deck atlas, as far as the engine has the words. Substitutions (words not implemented) are recorded per deck.
+'use strict';
+const D = (words, note, subs = {}) => ({ words, note, subs });
+const V2_DECKS = {
+  V01_neighbours_orchard: D(['life.bee', 'life.pear', 'life.hazel', 'life.feast', 'life.seed', 'life.bramble', 'life.grow', 'life.wolf', 'life.hare', 'life.plants', 'water.water', 'water.dew', 'water.otter', 'water.seep', 'water.rain', 'air.wind', 'air.gust', 'air.owl', 'air.herald', 'air.squall'], '01 · The neighbour\'s orchard'),
+  V02_bellows_ingot: D(['fire.smith', 'fire.fire', 'fire.torch', 'fire.ember', 'fire.bellows', 'fire.calcine', 'fire.scorch', 'fire.salamander', 'earth.silver', 'earth.copper', 'earth.tin', 'earth.lead', 'earth.shape', 'earth.garnet', 'earth.transmute', 'earth.temper', 'earth.boulder', 'earth.guard', 'earth.crush', 'earth.crucible'], '02 · The bellows and the ingot'),
+  V03_seal_engraver: D(['earth.copper', 'earth.silver', 'earth.shape', 'earth.garnet', 'earth.guard', 'earth.boulder', 'earth.iron', 'earth.flint', 'earth.temper', 'earth.crush', 'fire.smith', 'fire.ember', 'fire.calcine', 'word.writ', 'word.scribe', 'word.bard', 'word.omen', 'word.protect', 'word.doubt', 'word.scream'], '03 · The seal engraver'),
+  V04_orchard_cellar: D(['life.pear', 'life.bee', 'life.feast', 'life.abundance', 'life.grow', 'life.seed', 'life.sapling', 'life.harvest', 'life.bramble', 'life.wolf', 'life.hare', 'life.plants', 'water.flask', 'water.water', 'water.rain', 'water.otter', 'water.seep', 'water.dew', 'water.tonic', 'water.memory'], '04 · The orchard cellar (Ferment → Abundance: module F not built)', { 'life.ferment': 'life.abundance' }),
+  V08_patient_predator: D(['life.wolf', 'life.hare', 'life.stag', 'life.scarab', 'life.bite', 'life.beasts', 'life.bramble', 'life.bind', 'life.feral', 'life.abundance', 'rot.spider', 'rot.adder', 'rot.leech', 'rot.rat', 'rot.poison', 'rot.wither', 'air.owl', 'air.hawk', 'air.gust', 'air.herald'], '08 · The patient predator'),
+  V11_world_tree_maker: D(['life.seed', 'life.oak', 'life.sapling', 'life.pear', 'life.wolf', 'life.hare', 'life.bramble', 'life.grow', 'life.plants', 'water.dew', 'water.water', 'water.otter', 'water.pike', 'water.seep', 'water.tonic', 'earth.clay', 'earth.boulder', 'earth.guard', 'earth.crucible', 'earth.crush'], '11 · The maker of the World Tree'),
+  V13_giver_of_fire: D(['fire.torch', 'fire.fire', 'fire.ember', 'fire.salamander', 'fire.smith', 'fire.firebird', 'fire.burn', 'fire.scorch', 'fire.calcine', 'fire.kindle', 'fire.wildfire', 'fire.naphtha', 'air.wind', 'air.swallow', 'air.owl', 'air.gust', 'air.blow', 'air.gasp', 'air.winged', 'air.squall'], '13 · The giver of fire'),
+};
+module.exports = { V2_DECKS };

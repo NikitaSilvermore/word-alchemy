@@ -89,7 +89,7 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
     rules: { reserve, market, initiative, marketBreath, freeStrike: !!variant.freeStrike, draws: variant.draws || 1,
       // V30 experiment levers (defaults = rc1 reference)
       priceOwn: variant.priceOwn || FORMAT.ownPrice, priceOff: variant.priceOff || FORMAT.offPrice, sentenceSpark: variant.sentenceSpark !== false,
-      incomeEvery: variant.incomeEvery || 1, buyEvery: variant.buyEvery || 1, reserveCap: variant.reserveCap || FORMAT.reserveCap, responseDiscount: variant.responseDiscount || null, modules: (variant.modules || []).slice() }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
+      incomeEvery: variant.incomeEvery || 1, buyEvery: variant.buyEvery || 1, reserveCap: variant.reserveCap || FORMAT.reserveCap, responseDiscount: variant.responseDiscount || null, modules: (variant.modules || []).slice(), costOverride: variant.costOverride || null }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
     rand: r, log: [], events: [], hashes: [], clause: null, registry: {}, flags: {},
     players: decks.map((d, i) => ({
       i, life: FORMAT.life, breath: 0, reserve: 0, extraBreath: 0, personalTurn: 0, fatigue: 0, poison: 0,
@@ -226,7 +226,7 @@ function legacyStand(S, t) { return S.arithmetic === 'legacy' && t.attuned ? 2 :
 function standOf(S, t) { return maxStand(S, t) + legacyStand(S, t); }
 function remainingOf(S, t) { return standOf(S, t) - t.damage; }
 function groundRemaining(g) { return card(g).stand - (g.damage || 0); }
-function incapacitated(t) { return !!(t.status.asleep || t.status.frozen || t.status.bound); }
+function incapacitated(t) { return !!(t.status.asleep || t.status.frozen || t.status.bound || t.displaced); }
 // counters respect Measured and their caps; "added at cap do not count as gained"
 function addCounter(S, t, k, n = 1) {
   if (t.status.measured && ['growth', 'might', 'bedrock'].includes(k)) return 0;
@@ -263,7 +263,7 @@ function ignite(S, t, bySide) {
 function destroy(S, t) { if (rebirthAvailable(S, t)) { t.damage = 999; return; } if (leaveField(S, t, 'destroyed')) deathTrigger(S, t); }
 // control change: empty slot required; ownership kept; becomes Fresh and exhausted (§5.12)
 function takeControl(S, t, side) {
-  if (S.things.filter(o => o.ctrl === side).length >= FORMAT.slots) return false;
+  if (!hasRoom(S, side, card(t).id)) return false;
   t.ctrl = side; t.fresh = true; exhaust(t); t.tempGuard = false; event(S, 'control', { tid: t.id, side }); return true;
 }
 function enemy(S, i) { return S.players[1 - i]; }
@@ -283,7 +283,7 @@ function newThing(S, side, o) {
   S.things.push(t); return t;
 }
 function createToken(S, side, id) {
-  if (S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) { event(S, 'token-failed', { side, id }); return null; } // never displace
+  if (!hasRoom(S, side, id)) { event(S, 'token-failed', { side, id }); return null; } // never displace
   const t = newThing(S, side, { word: id, form: id, token: true });
   S.stats.tokens++; event(S, 'token', { side, id, tid: t.id }); return t;
 }
@@ -328,7 +328,7 @@ function zoneAudit(S) {
     p.grave.forEach(c => put(c.pid, 'grave' + p.i)); p.sealed.forEach(c => put(c.pid, 'sealed' + p.i));
     if (p.ground) put(p.ground.pid, 'ground' + p.i);
     if (p.hand.length > FORMAT.handCap) errs.push('hand over cap P' + p.i);
-    if (S.things.filter(t => t.ctrl === p.i).length > FORMAT.slots) errs.push('field over slots P' + p.i);
+    if (S.things.filter(t => t.ctrl === p.i).length > capTotal(S)) errs.push('field over slots P' + p.i);
     if (p.reserve > S.rules.reserveCap) errs.push('reserve over cap P' + p.i);
     if (p.spark > FORMAT.sparkCap || p.spark < 0) errs.push('spark out of range P' + p.i);
     if (p.breath > FORMAT.poolCap) errs.push('pool over cap P' + p.i);
@@ -402,6 +402,7 @@ function stateCheck(S) {
     }
   }
   if (S.processes) checkProcesses(S);
+  if (S.rules.modules && S.rules.modules.length) v32StateCheck(S);
   const dead = S.players.filter(p => p.life <= 0);
   if (dead.length && S.over == null) {
     S.over = dead.length === 2 ? 'draw' : (1 - dead[0].i);
@@ -465,6 +466,7 @@ function startTurn(S) {
   if (p.personalTurn === 1 && S.active === S.first) p.breath = Math.max(0, p.breath + (INITIATIVE[S.rules.initiative].p1FirstTurnBreath || 0));
   for (const t of S.things) if (t.ctrl === S.active) { t.exhausted = false; t.fresh = false; t.actions = 0; t.quickUsed = false; }
   event(S, 'renew', { side: p.i });
+  if (S.invites) S.invites = S.invites.filter(x => x.owner !== p.i); // standing invitations last until their owner's next Renew
   // Sky and Law expire at the caster's second subsequent Renew, before upkeep
   if (S.sky && S.sky.caster === p.i && p.personalTurn >= S.sky.until) { toGrave(S, S.sky, 'retired'); event(S, 'sky-expired', { word: S.sky.word }); S.sky = null; }
   if (S.law && S.law.caster === p.i && p.personalTurn >= S.law.until) { retireLaw(S); }
@@ -485,7 +487,7 @@ function startTurn(S) {
     if (u === 'worldTree') {
       gainLife(S, p.i, 2, 'world tree');
       const o = S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'living') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
-      if (o) addCounter(S, o, 'growth');
+      if (o && addCounter(S, o, 'growth') > 0) { t.wtGrants = (t.wtGrants || []).concat(o.id); event(S, 'wt-growth', { tree: t.id, beneficiary: o.id }); }
     }
     if (u === 'stone') { const k = decide(S, p.i, 'stoneUpkeep', ['draw', 'breath'], p.hand.length <= 3 && p.deck.length ? 0 : 1); if (k === 0) drawCard(S, p); else gainExtraBreath(p, 1); }
     if (card(t).lifespan) { t.age = (t.age || 0) + 1; if (t.age >= card(t).lifespan) { leaveField(S, t, 'expired'); say(S, `${t.word} disperses.`); continue; } }
@@ -517,6 +519,7 @@ function startTurn(S) {
   stateCheck(S); if (S.over != null) return;
   if (!(S.active === S.first && p.personalTurn === 1)) for (let k = 0; k < S.rules.draws; k++) { drawCard(S, p); stateCheck(S); if (S.over != null) return; } // §15 Q1 experiment: draws per turn
   stateCheck(S); if (S.over != null) return;
+  if (S.claims) { v32StartOfMain(S); if (S.over != null) return; } // W5: a surviving claim completes at the start of Main
   marketStep(S);
   const R0 = S.stats.res[p.i];
   R0.handByRound = R0.handByRound || {}; R0.handByRound[S.round] = p.hand.length; // occupancy after draw and market step
@@ -591,6 +594,7 @@ function endTurn(S) {
   S.stats.res[p.i].reserveKept += p.reserve; S.stats.res[p.i].breathWasted += p.breath - p.reserve;
   p.breath = 0;
   if (S.processes) for (const pr of S.processes.filter(x => x.owner === p.i && x.open && p.personalTurn >= x.earliest)) closeProcess(S, p.i, 'lapsed');
+  if (p.invitePlan) openInvitation(S, p);
   event(S, 'end', { side: p.i, reserve: p.reserve });
   if (S.over == null && S.active !== S.first && S.round >= FORMAT.roundCap) S.over = 'draw';
   if (S.over != null) return;
@@ -620,7 +624,7 @@ function contactReach(S, att, target) {
 // target: thing, 'ground' or null (rival)
 function eligibleBlockers(S, defender, att, target) {
   const protectsOther = !!target;
-  return S.things.filter(b => b.ctrl === defender && !b.exhausted && !incapacitated(b) && b !== target
+  return S.things.filter(b => b.ctrl === defender && !b.exhausted && !incapacitated(b) && b !== target && perm(S, b, 'intercept')
     && (!protectsOther || has(S, b, 'guard'))
     && (!has(S, att, 'flying') || has(S, b, 'flying') || has(S, b, 'reach')));
 }
@@ -654,11 +658,11 @@ function spellTargets(S, side, d, mode) {
     }
     case 'wildfire': return mode === 'main' && all.some(t => t.status.burning) ? [null] : [];
     case 'memory': return mode === 'main' && p.hand.length - 1 < FORMAT.handCap ? p.grave.filter(g => ['action', 'spell'].includes(BY_ID[g.word].type) && BY_ID[g.word].cost <= 2 && g.word !== 'water.memory').map(g => 'g:' + g.pid) : [];
-    case 'tame': return mode === 'main' && mine.length < FORMAT.slots ? foes.filter(t => isOriginal(t) && prop(t, 'beast') && curStrike(S, t) <= 2 && !t.status.named).map(t => t.id) : [];
-    case 'summon': return mode === 'main' && mine.length < FORMAT.slots ? foes.filter(t => isOriginal(t) && BY_ID[t.word].cost <= 2 && !t.status.named).map(t => t.id) : [];
+    case 'tame': return mode === 'main' && mine.length < capTotal(S) ? foes.filter(t => isOriginal(t) && prop(t, 'beast') && curStrike(S, t) <= 2 && !t.status.named).map(t => t.id) : [];
+    case 'summon': return mode === 'main' && mine.length < capTotal(S) ? foes.filter(t => isOriginal(t) && BY_ID[t.word].cost <= 2 && !t.status.named).map(t => t.id) : [];
     case 'rust': return mode === 'main' ? foes.filter(t => prop(t, 'metal') && !has(S, t, 'incorruptible') && !modsOf(t).rustImmune).map(t => t.id) : [];
     case 'wither': return mode === 'main' ? foes.filter(t => prop(t, 'living')).map(t => t.id) : [];
-    case 'exhume': return mode === 'main' && mine.length < FORMAT.slots ? p.grave.filter(g => BY_ID[g.word].type === 'thing' && BY_ID[g.word].cost <= 2).map(g => 'g:' + g.pid) : [];
+    case 'exhume': return mode === 'main' && mine.length < capTotal(S) ? p.grave.filter(g => BY_ID[g.word].type === 'thing' && BY_ID[g.word].cost <= 2).map(g => 'g:' + g.pid) : [];
     case 'miasma': case 'scream': case 'silence': return mode === 'main' ? [null] : [];
     case 'omen': return mode === 'main' && p.deck.length ? [null] : [];
     case 'gnosis': return mode === 'main' && p.deck.length ? [null] : [];
@@ -686,14 +690,14 @@ function cardPlays(S, side, mode) {
   const budget = mode === 'response' ? p.reserve : p.breath;
   const onTurn = side === S.active;
   const mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed); // Concealed: not individually targetable
-  const free = FORMAT.slots - mine.length;
+  const free = capTotal(S) - mine.length;
   for (const c of p.hand) {
     const d = card(c);
-    const eff = mode !== 'main' && S.rules.responseDiscount && S.rules.responseDiscount[d.id] ? Math.max(1, d.cost - S.rules.responseDiscount[d.id]) : d.cost;
+    const eff = mode !== 'main' && S.rules.responseDiscount && S.rules.responseDiscount[d.id] ? Math.max(1, d.cost - S.rules.responseDiscount[d.id]) : (S.rules.costOverride && S.rules.costOverride[d.id]) || d.cost;
     if (eff > budget) continue;
     if (mode !== 'main' && !isR(d)) continue;
     if (mode === 'main' && d.responseOnly) continue;
-    if (d.type === 'thing') { if (free > 0) out.push({ type: 'deploy', card: c.pid }); continue; }
+    if (d.type === 'thing') { if (hasRoom(S, side, d.id)) out.push({ type: 'deploy', card: c.pid }); continue; }
     if (d.type === 'ground') { out.push({ type: 'ground', card: c.pid }); continue; }
     if (mode === 'main') {
       if (d.type === 'weather') { out.push({ type: 'weather', card: c.pid }); continue; }
@@ -737,7 +741,7 @@ function cardPlays(S, side, mode) {
     }
     if (d.type === 'spell') { for (const tg of spellTargets(S, side, d, mode)) out.push(tg == null ? { type: 'spell', card: c.pid } : { type: 'spell', card: c.pid, target: tg }); continue; }
     if (d.type !== 'action') continue;
-    const subjects = mine.filter(t => ready(S, t, onTurn) && caps(S, t).has(d.verb));
+    const subjects = mine.filter(t => ready(S, t, onTurn) && caps(S, t).has(d.verb) && (!(d.verb in COMBAT) || perm(S, t, 'strike')));
     for (const s of subjects) {
       if (d.verb in COMBAT) {
         if (mode !== 'main') continue; // contact attacks are Main-only
@@ -793,10 +797,11 @@ function legalActions(S) {
     if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
   }
   if (folioOn(S, 'clife')) out.push(...processOptions(S, p.i));
+  if (S.rules.modules.some(m => V32_MODS.has(m))) out.push(...v32Options(S, p.i));
   out.push(...fusionOptions(S, p.i));
   out.push(...abilityOptions(S, p.i));
   const foes = S.things.filter(t => t.ctrl !== p.i && !t.status.concealed);
-  if (p.breath >= (S.rules.freeStrike ? 0 : 1)) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0)) {
+  if (p.breath >= (S.rules.freeStrike ? 0 : 1)) for (const s of S.things.filter(t => t.ctrl === p.i && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0 && perm(S, t, 'strike'))) {
     out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'rival' });
     for (const f of foes) if (contactReach(S, s, f)) out.push({ type: 'attack', subject: s.id, verb: 'strike', target: f.id });
     if (enemy(S, p.i).ground) out.push({ type: 'attack', subject: s.id, verb: 'strike', target: 'ground' });
@@ -855,7 +860,7 @@ function whyIllegal(S, act) {
     const d = card(c);
     if (d.cost > p.breath) return `${d.id} costs ${d.cost}; you have ${p.breath} breath`;
     if (d.responseOnly) return `${d.id} can only be spoken as a response`;
-    if (d.type === 'thing' && S.things.filter(t => t.ctrl === p.i).length >= FORMAT.slots) return 'no empty field slot';
+    if (d.type === 'thing' && !hasRoom(S, p.i, d.id)) return 'no empty field slot';
   }
   if (act.type === 'fuse') {
     const recipe = recipeById(act.recipe); if (!recipe) return 'no such recipe';
@@ -981,7 +986,7 @@ function resolveSeparate(S, n, t) {
   if (!t || t.ctrl !== side || !separable(S, t)) return false;
   const recs = t.lineage, gr = recs.filter(r => r.ground), th = recs.filter(r => !r.ground);
   const after = S.things.filter(x => x.ctrl === side && x !== t).length;
-  if (after + th.length > FORMAT.slots || (gr.length && p.ground)) return false; // insufficient space: fail
+  if (after + th.length > capTotal(S) || (gr.length && p.ground)) return false; // insufficient space: fail
   retireQuals(S, t);
   S.things = S.things.filter(x => x !== t);
   recs.forEach((r, k) => {
@@ -1028,6 +1033,7 @@ function resolveAbility(S, n, tg) {
       if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; destroy(S, tg); return true;
     }
     case 'pollinate': case 'shapeWork': case 'signet': case 'mould': return resolveFolioAbility(S, n, tg);
+    case 'visit': return resolveVisit(S, n, tg);
     case 'bear': case 'shapeStart': return resolveProcessStart(S, n, tg);
     case 'eatFruit': if (a.branch === 'life') { gainLife(S, side, 2, 'fruit'); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
   }
@@ -1068,7 +1074,7 @@ const FOLIO_RECIPES = [
 ];
 const SHAPEABLE = ['earth.copper', 'earth.silver'];
 const hasFruit = (S, side) => S.things.some(o => o.ctrl === side && card(o).id === 'token.fruit');
-const freeSlot = (S, side) => S.things.filter(o => o.ctrl === side).length < FORMAT.slots;
+const freeSlot = (S, side, id) => hasRoom(S, side, id || 'token.fruit');
 const wingFlight = (S, t) => has(S, t, 'flying') && prop(t, 'winged');
 // Why `carrier` cannot pollinate `host` right now (null = it can). Shared by legality, previews and the UI.
 function pollinationWhy(S, carrier, host, resolving) {
@@ -1104,7 +1110,7 @@ const nameOf = t => { const w = String((t.form || t.word) || '').split('.').pop(
 const feastable = (S, t) => t.exhausted && prop(t, 'living') && prop(t, 'body') && curStrike(S, t) > 0 && !incapacitated(t) && !(t.fresh && !has(S, t, 'swift')) && t.actions < 2;
 const mouldSeals = (S, side) => S.players[side].grave.filter(g => (BY_ID[g.word].props || []).includes('plant') && ['destroyed', 'sacrificed'].includes(g.reason) && !BY_ID[g.word].token);
 const mouldTargets = (S, side, m) => S.things.filter(t => t.ctrl === side && t !== m && prop(t, 'plant') && (((t.counters.growth || 0) < FORMAT.growthCap && !t.status.measured) || plantNext(S, t)));
-function abilityCost(S, t, id) { return id === 'shapeWork' || id === 'shapeStart' ? 2 : id === 'pollinate' || id === 'bear' ? 1 : ((card(t).ability || {}).cost || 1); }
+function abilityCost(S, t, id) { return id === 'shapeWork' || id === 'shapeStart' ? 2 : id === 'pollinate' || id === 'bear' || id === 'visit' ? 1 : ((card(t).ability || {}).cost || 1); }
 function folioPlays(S, side, c, d) {
   const out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
   if (d.spell === 'feast') { const tg = mine.filter(t => feastable(S, t)).map(t => t.id); for (const f of mine.filter(o => card(o).id === 'token.fruit')) for (const ts of combos(tg, 1, 2)) out.push({ type: 'spell', card: c.pid, sacrifice: f.id, targets: ts }); }
@@ -1233,6 +1239,213 @@ function folioWhy(S, act) {
   return null;
 }
 
+// ---------- V32 The Workshop (Volume II) — capacity, R, V, H, W5. Each lives behind its own format module ----------
+const V32_MODS = new Set(['visit', 'visit_draw', 'heat', 'w5']);
+// Field capacity: five general spaces (rc1); 'cap6' six general; 'supply' five general + one supply space restricted to
+// stock and products; 'supply4' four general + one supply. Every space is an ordinary public, targetable Thing space.
+const SUPPLY_OK = new Set(['earth.clay', 'earth.copper', 'earth.silver', 'earth.garnet', 'earth.setting', 'made.signet', 'token.fruit', 'token.cider']);
+function capGeneral(S) { const m = S.rules.modules || []; return m.includes('cap6') ? 6 : m.includes('supply4') ? 4 : FORMAT.slots; }
+function capSupply(S) { const m = S.rules.modules || []; return m.includes('supply') || m.includes('supply4') ? 1 : 0; }
+function capTotal(S) { return capGeneral(S) + capSupply(S); }
+// can `side` take one more Thing of current form `id` (null = any form)?
+function hasRoom(S, side, id) {
+  const mine = S.things.filter(t => t.ctrl === side);
+  if (!capSupply(S)) return mine.length < capGeneral(S);
+  const sup = mine.filter(t => t.supply).length, gen = mine.length - sup;
+  return gen < capGeneral(S) || (sup < capSupply(S) && (id == null || SUPPLY_OK.has(id)));
+}
+function assignSpaces(S) { // new arrivals take a general space first, otherwise the supply space; ineligible occupants move or are displaced
+  if (!capSupply(S)) return;
+  for (const side of [0, 1]) {
+    const mine = S.things.filter(t => t.ctrl === side);
+    for (const t of mine) {
+      if (t.supply && !SUPPLY_OK.has(card(t).id)) { // a form change made the occupant ineligible
+        const gen = mine.filter(o => !o.supply).length;
+        if (gen < capGeneral(S)) { t.supply = false; t.displaced = false; event(S, 'space-move', { tid: t.id }); } else if (!t.displaced) { t.displaced = true; event(S, 'displaced', { tid: t.id }); }
+      } else if (t.displaced && SUPPLY_OK.has(card(t).id)) t.displaced = false;
+    }
+    for (const t of mine.filter(t => t.supply === undefined)) {
+      const gen = mine.filter(o => o.supply === false).length;
+      t.supply = gen >= capGeneral(S) && SUPPLY_OK.has(card(t).id);
+    }
+  }
+}
+// R — who can act in combat. Permissions on exact current forms; everything else keeps B behaviour. Printed strike stays
+// for numeric tests (Gust etc.); Awaken grants all three. rfruit = Fruit only; r6 = six core rows; rext = + extensions.
+const R_ROWS = {
+  rfruit: { 'token.fruit': [0, 0, 0] },
+  r6: { 'life.wolf': [1, 1, 1], 'life.bee': [0, 0, 0], 'life.oak': [0, 1, 0], 'earth.silver': [0, 0, 0], 'earth.garnet': [0, 0, 0], 'token.fruit': [0, 0, 0] },
+  rext: { 'fire.smith': [0, 0, 0], 'word.scribe': [0, 0, 0], 'life.pear': [0, 0, 0], 'life.hazel': [0, 0, 0], 'rot.mould': [0, 0, 0], 'earth.copper': [0, 0, 0], 'earth.setting': [0, 0, 0], 'made.signet': [0, 0, 0], 'air.wind': [0, 0, 0] },
+};
+const PERM_K = { strike: 0, intercept: 1, retaliate: 2 };
+function rowFor(S, id) {
+  const m = S.rules.modules || []; let row;
+  if (m.includes('rfruit') || m.includes('r6') || m.includes('rext')) row = R_ROWS.rfruit[id];
+  if (m.includes('r6') || m.includes('rext')) row = R_ROWS.r6[id] || row;
+  if (m.includes('rext')) row = R_ROWS.rext[id] || row;
+  return row;
+}
+function perm(S, t, k) {
+  if (!S.rules.modules || !S.rules.modules.length) return true;
+  if ((t.extraProps || []).includes('body') && t.counters.might) return true; // Awaken: explicit grant of all three
+  const row = rowFor(S, card(t).id); return row ? !!row[PERM_K[k]] : true;
+}
+function permWhy(S, t) { const row = rowFor(S, card(t).id); if (!row || ((t.extraProps || []).includes('body') && t.counters.might)) return null; const no = Object.keys(PERM_K).filter(k => !row[PERM_K[k]]); return no.length ? `under the role overlay ${card(t).id.split('.')[1]} cannot ${no.join(', ')}` : null; }
+
+// V and H — explicit, public invitations. Planned during Main ("open at End"), opened at End if still valid, last until the
+// owner's next Renew. One invitation per End across V and H. Opening grants nothing; the visitor always may decline.
+function invitationWhy(S, side, kind, hostId) {
+  const p = S.players[side];
+  if (kind === 'orchard') {
+    if (!(folioOn(S, 'visit') || folioOn(S, 'visit_draw'))) return 'visiting orchards is not part of this format';
+    const h = thingById(S, hostId);
+    if (!h || h.ctrl !== side || h.owner !== side || h.status.concealed) return 'open one of your own visible trees';
+    if (trait(S, h, 'pollination') !== 'insect' || !prop(h, 'orchard')) return `${nameOf(h)} is not insect-pollinated, so a visiting Bee could not use it`;
+    if (hasFruit(S, side)) return 'you already have a Fruit, so a visit could not make one';
+    if (!hasRoom(S, side, 'token.fruit')) return 'you have no free space for the Fruit a visit would make';
+    return null;
+  }
+  if (kind === 'heat') {
+    if (!folioOn(S, 'heat')) return 'lending heat is not part of this format';
+    if (!p.ground || !['fire.fire', 'fire.torch'].includes(p.ground.word)) return 'you need Fire or Torch as your Ground to lend heat';
+    return null;
+  }
+  return 'unknown invitation';
+}
+function openInvitation(S, p) {
+  const plan = p.invitePlan; p.invitePlan = null;
+  if (invitationWhy(S, p.i, plan.kind, plan.host)) { event(S, 'invite-void', { side: p.i, kind: plan.kind }); return; }
+  S.invites = (S.invites || []).filter(x => x.owner !== p.i);
+  const inv = { id: 'inv' + (++S.seq), kind: plan.kind, owner: p.i, host: plan.kind === 'orchard' ? plan.host : null, groundPid: plan.kind === 'heat' ? p.ground.pid : null };
+  S.invites.push(inv); event(S, 'invite-open', { side: p.i, kind: inv.kind, host: inv.host });
+}
+const openInvite = (S, owner, kind) => (S.invites || []).find(x => x.owner === owner && x.kind === kind);
+function visitWhy(S, side, bee, host) {
+  const p = S.players[side], inv = host && openInvite(S, host.ctrl, 'orchard');
+  if (!bee || bee.ctrl !== side) return 'choose your own Bee';
+  if (trait(S, bee, 'carrier') !== 'insect') return `${nameOf(bee)} is not an insect carrier`;
+  if (!wingFlight(S, bee)) return `${nameOf(bee)} needs working wings to visit${bee.status.wet ? ' (it is Wet)' : ''}`;
+  if (!canAct(S, bee)) return `${nameOf(bee)} must be mature and ready`;
+  if (!host || host.ctrl === side) return 'a visit goes to the rival\'s orchard';
+  if (!inv || inv.host !== host.id) return `the rival has not opened ${nameOf(host)} to visitors`;
+  if (hasFruit(S, host.ctrl)) return 'the host already has a Fruit';
+  if (!hasRoom(S, host.ctrl, 'token.fruit')) return 'the host has no room for the Fruit';
+  if (p.deck.length < 2) return 'you need at least two cards in your deck to read';
+  if (folioOn(S, 'visit_draw') && p.hand.length >= FORMAT.handCap) return 'your hand is full, so you could not draw';
+  if (p.visitTurn === p.personalTurn) return 'you have already tried a visit this turn';
+  if (p.breath < 1) return 'a visit costs 1 breath';
+  return null;
+}
+function hotworkWhy(S, side, metal) {
+  const p = S.players[side], inv = openInvite(S, 1 - side, 'heat'), host = S.players[1 - side];
+  if (!inv) return 'the rival has not offered its heat';
+  if (!host.ground || host.ground.pid !== inv.groundPid) return 'the offered heat source is gone';
+  if (p.hotworkTurn === p.personalTurn) return 'you have already borrowed heat this turn';
+  if (p.spark < 1) return 'borrowing heat pays the host 1 spark; you have none';
+  if (host.spark >= FORMAT.sparkCap) return 'the host already holds 5 spark and cannot take the fee';
+  if (p.breath < 1) return 'borrowing heat costs 1 breath';
+  return shapeWhy(S, side, metal);
+}
+function v32Options(S, side) {
+  const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
+  if (!p.invitePlan) {
+    if (folioOn(S, 'visit') || folioOn(S, 'visit_draw')) for (const h of mine) if (!invitationWhy(S, side, 'orchard', h.id)) out.push({ type: 'invite', kind: 'orchard', host: h.id });
+    if (folioOn(S, 'heat') && !invitationWhy(S, side, 'heat')) out.push({ type: 'invite', kind: 'heat' });
+  }
+  if (folioOn(S, 'visit') || folioOn(S, 'visit_draw')) for (const b of mine) for (const h of foes) if (!visitWhy(S, side, b, h)) out.push({ type: 'ability', subject: b.id, ability: 'visit', target: h.id });
+  if (folioOn(S, 'heat')) for (const m of mine) if (!hotworkWhy(S, side, m)) out.push({ type: 'hotwork', target: m.id });
+  if (folioOn(S, 'w5')) for (const c of w5Claims(S, side)) out.push(c);
+  return out;
+}
+function resolveVisit(S, n, host) {
+  const side = n.side, bee = thingById(S, n.act.subject), p = S.players[side];
+  if (!bee || bee.ctrl !== side || !wingFlight(S, bee)) return false;
+  if (!host || host.ctrl === side) return false;
+  const inv = openInvite(S, host.ctrl, 'orchard'); if (!inv || inv.host !== host.id) return false;
+  if (hasFruit(S, host.ctrl) || !hasRoom(S, host.ctrl, 'token.fruit')) return false;
+  S.invites = S.invites.filter(x => x !== inv); // the visit closes the invitation
+  const f = createToken(S, host.ctrl, 'token.fruit'); if (!f) return false;
+  f.cropOf = host.id; f.visitedBy = bee.id; event(S, 'visited', { visitor: side, bee: bee.id, host: host.id, fruit: f.id });
+  if (folioOn(S, 'visit_draw')) drawCard(S, p); // the draw arm: never combined with the reorder reward
+  else if (p.deck.length >= 2) { // private: inspect and reorder the top two
+    const top = p.deck.slice(-2).reverse(), orders = [[0, 1], [1, 0]];
+    const k = decide(S, side, 'reorder', orders.map(o => o.map(i => top[i].word)), 0);
+    const pick = orders[k] || orders[0]; const newTop = pick.map(i => top[i]);
+    p.deck.splice(-2, 2, newTop[1], newTop[0]);
+  }
+  return true;
+}
+function declareHotwork(S, p, act, node) {
+  const host = S.players[1 - p.i], inv = openInvite(S, host.i, 'heat');
+  p.hotworkTurn = p.personalTurn; p.spark -= 1; host.spark = Math.min(FORMAT.sparkCap, host.spark + 1); // the fee is paid on declaration
+  S.stats.res[p.i].sparkSpent = (S.stats.res[p.i].sparkSpent || 0) + 1; S.stats.res[host.i].sparkGained = (S.stats.res[host.i].sparkGained || 0) + 1;
+  S.invites = S.invites.filter(x => x !== inv); node.groundPid = inv.groundPid; // invitation consumed at declaration
+  event(S, 'heat-fee', { from: p.i, to: host.i });
+}
+function resolveHotwork(S, n) {
+  const side = n.side, host = S.players[1 - side], m = thingById(S, n.act.target);
+  if (!host.ground || host.ground.pid !== n.groundPid) { event(S, 'folio-failed', { why: 'the heat source is gone' }); return false; } // no refund
+  if (shapeWhy(S, side, m)) return false;
+  toSetting(S, m); event(S, 'hotworked', { side, tid: m.id }); return true;
+}
+// W5 — a tree grown from the wet earth. Life plus one declared work. The World Tree must come from the documented
+// Clay + Water → Swamp, Seed + Swamp → Life, Oak + Life → World Tree chain, and must already have given Growth at upkeep to a
+// different, exact friendly Living Thing that still bears Growth. Declare (2 breath, own Main, once per turn, one open claim);
+// it completes at the claimant's next start of Main after a full rival turn, after every ordinary terminal check.
+function w5Chain(t) {
+  if (card(t).id !== 'made.world_tree' || !t.lineage) return false;
+  const life = t.lineage.find(r => r.made && r.form === 'made.life'); if (!life) return false;
+  return (life.lineage || []).some(r => r.made && r.form === 'made.swamp');
+}
+function w5Why(S, side, tree, ben) {
+  const p = S.players[side];
+  if (!folioOn(S, 'w5')) return 'the World Tree work is not part of this format';
+  if (!tree || card(tree).id !== 'made.world_tree') return 'you need a World Tree';
+  if (tree.ctrl !== side || tree.owner !== side) return 'the World Tree must be yours';
+  if (!w5Chain(tree)) return 'this World Tree was not grown from Clay + Water (Swamp) and Seed (Life)';
+  if (!(tree.wtGrants || []).length) return 'the World Tree has not yet given Growth at your upkeep';
+  if (!ben || ben === tree || ben.ctrl !== side || !prop(ben, 'living')) return 'choose the friendly Living Thing it grew';
+  if (!(tree.wtGrants || []).includes(ben.id)) return `the World Tree has never given Growth to ${nameOf(ben)}`;
+  if (!(ben.counters.growth >= 1)) return `${nameOf(ben)} no longer bears Growth`;
+  if ((S.claims || []).some(c => c.owner === side && c.open)) return 'you already have a work in progress';
+  if (p.claimTurn === p.personalTurn) return 'you have already declared a work this turn';
+  if (p.breath < 2) return 'declaring the work costs 2 breath';
+  return null;
+}
+function w5Claims(S, side) {
+  const out = [], mine = S.things.filter(t => t.ctrl === side);
+  for (const tr of mine.filter(t => card(t).id === 'made.world_tree')) for (const b of mine) if (!w5Why(S, side, tr, b)) out.push({ type: 'claim', work: 'w5', tree: tr.id, target: b.id });
+  return out;
+}
+function resolveClaim(S, n) {
+  const side = n.side, tree = thingById(S, n.act.tree), ben = thingById(S, n.act.target), p = S.players[side];
+  const save = p.claimTurn; p.claimTurn = -1; const bre = p.breath; p.breath = Math.max(p.breath, 2);
+  const why = w5Why(S, side, tree, ben); p.claimTurn = save; p.breath = bre;
+  if (why) { event(S, 'claim-failed', { side, why }); return false; }
+  S.claims = (S.claims || []).concat({ id: 'cl' + (++S.seq), work: 'w5', owner: side, tree: tree.id, ben: ben.id, start: p.personalTurn, earliest: p.personalTurn + 1, open: true });
+  event(S, 'claim-declared', { side, work: 'w5', tree: tree.id, ben: ben.id }); return true;
+}
+function v32StateCheck(S) {
+  assignSpaces(S);
+  if (S.invites) S.invites = S.invites.filter(inv => { // host leaving, changing control or concealing cancels; a heat source must stay
+    if (inv.kind === 'orchard') { const h = thingById(S, inv.host); if (!h || h.ctrl !== inv.owner || h.status.concealed) { event(S, 'invite-cancelled', { side: inv.owner }); return false; } }
+    if (inv.kind === 'heat') { const g = S.players[inv.owner].ground; if (!g || g.pid !== inv.groundPid) { event(S, 'invite-cancelled', { side: inv.owner }); return false; } }
+    return true;
+  });
+  for (const c of (S.claims || []).filter(c => c.open)) {
+    const tree = thingById(S, c.tree), ben = thingById(S, c.ben);
+    const why = !tree || tree.ctrl !== c.owner ? 'the World Tree left' : !ben || ben.ctrl !== c.owner ? 'the beneficiary left' : !(ben.counters.growth >= 1) ? 'the beneficiary lost its Growth' : card(tree).id !== 'made.world_tree' ? 'the World Tree changed form' : null;
+    if (why) { c.open = false; c.closed = 'broken'; event(S, 'claim-broken', { side: c.owner, why }); }
+  }
+}
+function v32StartOfMain(S) { // called after upkeep, draw and every ordinary terminal check of the active player's turn
+  const p = S.players[S.active];
+  for (const c of (S.claims || []).filter(c => c.open && c.owner === p.i && p.personalTurn >= c.earliest)) {
+    v32StateCheck(S); if (!c.open || S.over != null) continue;
+    c.open = false; c.closed = 'completed'; S.over = p.i; S.overCause = 'work'; event(S, 'work-completed', { side: p.i, work: c.work }); say(S, `P${p.i} completes the World Tree work.`);
+  }
+}
+
 // ---------- the Clause (§4.8) ----------
 // ctl: { block(S, info) -> blockerId|null, respond(S, side, kind) -> action|null }  (a bare function is treated as block)
 function normCtl(ctl) { if (typeof ctl === 'function') return { block: ctl, respond: null }; return ctl || {}; }
@@ -1243,9 +1456,10 @@ function declare(S, act, side, kind, ctl) {
   const node = { type: act.type, side, kind, act, card: null, cancelled: false };
   let d = null;
   if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; node.cardPid = node.card.pid; }
-  let cost = d ? d.cost : (act.type === 'attack' ? (S.rules.freeStrike ? 0 : 1) : 0); // §15 Q4 experiment: free basic Strike
+  let cost = d ? ((S.rules.costOverride && S.rules.costOverride[d.id]) || d.cost) : (act.type === 'attack' ? (S.rules.freeStrike ? 0 : 1) : 0); // §15 Q4 experiment: free basic Strike; V32 price lever
   if (act.type === 'fuse') cost = 0; // priced below once ingredients are known
-  if (act.type === 'complete') cost = 1;
+  if (act.type === 'complete' || act.type === 'hotwork') cost = 1;
+  if (act.type === 'claim') cost = 2;
   if (act.type === 'ability') cost = abilityCost(S, thingById(S, act.subject), act.ability);
   if (act.type === 'law') { // compound: Category + Be + Lawful Quality; one sentence, all three costs
     node.extra = [takeCard(p, act.category), takeCard(p, act.qual)];
@@ -1280,6 +1494,9 @@ function declare(S, act, side, kind, ctl) {
     const pid = act.seal.slice(2), k = p.grave.findIndex(g => g.pid === pid); const g = p.grave.splice(k, 1)[0];
     p.sealed.push({ pid: g.pid, word: g.word, owner: g.owner }); event(S, 'sealed', { pid: g.pid, why: 'mould' });
   }
+  if (act.type === 'hotwork') declareHotwork(S, p, act, node);
+  if (act.type === 'claim') p.claimTurn = p.personalTurn;
+  if (act.type === 'ability' && act.ability === 'visit') p.visitTurn = p.personalTurn; // one attempt per visitor per turn, used even if it fails
   if (act.endorse) { const sg = thingById(S, act.endorse); exhaust(sg); sg.actions++; node.endorsed = true; event(S, 'endorse', { tid: sg.id }); } // Writ endorsement is paid at declaration
   if (d && d.spell === 'squall') for (const id of act.targets) { const f = thingById(S, id); exhaust(f); f.actions++; }
   if (act.type === 'ability' && (card(thingById(S, act.subject)).ability || {}).sacrificeSelf && (card(thingById(S, act.subject)).ability || {}).id === act.ability) {
@@ -1300,7 +1517,7 @@ function declare(S, act, side, kind, ctl) {
     node.blocker = blocker ? blocker.id : null;
     if (blocker) { if (blocker.status.concealed) reveal(S, blocker); exhaust(blocker); }
     node.retaliates = false;
-    if (!blocker && tgThing && !tgThing.exhausted && !incapacitated(tgThing) && curStrike(S, tgThing) > 0) { node.retaliates = true; exhaust(tgThing); }
+    if (!blocker && tgThing && !tgThing.exhausted && !incapacitated(tgThing) && curStrike(S, tgThing) > 0 && perm(S, tgThing, 'retaliate')) { node.retaliates = true; exhaust(tgThing); }
   }
   event(S, 'declare', { side, kind, act: { ...act } });
   return node;
@@ -1313,6 +1530,7 @@ function apply(S, act, ctl) {
   if (act.type === 'pass') { endTurn(S); S.hashes.push(hashState(S)); return; }
   if (act.type === 'buy' || act.type === 'catalyst') { economy(S, act); S.hashes.push(hashState(S)); return; } // no response window
   if (act.type === 'abandon') { closeProcess(S, S.active, 'abandoned'); S.hashes.push(hashState(S)); return; } // public housekeeping, no Clause
+  if (act.type === 'invite') { S.players[S.active].invitePlan = { kind: act.kind, host: act.host || null }; event(S, 'invite-planned', { side: S.active, kind: act.kind, host: act.host || null }); S.hashes.push(hashState(S)); return; } // free, public, takes effect at End
   S.clause = { nodes: [] };
   S.clause.nodes.push(declare(S, act, S.active, 'main', ctl));
   stateCheck(S); // cost-generated automatic events resolve before the window
@@ -1393,7 +1611,7 @@ function resolveNode(S, n, k) {
   if (a.type !== 'attack' && a.target && tg === undefined && !special(a.target)) return false; // target left play
   switch (a.type) {
     case 'deploy': {
-      if (S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) return false; // never displace
+      if (!hasRoom(S, side, null)) return false; // never displace
       const c = n.card; n.card = null;
       const t = newThing(S, side, { pid: c.pid, word: c.word, owner: c.owner, attuned: S.arithmetic === 'legacy' && card(c).school === p.main });
       arrive(S, t);
@@ -1470,6 +1688,8 @@ function resolveNode(S, n, k) {
     }
     case 'attack': return resolveAttack(S, n);
     case 'complete': return completeProcess(S, n);
+    case 'hotwork': return resolveHotwork(S, n);
+    case 'claim': return resolveClaim(S, n);
   }
   return false;
 }
@@ -1563,7 +1783,7 @@ function resolveSpell(S, n, d, tg) {
     }
     case 'exhume': {
       const pid = a.target.slice(2), k2 = p.grave.findIndex(x => x.pid === pid);
-      if (k2 < 0 || S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) return false;
+      if (k2 < 0 || !hasRoom(S, side, null)) return false;
       const g = p.grave.splice(k2, 1)[0];
       const t = newThing(S, side, { pid: g.pid, word: g.word, owner: g.owner }); // original form, undamaged, ready and Fresh, normal arrival
       event(S, 'revive', { pid: g.pid }); arrive(S, t); break;
@@ -1632,7 +1852,7 @@ function resolveAttack(S, n) {
   if (n.blocker) {
     recipient = thingById(S, n.blocker);
     if (!recipient) { say(S, `P${n.side}: the blocker is gone; the attack misses.`); return false; } // no redirect
-    if (!incapacitated(recipient)) retaliator = recipient;
+    if (!incapacitated(recipient) && perm(S, recipient, 'retaliate')) retaliator = recipient; // R: an interceptor may be forbidden to strike back
   } else if (a.target === 'ground') {
     ground = enemy(S, n.side).ground;
     if (!ground || ground.pid !== n.groundPid) return false;
@@ -1688,7 +1908,7 @@ function sameAction(a, b) {
 
 function hashState(S) {
   const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map(o => o && o.word), sky: S.sky && S.sky.pid, law: S.law && S.law.cards.map(c => c.pid), bd: S.players.map(p => p.burden && [p.burden.pid, p.burden.ticks]), th: S.things.map(t => [t.id, t.pid, t.form, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status, t.mods, t.lineage && lineagePids(t.lineage).map(r => r.pid), (t.quals || []).map(q => q.pid)]) });
-  const extra = S.rules.modules && S.rules.modules.length ? JSON.stringify(S.things.map(t => [t.id, t.feastTurn || 0, t.cropOf || 0])) + JSON.stringify((S.processes || []).map(x => [x.id, x.open, x.closed || ''])) : ''; // V31 formats only: rc1 hashes unchanged
+  const extra = S.rules.modules && S.rules.modules.length ? JSON.stringify(S.things.map(t => [t.id, t.feastTurn || 0, t.cropOf || 0])) + JSON.stringify((S.processes || []).map(x => [x.id, x.open, x.closed || ''])) + JSON.stringify([S.invites || [], S.claims || [], S.things.map(t => [t.supply ? 1 : 0, t.displaced ? 1 : 0, (t.wtGrants || []).length])]) : ''; // V31 formats only: rc1 hashes unchanged
   const all = pub + extra;
   let h = 2166136261; for (let i = 0; i < all.length; i++) { h ^= all.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16);
 }
@@ -1702,6 +1922,7 @@ const REVISION = { id: 'r30.1', log: [
 
 module.exports = {
   pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost, processOptions,
+  perm, permWhy, hasRoom, capGeneral, capSupply, invitationWhy, visitWhy, hotworkWhy, w5Why, w5Chain,
   REVISION, FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,

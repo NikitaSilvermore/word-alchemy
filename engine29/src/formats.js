@@ -29,6 +29,20 @@ const FORMATS = {
   // V31 model C-life (isolated harness): the orchard's Bear and the workshop's Shape become public, interruptible processes
   // completed at the owner's next Main for 1 breath. Ordinary victory only. Set, Feast, Writ, Mould keep their B timing.
   folio_c_life: { version: '0.31.0-c.life', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'clife'] } },
+  // V32 The Workshop (Volume II). Each module is its own format on top of Expanded Grammar (B = all three V31 modules), rc1
+  // otherwise. Never combined with price34; never two modules at once unless the ID says so.
+  v32_b: { version: '0.32.0-b', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'] } },
+  v32_visit: { version: '0.32.0-visit', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit'] } },
+  v32_visit_draw: { version: '0.32.0-visit-draw', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit_draw'] } },
+  v32_heat: { version: '0.32.0-heat', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'heat'] } },
+  v32_rfruit: { version: '0.32.0-r.fruit', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'rfruit'] } },
+  v32_r6: { version: '0.32.0-r.six', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'r6'] } },
+  v32_rext: { version: '0.32.0-r.ext', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'r6', 'rext'] } },
+  v32_cap6: { version: '0.32.0-cap6', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'cap6'] } },
+  v32_supply: { version: '0.32.0-supply', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'supply'] } },
+  v32_supply4: { version: '0.32.0-supply4', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'supply4'] } },
+  v32_w5: { version: '0.32.0-w5', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'w5'] } },
+  v32_shape1: { version: '0.32.0-shape1', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'], costOverride: { 'earth.shape': 1 } } },
   // Only for comparison with the V28 maths; never for play.
   legacy_v28_maths: { version: '0.28-emulation', status: 'diagnostic', arithmetic: 'legacy', initiative: 'spec', reserve: true, market: true, marketBreath: 0, variant: {} },
 };
