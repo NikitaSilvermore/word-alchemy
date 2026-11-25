@@ -84,3 +84,9 @@
 - Response-aware bot policy (`:ra`), hidden-information tests; C2 rerun.
 - Engine REVISION recorded in replays; pre-Alkahest replay compatibility test; format-version check on replay.
 - REFERENCE_CONFIG.json freezes the V30 control (tag v30-control).
+
+## 0.31.0-folio.1 (branch v31-folio; experiment only)
+- Format modules (`variant.modules`): folio_b_orchard / workshop / decay / garden / all and folio_c_life. rc1 unchanged (replay/digest tripwires pass).
+- Words: Bee, Hazel, Feast, Shape, Garnet, Writ, Mould; forms Setting (transformed), Signet (made, Set recipe); overlays Pear, Wind, Smith.
+- Explained predicates (pollinationWhy, shapeWhy) shared by rules, UI and bots; C-life processes (Bear, Shape).
+- Bots: folio worth, Feast lookahead, builder pilot, process valuation; sim/folio.js paired-deal harness; tools/v31_summary.js.

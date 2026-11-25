@@ -3125,7 +3125,12 @@
           return out * E2.curStrike(S, t) * w.str + Math.max(0, E2.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0) + (w.alchemy || 0) * alchemyWorth(t, S);
         };
         const board = (i) => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E2.groundRemaining(P[i].ground) : 0);
-        const proc = (i) => (w.alchemy || 1) * (S.processes || []).filter((x) => x.open && x.owner === i).reduce((a, x) => a + (x.family === "bear" ? 1.4 : 1), 0);
+        const al = w.alchemy || 1, garnet = (i) => S.things.some((o) => o.ctrl === i && E2.card(o).id === "earth.garnet");
+        const proc = (i) => (S.processes || []).filter((x) => x.open && x.owner === i && !(S.active === i && P[i].personalTurn >= x.earliest)).reduce(
+          /* completable now = lapses at this End unless completed: no stored value */
+          (a, x) => a + 0.6 * Math.max(0, x.family === "bear" ? al * 1.2 + 0.55 : al * (0.6 + (garnet(i) ? 0.6 : 0)) - 0.55),
+          0
+        );
         return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length) - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst) + (S.sky ? S.sky.caster === me ? 1.2 : -1.2 : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0);
       }
       function cardWorth(S, me, word) {
@@ -6453,7 +6458,7 @@
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
       <label>Rival skill<select id="l-tier">${TIERS.map((t) => `<option${t === lobby.tier ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-      <label>Rival style<select id="l-style">${["careful", "aggressive"].map((t) => `<option${t === lobby.style ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Rival style<select id="l-style">${["careful", "aggressive", "builder"].map((t) => `<option${t === lobby.style ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       <label>Rival responses<select id="l-ra">${[["ra", "Response-aware (holds reserve, answers)"], ["", "Reference (rarely responds)"]].map(([v2, l]) => `<option value="${v2}"${v2 === lobby.ra ? " selected" : ""}>${l}</option>`).join("")}</select></label>
       <label>Your seat<select id="l-seat">${[["first", "You start"], ["second", "Rival starts"], ["random", "Seed decides"]].map(([v2, l]) => `<option value="${v2}"${v2 === lobby.seat ? " selected" : ""}>${l}</option>`).join("")}</select></label>
       <label>Seed<span class="inrow"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
