@@ -1561,7 +1561,7 @@ function apply(S, act, ctl) {
   if (!legalActions(S).some(a => sameAction(a, act))) throw new Error('illegal action ' + JSON.stringify(act) + ': ' + whyIllegal(S, act));
   if (act.type === 'pass') { endTurn(S); S.hashes.push(hashState(S)); return; }
   if (act.type === 'buy' || act.type === 'catalyst') { economy(S, act); S.hashes.push(hashState(S)); return; } // no response window
-  if (act.type === 'study') { const p = S.players[S.active]; p.breath -= CORE.studyCost; S.stats.res[p.i].breathSpent += CORE.studyCost; p.studyTurn = p.personalTurn; drawCard(S, p); S.stats.res[p.i].studied = (S.stats.res[p.i].studied || 0) + 1; event(S, 'study', { side: p.i }); say(S, `P${p.i} studies (draws 1).`); S.hashes.push(hashState(S)); return; } // V33: private, no response window
+  if (act.type === 'study') { const p = S.players[S.active]; p.breath -= CORE.studyCost; S.stats.res[p.i].breathSpent += CORE.studyCost; p.studyTurn = p.personalTurn; drawCard(S, p); S.stats.res[p.i].studied = (S.stats.res[p.i].studied || 0) + 1; event(S, 'study', { side: p.i }); say(S, `P${p.i} draws 1 by Study.`); S.hashes.push(hashState(S)); return; } // V33: private, no response window
   if (act.type === 'abandon') { closeProcess(S, S.active, 'abandoned'); S.hashes.push(hashState(S)); return; } // public housekeeping, no Clause
   if (act.type === 'invite') { S.players[S.active].invitePlan = { kind: act.kind, host: act.host || null }; event(S, 'invite-planned', { side: S.active, kind: act.kind, host: act.host || null }); S.hashes.push(hashState(S)); return; } // free, public, takes effect at End
   S.clause = { nodes: [] };

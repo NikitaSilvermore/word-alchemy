@@ -9,9 +9,10 @@ threading.Thread(target=srv.serve_forever, daemon=True).start()
 url = f'http://127.0.0.1:{srv.server_port}/index.html'
 errors = []; rnd = random.Random(7); report = []
 
-def lobby(page):  # an unfinished match now resumes on load: go back to the lobby on purpose
-    page.goto(url); page.wait_for_selector('#lob, .match')
-    if page.query_selector('.match'): page.click('#m-lobby')
+def lobby(page):  # the developer lobby (V33: behind "Developer tools" on the game's front page)
+    page.goto(url); page.wait_for_selector('#lob, .match, .corelob')
+    if page.query_selector('.match'): page.click('#m-lobby'); page.wait_for_selector('#lob, .corelob')
+    if page.query_selector('.corelob'): page.click('#c-dev')
     page.wait_for_selector('#lob')
 
 def visible(page, sel):
@@ -116,7 +117,9 @@ with sync_playwright() as p:
     open(os.path.join(dist, '_sandbox.html'), 'w').write('<iframe id=f sandbox="allow-scripts allow-same-origin" src="index.html" style="width:1200px;height:900px"></iframe>')
     page = br.new_page(viewport={'width': 1240, 'height': 940}); page.on('pageerror', lambda e: errors.append('pageerror: ' + (e.stack or str(e))[:600]))
     page.goto(f'http://127.0.0.1:{srv.server_port}/_sandbox.html'); fr = page.frame_locator('#f')
-    fr.locator('#l-start').click(); fr.locator('.match, .mull').first.wait_for(timeout=5000)
+    fr.locator('#c-play, #m-lobby').first.wait_for(timeout=5000)
+    if fr.locator('#m-lobby').count(): fr.locator('#m-lobby').click()
+    fr.locator('#c-play').click(); fr.locator('.match, .mull').first.wait_for(timeout=5000)
     report.append({'sandboxed_frame_start': 'ok'}); os.remove(os.path.join(dist, '_sandbox.html'))
     br.close()
 print(json.dumps(report, indent=1))

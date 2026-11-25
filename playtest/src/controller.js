@@ -30,7 +30,7 @@ function createController(cfg, hooks = {}) {
     const ctl = {
       block: (S, info) => {
         const side = 1 - info.attacker.ctrl;
-        const v = side === C.human ? take({ type: 'block', side, attacker: info.attacker.id, verb: info.verb, target: info.target ? info.target.id : (info.ground ? 'ground' : 'rival'), candidates: info.candidates.map(b => b.id), bonus: info.bonus }) : botCtl.block(S, info);
+        const v = side === C.human ? take({ type: 'block', side, attacker: info.attacker.id, verb: info.verb, target: info.target ? info.target.id : (info.ground ? 'ground' : 'rival'), candidates: info.candidates.map(b => b.id), bonus: info.bonus, group: info.group || null }) : botCtl.block(S, info);
         log.push({ kind: 'block', side, value: v }); return v;
       },
       respond: (S, side, kind) => {

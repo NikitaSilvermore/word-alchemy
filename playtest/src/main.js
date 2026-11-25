@@ -13,6 +13,9 @@ const SPEC = require('../../engine29/data/spec_catalogue.json');
 const { createController, restoreController } = require('./controller');
 const { FIXTURES } = require('./fixtures');
 const { V2_DECKS } = require('../../engine29/data/v32_decks');
+const { V33_DECKS } = require('../../engine29/data/v33_decks');
+const CORE_FMT = 'v33_core';
+const isCore = () => !!(A.cfg && A.cfg.format === CORE_FMT);
 const SC = require('./scenario');
 const DG = require('../../engine29/src/diagnose');
 const FIXRES = () => Object.assign({}, FIXTURES, { __fromSpec: SC.asFixture }); // resolves both named fixtures and editor scenarios
@@ -24,6 +27,7 @@ const FMT_GROUPS = [
   ['Other test variants', [['grammar_v30_exp_nosentence', 'No spark from sentences'], ['grammar_v30_exp_income2', 'Spark income every second turn'], ['grammar_v30_exp_buy2', 'Buy every second turn'], ['grammar_v30_exp_reserve3', 'Reserve cap 3'], ['grammar_v30_exp_cheapresp', 'Cheaper responses']]],
   ['V31 Living Folio · Expanded Grammar (experiment)', [['folio_b_all', 'All three modules: orchard, workshop, decay'], ['folio_b_orchard', 'Orchard only (Bee, Hazel, Feast)'], ['folio_b_workshop', 'Workshop only (Shape, Garnet, Signet, Writ)'], ['folio_b_garden', 'Orchard + decay (Mould)'], ['folio_b_decay', 'Decay only (Mould)']]],
   ['V31 C-life · persistent processes (isolated experiment)', [['folio_c_life', 'Bear and Shape as public processes (ordinary victory only)']]],
+  ['V33 Core Duel (the game)', [['v33_core', 'The Core Duel — default rules']]],
   ['V32 Workshop · B control', [['v32_b', 'B modules only (orchard, workshop, decay) — the V32 control']]],
   ['V32 · V visit an opposing orchard', [['v32_visit', 'V — visitor reorders its top two'], ['v32_visit_draw', 'V — visitor draws 1 instead (separate arm)']]],
   ['V32 · H borrow the rival\'s heat', [['v32_heat', 'H — 1 breath + 1 spark fee to the host']]],
@@ -33,7 +37,7 @@ const FMT_GROUPS = [
   ['V32 · W5 alternative victory (concept test)', [['v32_w5', 'W5 — World Tree life-plus-work']]],
   ['Earlier', [['grammar_v29_spec', 'V29 specification']]],
 ];
-const VERSION = 'V32 The Workshop research build 1 (on V31 Living Folio)';
+const VERSION = 'V33 The Core Duel · rules ' + F.resolveFormat('v33_core').version;
 const SCHOOLS = ['fire', 'water', 'air', 'earth', 'life', 'rot', 'word'];
 const SCHOOL_NAME = { fire: 'Fire', water: 'Water', air: 'Air', earth: 'Earth', life: 'Life', rot: 'Rot', word: 'The Word' };
 const TIERS = B.TIER_ORDER;
@@ -72,16 +76,25 @@ const FOLIO_TEXT = {
   'rot.mould': 'Living Fungus, Decomposer. Main, 1 breath, exhaust: seal a Plant card of yours that died (destroyed or sacrificed) from your Grave; another friendly Plant gains 1 Growth and 1 age. A discarded Plant or a released ingredient cannot pay.',
 };
 const OVERLAY_TEXT = { 'life.pear': ' Folio: insect-pollinated (a Bee can pollinate it).', 'air.wind': ' Folio: wind carrier (can pollinate Hazel, even when Wet).', 'fire.smith': ' Folio: Main, 2 breath, exhaust: work your Copper or Silver into a Setting (native, cannot be Doubted).' };
-function textOf(id) { const base = FOLIO_TEXT[id] || (SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || ''); const fm = A.C && A.C.S && A.C.S.rules.modules || []; return base + (fm.length && OVERLAY_TEXT[id] && ((id !== 'fire.smith' && fm.includes('orchard')) || (id === 'fire.smith' && fm.includes('workshop'))) ? OVERLAY_TEXT[id] : ''); }
+const CORE_TEXT = {
+  'token.fruit': 'Token. Food. Main, 1 breath, sacrifice the Fruit — choose one: you heal 2 life; or remove 1 poison from a friendly Thing; or restore up to 2 marked damage on an injured friendly Living Thing.',
+  'water.dew': 'Response. Choose a friendly Thing: it becomes Wet (Burning ends), loses 1 poison, and if it is Living it restores up to 2 marked damage. Or remove 1 poison from yourself.',
+  'fire.kindle': 'Response. Friendly Thing +1 strike this turn; if it deals combat damage to a flammable Thing, Ignite it. If you choose your Naphtha, Ignite the Naphtha instead (Wet does not stop it).',
+  'fire.naphtha': 'Non-living Liquid, Flammable. Oil burns on water: Wet does not stop it igniting. The first time it is Ignited: 2 damage to every enemy Thing and 2 to the rival, then Naphtha is destroyed. Ignite it with Kindle.',
+  'fire.drought': 'Weather (2 turns). When called, every Thing stops being Wet. At each upkeep the active player\'s Things dry. Your first Ignite of an enemy Thing each turn also deals 1 damage.',
+  'life.abundance': 'Main. Up to two of your Plants: each gains 1 Growth and ages once (a Seed or Sapling grows a stage when it reaches age 2).',
+  'air.winged': 'Quality. Attach to a friendly Thing that does not already fly: it gains Winged, Flying and Blow.',
+};
+function textOf(id) { if (isCore() && CORE_TEXT[id]) return CORE_TEXT[id]; const base = FOLIO_TEXT[id] || (SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || ''); const fm = A.C && A.C.S && A.C.S.rules.modules || []; return base + (fm.length && OVERLAY_TEXT[id] && ((id !== 'fire.smith' && fm.includes('orchard')) || (id === 'fire.smith' && fm.includes('workshop'))) ? OVERLAY_TEXT[id] : ''); }
 function schoolOf(id) { const c = BY_ID[id]; return c ? c.school : 'word'; }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const TYPE_NAME = { thing: 'Thing', action: 'Action', spell: 'Spell', ground: 'Ground', quality: 'Quality', weather: 'Weather', burden: 'Burden', category: 'Category' };
 
 // ---------- app state ----------
-const A = { view: store.get('wa32.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-const lobby = Object.assign({ ra: 'ra', mine: 'V01_neighbours_orchard', theirs: 'V04_orchard_cellar', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'v32_visit' }, store.get('wa32.lobby') || {});
+const A = { view: store.get('wa33.view') || 'art', names: {}, screen: 'core', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+const lobby = Object.assign({ ra: 'ra', mine: 'V01_neighbours_orchard', theirs: 'V04_orchard_cellar', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'v32_visit' }, store.get('wa33.lobby') || {});
 function allDecks() {
-  const custom = store.get('wa32.custom') || {};
+  const custom = store.get('wa33.custom') || {};
   const out = [];
   for (const [k, v] of Object.entries(REFERENCE_DECKS)) out.push({ id: k, group: 'Reference decks (frozen)', label: k.replace(/_/g, ' ') + ' — ' + v.rival, words: v.words });
   for (const [k, v] of Object.entries(THEMED)) out.push({ id: k, group: 'Themed test decks', label: k.slice(2).replace(/_/g, ' '), words: v });
@@ -115,7 +128,7 @@ function startFixture(id, fx) {
 }
 function save() {
   if (!A.C || A.review) return;
-  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa32.last', rep); store.set('wa32.left', false);
+  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa33.last', rep); store.set('wa33.left', false);
 }
 function stopBot() { if (A.botTimer) { clearTimeout(A.botTimer); A.botTimer = null; } }
 function driveBot() {
@@ -132,7 +145,7 @@ function baseCands() {
   const C = A.C; if (!C) return [];
   if (C.pending && C.pending.type === 'respond') return C.pending.options;
   if (C.pending || !C.S || C.S.over != null || C.S.active !== C.human || A.review) return [];
-  return E.legalActions(C.S).filter(a => a.type !== 'pass');
+  return E.legalActions(C.S).filter(a => a.type !== 'pass' && a.type !== 'combat' && a.type !== 'study');
 }
 function anchorMatch(a, an) {
   if (!an) return true;
@@ -221,6 +234,8 @@ function describe0(S, a) {
   const tgt = a.target != null ? ' → ' + targetLabel(S, a.target) : a.targets ? ' → ' + a.targets.map(x => thingName(S, x)).join(', ') : '';
   switch (a.type) {
     case 'pass': return 'End turn';
+    case 'study': return 'Study: draw 1 word';
+    case 'combat': return 'Attack the rival with ' + a.attackers.map(x => thingName(S, x)).join(', ');
     case 'invite': return a.kind === 'orchard' ? 'Open ' + thingName(S, a.host) + ' to visiting Bees at your End' : 'Lend your heat (' + nm(S.players[S.active].ground ? S.players[S.active].ground.word : '') + ') at your End';
     case 'hotwork': return 'Borrow the rival\'s heat: work ' + thingName(S, a.target) + ' into a Setting';
     case 'claim': return 'Declare the work: World Tree ' + thingName(S, a.tree) + ' with ' + thingName(S, a.target);
@@ -250,7 +265,9 @@ function costOf(S, a) {
   if (a.type === 'ability') { const t = S.things.find(x => x.id === a.subject); return t ? E.abilityCost(S, t, a.ability) + ' breath' + (a.ability === 'pollinate' ? ' (exhausts the carrier)' : a.seal ? ' + seal a dead Plant' : '') : ''; }
   if (a.type === 'law') return [a.card, a.category, a.qual].reduce((s, pid) => s + BY_ID[cardWord(S, pid)].cost, 0) + ' breath';
   if (a.card) { const w = cardWord(S, a.card); return BY_ID[w].cost + (A.C.pending && A.C.pending.type === 'respond' && A.C.pending.kind === 'response' ? ' reserve' : ' breath'); }
-  if (a.type === 'attack') return '1 breath';
+  if (a.type === 'attack') return isCore() ? (a.card ? BY_ID[cardWord(S, a.card)].cost + ' breath' : 'free') : '1 breath';
+  if (a.type === 'combat') return 'free';
+  if (a.type === 'study') return '2 breath';
   if (a.type === 'invite') return 'free (an invitation, not a promise)';
   if (a.type === 'hotwork') return '1 breath + 1 spark paid to the rival on declaration (kept if interrupted)';
   if (a.type === 'claim') return '2 breath (kept if interrupted)';
@@ -336,6 +353,7 @@ function thingWhy(S, t) {
     if (p.life >= 30 && !S.things.some(o => o.ctrl === A.C.human && o.status.poison)) return 'Eating a Fruit heals 2 life or cures 1 poison: your life is full and nothing of yours is poisoned. You can keep it to block, or spend it on Feast.';
   }
   const r = actorWhy(S, t); if (r) return `${n} ${r}.`;
+  if (isCore()) return E.caps(S, t).has('strike') && E.curStrike(S, t) > 0 ? `${n} is ready. Attacks go at the rival together: press Attack and choose who joins. Attacking a Thing needs a word that says so (Bite, Crush, Scorch, Burn…).` : `${n} does not attack (no strike). It can still block.`;
   if (!E.caps(S, t).has('strike')) return `${n} has no Body, so it cannot Strike.${E.card(t).ability ? '' : ' It can still block.'}`;
   if (p.breath < 1) return `A Strike costs 1 breath; you have none left.`;
   const w = E.whyIllegal(S, { type: 'attack', subject: t.id, verb: 'strike', target: 'rival' });
@@ -404,6 +422,7 @@ function handCard(S, c, o = {}) {
 // ---------- render ----------
 const root = () => document.getElementById('app');
 function render() {
+  if (A.screen === 'core') return renderCoreLobby();
   if (A.screen === 'lobby') return renderLobby();
   if (A.screen === 'editor') return renderEditor();
   if (A.screen === 'fixtures') return renderFixtures();
@@ -417,9 +436,9 @@ function render() {
 function renderLobby() {
   const decks = allDecks(), groups = [...new Set(decks.map(d => d.group))];
   const opts = sel => groups.map(g => `<optgroup label="${esc(g)}">${decks.filter(d => d.group === g).map(d => `<option value="${esc(d.id)}"${d.id === sel ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</optgroup>`).join('');
-  const last = store.get('wa32.last');
+  const last = store.get('wa33.last');
   root().innerHTML = `<main class="lobby">
-    <header class="lob-head"><h1>The Workshop</h1>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}<p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
+    <header class="lob-head"><p><button class="lnk" id="l-back">← Back to the game</button></p><h1>Developer tools</h1><p class="small">Not part of the game. Earlier research versions, seeds, replays, fixtures and the scenario editor.</p>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}<p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
     <form id="lob" class="lob-grid">
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
@@ -437,18 +456,57 @@ function renderLobby() {
     <section class="lob-decks"><h2>${esc(deckById(lobby.mine).label)}</h2><p class="dl">${deckById(lobby.mine).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p>
     <h2>${esc(deckById(lobby.theirs).label)}</h2><p class="dl">${deckById(lobby.theirs).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p></section>
   </main>`;
-  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa32.lobby', lobby); };
+  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa33.lobby', lobby); };
   const v = id => document.getElementById(id).value;
   for (const id of ['l-mine', 'l-theirs', 'l-tier', 'l-style', 'l-ra', 'l-seat', 'l-seed', 'l-format']) document.getElementById(id).addEventListener('change', () => { upd(); if (id === 'l-mine' || id === 'l-theirs') renderLobby(); });
+  document.getElementById('l-back').onclick = () => { A.screen = 'core'; render(); };
   document.getElementById('l-dice').onclick = () => { document.getElementById('l-seed').value = 1 + Math.floor(Math.random() * 99999); upd(); };
   // artifact frames are sandboxed without form submission, so the form never submits: Start is a plain button
   document.getElementById('lob').onsubmit = e => { e.preventDefault(); };
   document.getElementById('l-start').onclick = () => { upd(); startMatch(); };
   document.getElementById('l-editor').onclick = () => { A.screen = 'editor'; A.ed = A.ed || { words: deckById(lobby.mine).words.slice(), name: 'My test deck', filter: 'all', q: '' }; render(); };
   document.getElementById('l-fix').onclick = () => { A.screen = 'fixtures'; render(); };
-  document.getElementById('l-scen').onclick = () => { A.scen = A.scen || store.get('wa32.scenario') || SC.blank(); A.screen = 'scenario'; render(); };
+  document.getElementById('l-scen').onclick = () => { A.scen = A.scen || store.get('wa33.scenario') || SC.blank(); A.screen = 'scenario'; render(); };
   document.getElementById('l-load').onclick = () => { A.screen = 'match'; A.modal = { kind: 'load' }; if (!A.C) { A.screen = 'lobby'; } render(); if (!A.C) renderModalOver(); };
   if (last) document.getElementById('l-resume').onclick = () => resumeFrom(last, last.result != null);
+}
+// ---------- V33: the one ordinary way to play ----------
+const core = Object.assign({ mine: 'orchard', theirs: 'furnace', skill: 'journeyman', seat: 'random' }, store.get('wa33.core') || {});
+const SKILL = [['initiate', 'Gentle', 'Plays fair but misses things'], ['journeyman', 'Steady', 'Plays solidly, answers when it can'], ['expert', 'Sharp', 'Looks a turn ahead']];
+function startCore() {
+  stopBot(); const seed = 1 + Math.floor(Math.random() * 99999);
+  const first = core.seat === 'first' ? 0 : core.seat === 'second' ? 1 : seed % 2;
+  const d1 = V33_DECKS[core.mine], d2 = V33_DECKS[core.theirs];
+  const cfg = { format: CORE_FMT, decks: [d1.words, d2.words], deckNames: [d1.name, d2.name], seed, first, humanSide: 0, botPolicy: 'careful:' + core.skill + ':ra' };
+  A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.review = null; A.screen = 'match'; A.combat = null; A.C.start(); render();
+}
+function renderCoreLobby() {
+  const last = store.get('wa33.last');
+  const deckCard = (k, sel, name) => { const d = V33_DECKS[k]; const sch = [...new Set(d.words.map(w => schoolOf(w)))]; return `<button class="deckpick${sel === k ? ' on' : ''}" data-pick="${name}:${k}" aria-pressed="${sel === k}"><span class="dp-n">${esc(d.name)}</span><span class="dp-s">${sch.map(x => `<span class="dot s-${x}"></span>${SCHOOL_NAME[x]}`).join(' ')}</span><span class="dp-p">${esc(d.pitch)}</span></button>`; };
+  root().innerHTML = `<main class="lobby corelob">
+    <header class="lob-head"><h1>Word Alchemy</h1><p class="sub">The Core Duel</p>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}</header>
+    <section><h2>Your deck</h2><div class="picks">${Object.keys(V33_DECKS).map(k => deckCard(k, core.mine, 'mine')).join('')}</div></section>
+    <section><h2>Your opponent</h2><div class="picks">${Object.keys(V33_DECKS).map(k => deckCard(k, core.theirs, 'theirs')).join('')}</div>
+      <div class="optrow"><span>Skill</span>${SKILL.map(([v, l, t]) => `<button class="seg${core.skill === v ? ' on' : ''}" data-skill="${v}" title="${esc(t)}">${l}</button>`).join('')}
+      <span>Who starts</span>${[['random', 'Random'], ['first', 'You'], ['second', 'Opponent']].map(([v, l]) => `<button class="seg${core.seat === v ? ' on' : ''}" data-seat="${v}">${l}</button>`).join('')}</div></section>
+    <div class="btns big"><button id="c-play" class="go">Play</button>${last && last.format === CORE_FMT && last.result == null ? '<button id="c-resume">Continue your match</button>' : ''}</div>
+    <details class="howto"><summary>How to play (one minute)</summary><ul>
+      <li>Win by bringing the rival from 30 life to 0. Each turn you get breath (shown large under your side). Words cost breath.</li>
+      <li>Bring forth Things, lay a Ground, speak Spells and Actions. Each word does exactly what it says.</li>
+      <li><b>Attack</b> once per turn, for free: choose any of your ready Things. They all go at the rival and become exhausted, so they cannot block on the rival's turn. The rival chooses blockers.</li>
+      <li>Attacks never pick a Thing. To hit a Thing you need a word that says so — Bite, Crush, Scorch, Burn, Calcine, Gust…</li>
+      <li><b>Study</b>: 2 breath, once per turn, draw a word.</li>
+      <li>Words marked Response can be spoken on the rival's turn using reserve (breath you kept).</li>
+    </ul></details>
+    <p class="devlink"><button class="lnk" id="c-dev">Developer tools</button> <small>${esc(VERSION)}</small></p>
+  </main>`;
+  const save = () => store.set('wa33.core', core);
+  for (const b of document.querySelectorAll('[data-pick]')) b.onclick = () => { const [w, k] = b.dataset.pick.split(':'); core[w] = k; save(); render(); };
+  for (const b of document.querySelectorAll('[data-skill]')) b.onclick = () => { core.skill = b.dataset.skill; save(); render(); };
+  for (const b of document.querySelectorAll('[data-seat]')) b.onclick = () => { core.seat = b.dataset.seat; save(); render(); };
+  document.getElementById('c-play').onclick = startCore;
+  const rs = document.getElementById('c-resume'); if (rs) rs.onclick = () => resumeFrom(last, false);
+  document.getElementById('c-dev').onclick = () => { A.screen = 'lobby'; A.flash = null; render(); };
 }
 function renderModalOver() { A.modal = { kind: 'load' }; renderModal(); }
 
@@ -473,12 +531,17 @@ function infoStrip(S, side) {
   return `<div class="strip ${me ? 'me' : 'them'}${S.active === side ? ' active' : ''}" data-rival="${me ? '' : 'rival'}">
     <span class="who">${me ? 'You' : 'Rival'}${S.first === side ? ' · started' : ''}${S.active === side && S.over == null ? ' · to act' : ''}</span>
     <button class="life${me ? '' : ' tgt'}" data-target="${me ? 'self' : 'rival'}" aria-label="${me ? 'Your' : 'Rival'} life ${p.life}"><b>${p.life}</b><small>life</small></button>
-    ${it('breath', p.breath)}${it('reserve', p.reserve)}${it('spark', p.spark + '/5')}${it('catalyst', p.catalyst)}
+    ${isCore() ? breathBlock(S, p, me) + it('catalyst', p.catalyst + ' (fixed)') : it('breath', p.breath) + it('reserve', p.reserve) + it('spark', p.spark + '/5') + it('catalyst', p.catalyst)}
     ${it('hand', p.hand.length)}${it('deck', p.deck.length)}
     <button class="pip lnk" data-zone="grave:${side}"><b>${p.grave.length}</b><small>grave</small></button><button class="pip lnk" data-zone="sealed:${side}"><b>${p.sealed.length}</b><small>sealed</small></button>
     ${p.poison ? it('poison', p.poison, ' bad') : ''}${p.burden ? `<span class="pip bad"><b>${esc(nm(p.burden.word))}</b><small>burden ×${p.burden.ticks}</small></span>` : ''}
     ${p.fatigue ? it('fatigue', p.fatigue, ' bad') : ''}<span class="schools">${p.schools.map(s => `<span class="dot s-${s}" title="${SCHOOL_NAME[s]}"></span>${SCHOOL_NAME[s]}`).join(' ')}</span>
   </div>`;
+}
+function breathBlock(S, p, me) {
+  const pend = A.pendingCost && me ? A.pendingCost : 0, n = p.breath;
+  const pips = Array.from({ length: Math.max(n, 1) }, (_, k) => `<i class="bp${k >= n - pend && k < n ? ' spend' : ''}${n === 0 ? ' none' : ''}"></i>`).join('');
+  return `<span class="breath" aria-label="${me ? 'Your' : 'Rival'} breath ${n}, reserve ${p.reserve}"><b>${n}</b><span class="bl">breath</span><span class="bpips">${pips}</span><span class="rsv">reserve <b>${p.reserve}</b></span></span>`;
 }
 function groundSlot(S, side, hiSet) {
   const g = S.players[side].ground, me = side === A.C.human;
@@ -507,6 +570,7 @@ function renderMatch() {
   const me = C.human, them = 1 - me;
   for (const t of S.things) if (!(t.status.concealed && t.ctrl !== me)) A.names[t.id] = nm(t.form || t.word) + (t.ctrl === me ? '' : ' (rival)');
   const sel = selection(), hiSet = boardTargets(sel);
+  if (A.combat && C.S && C.S.active === C.human) for (const a of E.legalActions(C.S)) if (a.type === 'combat') for (const id of a.attackers) hiSet.add(id);
   if (C.pending && C.pending.type === 'block') for (const id of C.pending.candidates) hiSet.add(id);
   if (C.pending && C.pending.type === 'decide' && ['poisonTarget', 'waterGround'].includes(C.pending.kind)) for (const id of C.pending.options) hiSet.add(id);
   const handHi = new Set(); for (const a of sel.all) { if (a.card) handHi.add(a.card); if (a.category) handHi.add(a.category); if (a.qual) handHi.add(a.qual); }
@@ -515,12 +579,12 @@ function renderMatch() {
   root().innerHTML = `<div class="match">
   <header class="top">
     <button class="ghost" id="m-lobby">Lobby</button>
-    <span class="title">The Workshop <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
-    <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} · seed ${esc(A.cfg.seed)} · round ${S.round} · turn ${S.turn}${A.review ? ' · reviewing' : ''}</span>
+    <span class="title">${isCore() ? 'The Core Duel' : 'Developer match'} <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
+    <span class="meta">${isCore() ? '' : esc(A.cfg.format) + ' ' + esc(fmt.version) + ' · seed ' + esc(A.cfg.seed) + ' · '}round ${S.round}${A.review ? ' · reviewing' : ''}</span>
     <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== 'text' ? ' selected' : ''}>Art</option><option value="text"${A.view === 'text' ? ' selected' : ''}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? ' checked' : ''}> Auto-pass my responses</label>
     <label class="tog">Rival speed <select id="m-speed">${[[250, 'fast'], [600, 'normal'], [1100, 'slow']].map(([v, l]) => `<option value="${v}"${A.speed === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-    <button class="ghost" id="m-export">Export replay</button><button class="ghost" id="m-rematch">Rematch</button><button class="ghost" id="m-swap">Swap seats</button>
+    <button class="ghost" id="m-export">Export replay</button><button class="ghost" id="m-rematch">${isCore() ? 'New match' : 'Rematch'}</button>${isCore() ? '' : '<button class="ghost" id="m-swap">Swap seats</button>'}
   </header>
   ${A.review ? `<div class="reviewbar"><button id="rv-0">Start</button><button id="rv-p">Back</button><span>Action ${A.review.k} of ${A.review.total}</span><button id="rv-n">Forward</button><button id="rv-e">End</button>${A.C.S.over == null ? '<button id="rv-play" class="go">Play on from here</button>' : ''}</div>` : ''}
   <div class="main">
@@ -535,7 +599,7 @@ function renderMatch() {
     </section>
     <aside class="side">
       <div class="panel act" aria-live="polite">${actionPanel(S, sel, vesselN)}</div>
-      <div class="panel market"><h3>Market</h3>${marketHTML(S, sel)}</div>
+      ${isCore() ? '' : `<div class="panel market"><h3>Market</h3>${marketHTML(S, sel)}</div>`}
       <div class="panel chron"><h3>Chronicle</h3>${chronicleHTML()}</div>
     </aside>
   </div></div>`;
@@ -571,6 +635,17 @@ function actionPanel(S, sel, vesselN) {
   if (S.over != null) return flash + summaryHTML(S);
   if (S.active !== C.human) return flash + `<h3>Rival is thinking…</h3><p>${A.botTimer ? 'Its next sentence follows shortly.' : ''}</p>`;
   const p = S.players[C.human];
+  if (isCore() && A.combat) return flash + combatHTML(S);
+  if (isCore() && !A.sel) {
+    const all = E.legalActions(S), elig = [...new Set(all.filter(a => a.type === 'combat').flatMap(a => a.attackers))], canStudy = all.some(a => a.type === 'study');
+    const used = S.players[C.human].combatTurn === S.players[C.human].personalTurn;
+    return flash + `<h3>Your turn</h3>
+      <p>Click a highlighted word in your hand or one of your Things. ${A.why ? `<span class="why">${esc(A.why)}</span>` : ''}</p>
+      <div class="btns col"><button id="a-attack"${elig.length ? '' : ' disabled'}>Attack the rival — free${elig.length ? ` (${elig.length} ready)` : used ? ' (done this turn)' : ' (no one ready)'}</button>
+      <button id="a-study"${canStudy ? '' : ' disabled'}>Study — draw 1 · 2 breath · ${p.deck.length} in deck</button>
+      <button id="a-vessel"${vesselN ? '' : ' disabled'}>Vessel — fuse${vesselN ? ` (${vesselN})` : ''}</button>
+      <button id="a-end" class="go">End turn${p.breath ? ` — keep ${Math.min(S.rules.reserveCap, p.breath)} as reserve` : ''}</button></div>`;
+  }
   if (!A.sel) {
     return flash + `<h3>Your turn</h3>
       <p>Choose a highlighted word in your hand, one of your Things, a market offer or the Vessel. ${A.why ? `<span class="why">${esc(A.why)}</span>` : ''}</p>
@@ -579,6 +654,15 @@ function actionPanel(S, sel, vesselN) {
       ${vesselN ? '' : '<p class="small">Vessel: no recipe has two ready, owned ingredients with at least one mature Thing, affordable now.</p>'}`;
   }
   return flash + builderHTML(S, sel, false);
+}
+function combatHTML(S) {
+  const all = E.legalActions(S).filter(a => a.type === 'combat'), elig = [...new Set(all.flatMap(a => a.attackers))];
+  const chosen = elig.filter(id => A.combat.has(id)), tot = chosen.reduce((n, id) => n + E.curStrike(S, S.things.find(t => t.id === id)), 0);
+  const foes = S.things.filter(t => t.ctrl !== A.C.human && !t.exhausted && !E.incapacitated(t));
+  return `<h3>Attack the rival</h3><p>Choose who joins — click your highlighted Things or tick below. Attacking is free; every attacker becomes exhausted and cannot block on the rival's turn.</p>
+    <ul class="atk">${elig.map(id => { const t = S.things.find(x => x.id === id); return `<li><label><input type="checkbox" data-atk="${id}"${A.combat.has(id) ? ' checked' : ''}> ${esc(thingName(S, id))} <small>${E.curStrike(S, t)} strike${E.has(S, t, 'flying') ? ' · flying' : ''}</small></label></li>`; }).join('')}</ul>
+    <p class="cost">Up to <b>${tot}</b> damage to the rival if nothing blocks. The rival has ${foes.length} ready Thing${foes.length === 1 ? '' : 's'} that may block (one blocker per attacker; fliers can only be blocked by Flying or Reach).</p>
+    <div class="btns"><button id="c-all">Everyone</button><button id="c-go" class="go"${chosen.length ? '' : ' disabled'}>Attack with ${chosen.length}</button><button id="a-cancel">Cancel</button></div>`;
 }
 function builderHTML(S, sel, inPrompt) {
   const fixed = Object.entries(A.sel.fixed).map(([k, v]) => `<li><span>${esc(KEY_LABEL[k] || k)}</span> ${esc(valueLabel(S, k, JSON.parse(v)))}</li>`).join('');
@@ -594,7 +678,8 @@ function builderHTML(S, sel, inPrompt) {
       ${A.why ? `<p class="why">${esc(A.why)}</p>` : ''}`;
   } else {
     const a = sel.cands[0];
-    body = `<p class="sentence">${esc(describe(S, a))}</p><p class="cost">Cost: ${esc(costOf(S, a) || 'none')}</p>
+    const cst = costOf(S, a) || 'none', nb = /^(\d+) breath/.exec(cst), pB = S.players[A.C.human];
+    body = `<p class="sentence">${esc(describe(S, a))}</p><p class="cost">Cost: <b>${esc(cst)}</b>${nb && !inPrompt ? ` · you will have <b>${pB.breath - +nb[1]}</b> breath left` : ''}${nb && inPrompt && / reserve/.test(cst) ? '' : ''}</p>
       <div class="pred"><b>If ${inPrompt ? 'nothing else answers' : 'unblocked and unanswered'}:</b><ul>${predict(a).map(x => `<li>${esc(x)}</li>`).join('')}</ul><small>A legal declaration is not a guaranteed outcome: blocks, responses and revalidation can change it.</small></div>
       <div class="btns"><button id="a-confirm" class="go">${inPrompt ? 'Respond' : 'Declare'}</button></div>`;
   }
@@ -608,7 +693,7 @@ function promptHTML(S, sel) {
     const tgt = q.target === 'rival' ? 'you' : q.target === 'ground' ? 'your Ground' : thingName(S, q.target);
     const dmg = att ? E.curStrike(S, att) + (q.bonus || 0) : '?';
     const others = S.things.filter(t => t.ctrl === A.C.human && !q.candidates.includes(t.id));
-    return `<h3>Block?</h3><p><b>${esc(att ? thingName(S, att.id) : 'An attacker')}</b> attacks ${esc(tgt)} with ${esc(q.verb)} for ${dmg}. Choose a blocker before any response. A blocker exhausts now and still strikes back.</p>
+    return `<h3>Block?</h3>${q.group ? `<p class="small">Attacker ${q.group.index + 1} of ${q.group.of} · ${q.group.incoming} damage still coming in total · each of your Things can block once</p>` : ''}<p><b>${esc(att ? thingName(S, att.id) : 'An attacker')}</b> attacks ${esc(tgt)} with ${esc(q.verb)} for ${dmg}. Choose a blocker before any response. A blocker exhausts now and still strikes back.</p>
       <div class="choices">${q.candidates.map(id => { const b = S.things.find(t => t.id === id); return `<button data-block="${esc(id)}">${esc(thingName(S, id))} — ${E.curStrike(S, b)} strike, ${E.remainingOf(S, b)} stand left</button>`; }).join('')}<button data-block="null">No block</button></div>
       ${others.length ? `<p class="small">Cannot block: ${others.map(t => esc(nm(t.form || t.word)) + ' (' + esc(blockReason(S, t, att, q)) + ')').join('; ')}.</p>` : ''}`;
   }
@@ -677,10 +762,10 @@ function summaryHTML(S) {
     <tr><td>Life lost to</td><td>${esc(lost(me))}</td><td>${esc(lost(1 - me))}</td></tr>
     <tr><td>Breath spent / wasted</td><td>${t[me].breathSpent} / ${t[me].breathWasted}</td><td>${t[1 - me].breathSpent} / ${t[1 - me].breathWasted}</td></tr>
     <tr><td>Reserve kept / used</td><td>${t[me].reserveKept} / ${t[me].reserveUsed}</td><td>${t[1 - me].reserveKept} / ${t[1 - me].reserveUsed}</td></tr>
-    <tr><td>Spark gained / spent</td><td>${t[me].sparkGained} / ${t[me].sparkSpent}</td><td>${t[1 - me].sparkGained} / ${t[1 - me].sparkSpent}</td></tr>
+    ${isCore() ? '' : '<tr><td>Spark gained / spent</td><td>' + t[me].sparkGained + ' / ' + t[me].sparkSpent + '</td><td>' + t[1 - me].sparkGained + ' / ' + t[1 - me].sparkSpent + '</td></tr>'}
     <tr><td>Drawn / bought</td><td>${t[me].drawn} / ${t[me].bought}</td><td>${t[1 - me].drawn} / ${t[1 - me].bought}</td></tr>
     </tbody></table>
-    <div class="btns"><button id="s-rematch" class="go">Rematch</button><button id="s-swap">Swap seats</button><button id="s-export">Export replay</button><button id="s-lobby">Lobby</button></div>`;
+    <div class="btns"><button id="s-rematch" class="go">${isCore() ? 'Play another' : 'Rematch'}</button>${isCore() ? '' : '<button id="s-swap">Swap seats</button>'}<button id="s-export">Export replay</button><button id="s-lobby">Lobby</button></div>`;
 }
 
 // ---------- inspector ----------
@@ -780,20 +865,25 @@ function renderModal() {
 // ---------- events ----------
 function bindMatch() {
   const C = A.C, on = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
-  on('m-lobby', () => { stopBot(); store.set('wa32.left', true); A.screen = 'lobby'; A.sel = null; render(); });
+  on('m-lobby', () => { stopBot(); store.set('wa33.left', true); A.screen = isCore() ? 'core' : 'lobby'; A.sel = null; A.combat = null; render(); });
   on('m-export', () => { A.modal = { kind: 'export' }; renderModal(); }); on('s-export', () => { A.modal = { kind: 'export' }; renderModal(); });
-  const rematch = swap => { stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id, cfg.fixture); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
+  const rematch = swap => { if (isCore()) return startCore(); stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id, cfg.fixture); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
-  on('s-lobby', () => { stopBot(); A.screen = 'lobby'; render(); });
+  on('s-lobby', () => { stopBot(); A.screen = isCore() ? 'core' : 'lobby'; render(); });
   const ap = document.getElementById('m-autopass'); if (ap) ap.onchange = () => { C.auto.passAll = ap.checked; };
-  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa32.view', A.view); render(); };
+  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa33.view', A.view); render(); };
   const sp = document.getElementById('m-speed'); if (sp) sp.onchange = () => { A.speed = +sp.value; };
   if (A.review) { on('rv-0', () => reviewTo(0)); on('rv-p', () => reviewTo(A.review.k - 1)); on('rv-n', () => reviewTo(A.review.k + 1)); on('rv-e', () => reviewTo(A.review.total)); on('rv-play', () => { A.review = null; render(); }); }
   on('a-end', () => { A.flash = null; A.why = null; C.act({ type: 'pass' }); });
+  on('a-attack', () => { A.combat = new Set(); A.sel = null; A.why = null; render(); });
+  on('a-study', () => { A.flash = null; C.act({ type: 'study' }); });
+  on('c-all', () => { for (const a of E.legalActions(C.S)) if (a.type === 'combat') for (const id of a.attackers) A.combat.add(id); render(); });
+  on('c-go', () => { const elig = [...new Set(E.legalActions(C.S).filter(a => a.type === 'combat').flatMap(a => a.attackers))]; const ids = elig.filter(id => A.combat.has(id)); const act = E.legalActions(C.S).find(a => a.type === 'combat' && J(a.attackers) === J(ids)); A.combat = null; if (act) C.act(act); });
+  for (const b of document.querySelectorAll('[data-atk]')) b.onchange = () => { b.checked ? A.combat.add(b.dataset.atk) : A.combat.delete(b.dataset.atk); render(); };
   on('a-diag', () => { A.modal = { kind: 'diag' }; renderModal(); });
   on('a-vessel', () => { A.sel = { anchor: { kind: 'vessel' }, fixed: {} }; A.why = null; render(); });
   on('a-cat', () => { A.sel = { anchor: { kind: 'catalyst' }, fixed: {} }; render(); });
-  on('a-cancel', () => { A.sel = null; A.why = null; render(); });
+  on('a-cancel', () => { A.sel = null; A.why = null; A.combat = null; render(); });
   on('a-confirm', () => {
     const sel = selection(); if (sel.cands.length !== 1) return;
     const a = sel.cands[0]; A.sel = null; A.why = null; A.flash = null;
@@ -820,6 +910,7 @@ function clickObj(kind, id) {
   const q = C.pending;
   if (q && q.type === 'block') { if (q.candidates.includes(id)) C.answer(id); else if (kind === 'thing') { A.why = 'That Thing cannot block this attack.'; render(); } return; }
   if (q && q.type === 'decide') { const k = q.options.indexOf(id); if (k >= 0) C.answer(k); return; }
+  if (A.combat && kind === 'thing') { const ok = E.legalActions(C.S).some(a => a.type === 'combat' && a.attackers.includes(id)); if (ok) { A.combat.has(id) ? A.combat.delete(id) : A.combat.add(id); render(); } else { A.why = whyNot('thing', id); render(); } return; }
   const sel = selection();
   // a value for the current step?
   if (A.sel && sel.next) {
@@ -831,7 +922,9 @@ function clickObj(kind, id) {
   // otherwise a new anchor
   if (kind === 'card') {
     const has = sel.all.some(a => a.card === id || a.category === id || a.qual === id);
-    A.sel = { anchor: { kind: 'card', id }, fixed: {} }; A.why = has ? null : whyNot('card', id); render(); return;
+    A.sel = { anchor: { kind: 'card', id }, fixed: {} }; A.why = has ? null : whyNot('card', id);
+    if (isCore() && has && !q) { const s2 = selection(); if (s2.cands.length === 1 && ['deploy', 'ground', 'weather'].includes(s2.cands[0].type)) { const a = s2.cands[0]; A.sel = null; C.act(a); return; } } // obvious single action: no extra confirmation
+    render(); return;
   }
   if (kind === 'thing') {
     const t = C.state().things.find(x => x.id === id);
@@ -862,7 +955,7 @@ function renderEditor() {
   for (const b of document.querySelectorAll('[data-add]')) b.onclick = () => { if (ed.words.length < 20) ed.words.push(b.dataset.add); render(); };
   for (const b of document.querySelectorAll('[data-rem]')) b.onclick = () => { ed.words = ed.words.filter(w => w !== b.dataset.rem); render(); };
   for (const b of document.querySelectorAll('[data-inspect-word]')) b.onclick = () => { A.inspect = { word: b.dataset.inspectWord }; renderInspect(); };
-  on('ed-save', () => { const c = store.get('wa32.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa32.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa32.lobby', lobby); A.screen = 'lobby'; render(); });
+  on('ed-save', () => { const c = store.get('wa33.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa33.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa33.lobby', lobby); A.screen = 'lobby'; render(); });
 }
 
 function renderFixtures() {
@@ -920,15 +1013,15 @@ function renderScenario() {
       <div class="btns"><button id="sc-play" class="go"${v.errors.length ? ' disabled' : ''}>Play this position</button><button id="sc-save">Save</button><button id="sc-export">Export JSON</button><button id="sc-import">Import JSON</button><button id="sc-new">Blank</button></div>
       <p class="small">Replays of a scenario carry the whole position, so they always re-run. You play side "You"; the rival uses the lobby's skill and style.</p>
     </section>${sideHTML(0)}${sideHTML(1)}</div></main>`;
-  const upd = () => { store.set('wa32.scenario', sp); render(); };
+  const upd = () => { store.set('wa33.scenario', sp); render(); };
   const g = id => document.getElementById(id);
   g('sc-back').onclick = () => { A.screen = 'lobby'; render(); };
   g('sc-title').onchange = e => { sp.title = e.target.value; upd(); }; g('sc-text').onchange = e => { sp.text = e.target.value; upd(); };
   g('sc-format').onchange = e => { const to = e.target.value, c = comp.find(x => x.id === to); sp.format = to; A.flash = c && !c.ok ? 'Switched — this position is not legal under ' + to + ': ' + c.why : null; upd(); };
   g('sc-active').onchange = e => { sp.active = +e.target.value; upd(); }; g('sc-market').onchange = e => { sp.market = e.target.value; upd(); }; g('sc-seed').onchange = e => { sp.seed = +e.target.value || 7; upd(); };
   g('sc-new').onclick = () => { A.scen = SC.blank(sp.format); upd(); };
-  g('sc-save').onclick = () => { store.set('wa32.scenario', sp); A.flash = 'Saved in this browser.'; render(); };
-  g('sc-play').onclick = () => { store.set('wa32.scenario', sp); startFixture('scenario', SC.asFixture(JSON.parse(JSON.stringify(sp)))); };
+  g('sc-save').onclick = () => { store.set('wa33.scenario', sp); A.flash = 'Saved in this browser.'; render(); };
+  g('sc-play').onclick = () => { store.set('wa33.scenario', sp); startFixture('scenario', SC.asFixture(JSON.parse(JSON.stringify(sp)))); };
   g('sc-export').onclick = () => { A.modal = { kind: 'scexport' }; renderScModal(); };
   g('sc-import').onclick = () => { A.modal = { kind: 'scimport' }; renderScModal(); };
   for (const el of document.querySelectorAll('[data-sv]')) el.onchange = () => { const [i, k] = el.dataset.sv.split(':'); const sd = sp.sides[+i]; if (k === 'list') { Object.assign(sd, { list: el.value, field: [], hand: [], grave: [], deckTop: [], ground: null }); sp.invites = (sp.invites || []).filter(x => x.owner !== +i); } else if (k === 'ground') sd.ground = el.value || null; else if (k === 'deckRest') sd.deckRest = el.value; else sd[k] = +el.value; upd(); };
@@ -953,19 +1046,19 @@ function renderScModal() {
   const close = () => { A.modal = null; el.remove(); };
   el.querySelector('.scrim').onclick = close; el.querySelector('#mo-x').onclick = close; el.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   const cp = el.querySelector('#sx-copy'); if (cp) cp.onclick = async () => { const t = el.querySelector('#sx-t'); try { await navigator.clipboard.writeText(t.value); el.querySelector('#sx-msg').textContent = 'Copied.'; } catch (e) { t.select(); el.querySelector('#sx-msg').textContent = 'Copy was refused here: the text is selected, press Ctrl+C or Cmd+C.'; } };
-  const ld = el.querySelector('#sx-load'); if (ld) ld.onclick = () => { try { const x = JSON.parse(el.querySelector('#sx-t').value); if (!x.sides || x.sides.length !== 2) throw new Error('needs two sides'); A.scen = x; close(); store.set('wa32.scenario', x); render(); } catch (e) { el.querySelector('#sx-msg').textContent = 'Not a scenario: ' + e.message; } };
+  const ld = el.querySelector('#sx-load'); if (ld) ld.onclick = () => { try { const x = JSON.parse(el.querySelector('#sx-t').value); if (!x.sides || x.sides.length !== 2) throw new Error('needs two sides'); A.scen = x; close(); store.set('wa33.scenario', x); render(); } catch (e) { el.querySelector('#sx-msg').textContent = 'Not a scenario: ' + e.message; } };
 }
 
 // ---------- boot ----------
 function boot(data) {
-  if (data && data.last) store.set('wa32.last', data.last);
-  const last = store.get('wa32.last');
-  if (last && last.result == null && !store.get('wa32.left')) { resumeFrom(last, false); return; } // carry on where you left off
+  if (data && data.last) store.set('wa33.last', data.last);
+  const last = store.get('wa33.last');
+  if (last && last.result == null && !store.get('wa33.left')) { resumeFrom(last, false); return; } // carry on where you left off
   render();
 }
 if (typeof window !== 'undefined') {
   window.WA30 = { A, render, startMatch, startFixture, selection, E, SC };
-  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa32.last') }));
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa33.last') }));
   const start = d => boot(d || {});
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start(window.claude && window.claude.hot ? window.claude.hot.data : {});
 }
