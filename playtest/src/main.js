@@ -66,7 +66,7 @@ function allDecks() {
 const deckById = id => allDecks().find(d => d.id === id) || allDecks()[0];
 
 // ---------- the match ----------
-const hooks = { changed: () => { save(); render(); }, prompt: () => render(), error: (C, e) => { A.flash = 'Engine refused that: ' + (C.error || e.message); render(); } };
+const hooks = { changed: () => { save(); render(); }, prompt: () => { save(); render(); }, error: (C, e) => { A.flash = 'Engine refused that: ' + (C.error || e.message); render(); } };
 function startMatch(cfgOverride) {
   stopBot();
   const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
