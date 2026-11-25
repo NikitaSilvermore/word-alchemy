@@ -88,6 +88,24 @@ with sync_playwright() as p:
             for j in range(40):
                 if step(page) == 'over': break
         report.append({'width': width, 'fixtures': n})
+        # V32: diagnostics on a fixture, then the scenario editor end to end (build, play, export, resume by replay)
+        lobby(page); page.click('#l-fix'); page.click('[data-fx=cv_setting]'); page.wait_for_selector('.match'); page.evaluate('() => { WA30.A.speed = 0 }')
+        page.click('#a-diag'); page.wait_for_selector('table.diag'); rows = page.eval_on_selector_all('table.diag tbody tr', 'r => r.map(x => x.innerText)')
+        report.append({'width': width, 'diag_rows': rows}); page.screenshot(path=f'/tmp/smoke_{width}_diag.png'); page.keyboard.press('Escape')
+        lobby(page); page.click('#l-fix'); page.click('[data-fxed=w5_interrupt]'); page.wait_for_selector('.scgrid')
+        page.select_option('#sc-format', 'v32_b'); page.wait_for_selector('.val.bad')
+        bad = page.inner_text('.val'); page.select_option('#sc-format', 'v32_w5'); page.wait_for_selector('.val.ok')
+        page.select_option('[data-sadd="0:hand"]', 'earth.guard'); page.wait_for_selector('.val.ok')
+        page.screenshot(path=f'/tmp/smoke_{width}_scenario.png', full_page=True)
+        page.click('#sc-play'); page.wait_for_selector('.match'); page.evaluate('() => { WA30.A.speed = 0 }')
+        for j in range(60):
+            if step(page) == 'over': break
+        page.click('#m-export'); rep = json.loads(page.input_value('#ex-t')); page.keyboard.press('Escape')
+        assert rep.get('scenario') and rep['scenario']['format'] == 'v32_w5', 'scenario missing from replay'
+        lobby(page); page.click('#l-load'); page.fill('#ld-t', json.dumps(rep)); page.click('#ld-resume'); page.wait_for_selector('.match')
+        h = page.evaluate('() => WA30.A.C.S.hashes.slice(-1)[0]')
+        assert h == rep['finalHash'], ('scenario replay hash mismatch', h, rep['finalHash'])
+        report.append({'width': width, 'scenario': 'ok', 'switch_refusal': bad[:160]})
         lobby(page); page.click('#l-editor'); page.wait_for_selector('.ed-grid'); page.click('[data-f=fire]')
         page.screenshot(path=f'/tmp/smoke_{width}_editor.png')
         lobby(page); page.click('#l-start'); page.wait_for_timeout(400)

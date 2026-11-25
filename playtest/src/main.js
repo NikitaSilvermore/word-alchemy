@@ -12,6 +12,10 @@ const { FOLIO_DECKS, ABLATIONS } = require('../../engine29/data/folio_decks');
 const SPEC = require('../../engine29/data/spec_catalogue.json');
 const { createController, restoreController } = require('./controller');
 const { FIXTURES } = require('./fixtures');
+const { V2_DECKS } = require('../../engine29/data/v32_decks');
+const SC = require('./scenario');
+const DG = require('../../engine29/src/diagnose');
+const FIXRES = () => Object.assign({}, FIXTURES, { __fromSpec: SC.asFixture }); // resolves both named fixtures and editor scenarios
 const ART = new Set(require('./art_index.json'));
 
 const FMT_GROUPS = [
@@ -20,9 +24,16 @@ const FMT_GROUPS = [
   ['Other test variants', [['grammar_v30_exp_nosentence', 'No spark from sentences'], ['grammar_v30_exp_income2', 'Spark income every second turn'], ['grammar_v30_exp_buy2', 'Buy every second turn'], ['grammar_v30_exp_reserve3', 'Reserve cap 3'], ['grammar_v30_exp_cheapresp', 'Cheaper responses']]],
   ['V31 Living Folio · Expanded Grammar (experiment)', [['folio_b_all', 'All three modules: orchard, workshop, decay'], ['folio_b_orchard', 'Orchard only (Bee, Hazel, Feast)'], ['folio_b_workshop', 'Workshop only (Shape, Garnet, Signet, Writ)'], ['folio_b_garden', 'Orchard + decay (Mould)'], ['folio_b_decay', 'Decay only (Mould)']]],
   ['V31 C-life · persistent processes (isolated experiment)', [['folio_c_life', 'Bear and Shape as public processes (ordinary victory only)']]],
+  ['V32 Workshop · B control', [['v32_b', 'B modules only (orchard, workshop, decay) — the V32 control']]],
+  ['V32 · V visit an opposing orchard', [['v32_visit', 'V — visitor reorders its top two'], ['v32_visit_draw', 'V — visitor draws 1 instead (separate arm)']]],
+  ['V32 · H borrow the rival\'s heat', [['v32_heat', 'H — 1 breath + 1 spark fee to the host']]],
+  ['V32 · R combat permissions', [['v32_rfruit', 'R — Fruit only'], ['v32_r6', 'R — six core rows'], ['v32_rext', 'R — six rows + broader overlay']]],
+  ['V32 · field capacity', [['v32_cap6', 'Six general spaces'], ['v32_supply', 'Five general + one supply space'], ['v32_supply4', 'Four general + one supply space']]],
+  ['V32 · creation value', [['v32_shape1', 'Shape costs 1 breath (own configuration)']]],
+  ['V32 · W5 alternative victory (concept test)', [['v32_w5', 'W5 — World Tree life-plus-work']]],
   ['Earlier', [['grammar_v29_spec', 'V29 specification']]],
 ];
-const VERSION = 'V31 Living Folio experiment 1 (on the V30 Crucible 2 build)';
+const VERSION = 'V32 The Workshop research build 1 (on V31 Living Folio)';
 const SCHOOLS = ['fire', 'water', 'air', 'earth', 'life', 'rot', 'word'];
 const SCHOOL_NAME = { fire: 'Fire', water: 'Water', air: 'Air', earth: 'Earth', life: 'Life', rot: 'Rot', word: 'The Word' };
 const TIERS = B.TIER_ORDER;
@@ -67,14 +78,15 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const TYPE_NAME = { thing: 'Thing', action: 'Action', spell: 'Spell', ground: 'Ground', quality: 'Quality', weather: 'Weather', burden: 'Burden', category: 'Category' };
 
 // ---------- app state ----------
-const A = { view: store.get('wa31.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-const lobby = Object.assign({ ra: 'ra', mine: 'O_orchard_crosswind', theirs: 'D3_furnace_wind', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'folio_b_all' }, store.get('wa31.lobby') || {});
+const A = { view: store.get('wa32.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+const lobby = Object.assign({ ra: 'ra', mine: 'V01_neighbours_orchard', theirs: 'V04_orchard_cellar', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'v32_visit' }, store.get('wa32.lobby') || {});
 function allDecks() {
-  const custom = store.get('wa31.custom') || {};
+  const custom = store.get('wa32.custom') || {};
   const out = [];
   for (const [k, v] of Object.entries(REFERENCE_DECKS)) out.push({ id: k, group: 'Reference decks (frozen)', label: k.replace(/_/g, ' ') + ' — ' + v.rival, words: v.words });
   for (const [k, v] of Object.entries(THEMED)) out.push({ id: k, group: 'Themed test decks', label: k.slice(2).replace(/_/g, ' '), words: v });
   for (const [k, v] of Object.entries(COUNTERS)) out.push({ id: k, group: 'Counter test decks', label: k.slice(2).replace(/_/g, ' '), words: v });
+  for (const [k, v] of Object.entries(V2_DECKS)) out.push({ id: k, group: 'V32 Volume II decks', label: v.note, words: v.words });
   for (const [k, v] of Object.entries(FOLIO_DECKS)) out.push({ id: k, group: 'V31 Folio decks (need a Folio rules version)', label: v.note + ' (' + k[0] + ')', words: v.words, modules: v.modules });
   for (const [k, v] of Object.entries(ABLATIONS)) out.push({ id: k, group: 'V31 A-ablations (rc1-legal twins)', label: k.replace('_A', '') + ' list with rc1 substitutes', words: v });
   for (const [k, v] of Object.entries(custom)) out.push({ id: 'custom:' + k, group: 'Your test decks', label: k, words: v });
@@ -89,20 +101,21 @@ function startMatch(cfgOverride) {
   const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
   const mods = (F.resolveFormat(lobby.format).variant || {}).modules || [];
   const bad = [d1, d2].map(d => E.deckErrors(d.words, mods)).find(e => e.length);
-  if (!cfgOverride && bad) { A.flash = 'That deck needs a different rules version: ' + bad.join('; ') + '. Choose a V31 Living Folio rules version for the Folio decks.'; renderLobby(); return; }
+  if (!cfgOverride && bad) { A.flash = 'That deck needs a different rules version: ' + bad.join('; ') + '. Choose a V31 Folio or V32 Workshop rules version for these decks.'; renderLobby(); return; }
   const first = lobby.seat === 'first' ? 0 : lobby.seat === 'second' ? 1 : (lobby.seed % 2);
   const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ':' + lobby.tier + (lobby.ra ? ':' + lobby.ra : '') };
   A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.review = null; A.screen = 'match';
   A.C.start(); render();
 }
-function startFixture(id) {
+function startFixture(id, fx) {
   stopBot();
-  const cfg = { format: FIXTURES[id].format || 'grammar_v30_rc1', decks: [], seed: 0, first: FIXTURES[id].build().first, humanSide: 0, botPolicy: 'careful:' + lobby.tier, fixture: FIXTURES[id], deckNames: ['Fixture', 'Fixture'] };
+  fx = fx || FIXTURES[id];
+  const cfg = { format: fx.format || 'grammar_v30_rc1', decks: [], seed: 0, first: fx.build().first, humanSide: 0, botPolicy: lobby.style + ':' + lobby.tier + (lobby.ra ? ':' + lobby.ra : ''), fixture: fx, deckNames: ['Fixture', 'Fixture'] };
   A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.screen = 'match'; A.C.start(); render();
 }
 function save() {
   if (!A.C || A.review) return;
-  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa31.last', rep); store.set('wa31.left', false);
+  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa32.last', rep); store.set('wa32.left', false);
 }
 function stopBot() { if (A.botTimer) { clearTimeout(A.botTimer); A.botTimer = null; } }
 function driveBot() {
@@ -112,8 +125,8 @@ function driveBot() {
 }
 
 // ---------- selection: narrowing the engine's legal actions ----------
-const KEYS = ['type', 'card', 'subject', 'ability', 'recipe', 'a', 'b', 'category', 'qual', 'sacrifice', 'endorse', 'payload', 'mode', 'targets', 'target', 'seal', 'branch', 'replace', 'might', 'donor', 'slot', 'verb'];
-const KEY_LABEL = { type: 'What to do', card: 'Word', subject: 'Who acts', ability: 'Ability', recipe: 'Recipe', a: 'First ingredient', b: 'Second ingredient', category: 'Category', qual: 'Lawful Quality', sacrifice: 'Sacrifice (cost)', payload: 'Payload', mode: 'Property to blow', targets: 'Targets', target: 'Target', branch: 'Becomes', replace: 'Replace attachment', might: 'Gains Might', donor: 'Donor plant', slot: 'Offer', verb: 'Verb', endorse: 'Endorse with Signet (exhausts it)', seal: 'Seal a dead Plant from your Grave (cost)' };
+const KEYS = ['type', 'kind', 'card', 'subject', 'ability', 'recipe', 'a', 'b', 'category', 'qual', 'sacrifice', 'endorse', 'payload', 'mode', 'targets', 'target', 'seal', 'branch', 'replace', 'might', 'donor', 'slot', 'verb', 'host', 'tree', 'work'];
+const KEY_LABEL = { kind: 'Invitation', host: 'Tree to open', type: 'What to do', card: 'Word', subject: 'Who acts', ability: 'Ability', recipe: 'Recipe', a: 'First ingredient', b: 'Second ingredient', category: 'Category', qual: 'Lawful Quality', sacrifice: 'Sacrifice (cost)', payload: 'Payload', mode: 'Property to blow', targets: 'Targets', target: 'Target', branch: 'Becomes', replace: 'Replace attachment', might: 'Gains Might', donor: 'Donor plant', slot: 'Offer', verb: 'Verb', endorse: 'Endorse with Signet (exhausts it)', seal: 'Seal a dead Plant from your Grave (cost)' };
 const J = v => JSON.stringify(v == null ? null : v);
 function baseCands() {
   const C = A.C; if (!C) return [];
@@ -124,11 +137,11 @@ function baseCands() {
 function anchorMatch(a, an) {
   if (!an) return true;
   if (an.kind === 'card') return a.card === an.id || a.category === an.id || a.qual === an.id;
-  if (an.kind === 'thing') return a.subject === an.id || a.a === an.id || a.b === an.id || a.sacrifice === an.id || a.payload === an.id || a.endorse === an.id || a.donor === an.id;
+  if (an.kind === 'thing') return a.host === an.id || a.tree === an.id || (a.type === 'hotwork' && a.target === an.id) || a.subject === an.id || a.a === an.id || a.b === an.id || a.sacrifice === an.id || a.payload === an.id || a.endorse === an.id || a.donor === an.id;
   if (an.kind === 'foe') return a.target === an.id || (a.targets || []).includes(an.id);
   if (an.kind === 'market') return a.type === 'buy' && a.slot === an.id;
   if (an.kind === 'vessel') return a.type === 'fuse';
-  if (an.kind === 'ground') return a.type === 'fuse' && (a.a === 'ground' || a.b === 'ground');
+  if (an.kind === 'ground') return (a.type === 'fuse' && (a.a === 'ground' || a.b === 'ground')) || (a.type === 'invite' && a.kind === 'heat');
   if (an.kind === 'catalyst') return a.type === 'catalyst';
   return true;
 }
@@ -173,11 +186,13 @@ function valueLabel(S, key, v) {
   if (key === 'slot') { const o = S.market[v]; return o ? nm(o.word) : 'from the market'; }
   if (key === 'recipe') return nm('made.' + v) || v;
   if (key === 'branch') return nm(v);
+  if (key === 'kind') return { orchard: 'Open a tree to visiting Bees', heat: 'Lend your heat (Fire or Torch)' }[v] || v;
+  if (key === 'work') return 'World Tree (W5)';
   if (key === 'mode') return { hot: 'Hot — ignite', liquid: 'Liquid — make Wet', toxic: 'Toxic — 1 poison' }[v] || v;
-  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)', pollinate: 'Pollinate (make Fruit)', shapeWork: 'Work metal into a Setting', signet: 'Seal with the Signet (Named)', mould: 'Return the dead to the soil', bear: 'Start Bear (crop next turn)', shapeStart: 'Start Shape (Setting next turn)' }[v] || v;
+  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)', pollinate: 'Pollinate (make Fruit)', shapeWork: 'Work metal into a Setting', signet: 'Seal with the Signet (Named)', mould: 'Return the dead to the soil', bear: 'Start Bear (crop next turn)', shapeStart: 'Start Shape (Setting next turn)', visit: 'Visit the rival\'s orchard' }[v] || v;
   if (key === 'endorse') return v ? 'Endorse with ' + thingName(S, v) : 'No endorsement';
   if (key === 'seal') return targetLabel(S, v);
-  if (key === 'type') return { deploy: 'Bring forth', ground: 'Lay Ground', spell: 'Speak', attack: 'Attack', remote: 'Act', fuse: 'Fuse', ability: 'Ability', buy: 'Buy', catalyst: 'Refill catalyst', quality: 'Attach', weather: 'Weather', burden: 'Burden', law: 'Law' }[v] || v;
+  if (key === 'type') return { deploy: 'Bring forth', ground: 'Lay Ground', spell: 'Speak', attack: 'Attack', remote: 'Act', fuse: 'Fuse', ability: 'Ability', buy: 'Buy', catalyst: 'Refill catalyst', invite: 'Invite (opens at your End)', hotwork: 'Borrow the rival\'s heat', claim: 'Declare the work', quality: 'Attach', weather: 'Weather', burden: 'Burden', law: 'Law' }[v] || v;
   if (Array.isArray(v)) return v.map(x => thingName(S, x)).join(' and ');
   return targetLabel(S, v);
 }
@@ -206,6 +221,9 @@ function describe0(S, a) {
   const tgt = a.target != null ? ' → ' + targetLabel(S, a.target) : a.targets ? ' → ' + a.targets.map(x => thingName(S, x)).join(', ') : '';
   switch (a.type) {
     case 'pass': return 'End turn';
+    case 'invite': return a.kind === 'orchard' ? 'Open ' + thingName(S, a.host) + ' to visiting Bees at your End' : 'Lend your heat (' + nm(S.players[S.active].ground ? S.players[S.active].ground.word : '') + ') at your End';
+    case 'hotwork': return 'Borrow the rival\'s heat: work ' + thingName(S, a.target) + ' into a Setting';
+    case 'claim': return 'Declare the work: World Tree ' + thingName(S, a.tree) + ' with ' + thingName(S, a.target);
     case 'complete': return 'Complete your process (1 breath)';
     case 'abandon': return 'Abandon your process (free)';
     case 'deploy': return 'Bring forth ' + c;
@@ -233,6 +251,9 @@ function costOf(S, a) {
   if (a.type === 'law') return [a.card, a.category, a.qual].reduce((s, pid) => s + BY_ID[cardWord(S, pid)].cost, 0) + ' breath';
   if (a.card) { const w = cardWord(S, a.card); return BY_ID[w].cost + (A.C.pending && A.C.pending.type === 'respond' && A.C.pending.kind === 'response' ? ' reserve' : ' breath'); }
   if (a.type === 'attack') return '1 breath';
+  if (a.type === 'invite') return 'free (an invitation, not a promise)';
+  if (a.type === 'hotwork') return '1 breath + 1 spark paid to the rival on declaration (kept if interrupted)';
+  if (a.type === 'claim') return '2 breath (kept if interrupted)';
   return '';
 }
 
@@ -332,6 +353,8 @@ function statusChips(S, t) {
   if (st.asleep) out.push(['Asleep', 'b']); if (st.frozen) out.push(['Frozen', 'b']); if (st.bound) out.push(['Bound', 'b']); if (st.ward) out.push(['Ward', 'c']);
   if (st.named) out.push(['Named', 'c']); if (st.measured) out.push(['Measured', 'c']); if (st.concealed) out.push(['Concealed', 'c']);
   if (t.ctrl !== t.owner) out.push(['Borrowed', 'c']);
+  if (t.supply) out.push(['Supply space', 'c']); if (t.displaced) out.push(['Displaced', 'b']);
+  if (S.rules && S.rules.modules && S.rules.modules.length) { const no = ['strike', 'intercept', 'retaliate'].filter(k => !E.perm(S, t, k)); if (no.length === 3) out.push(['No combat', 'k']); else if (no.length) out.push(['No ' + no.join('/'), 'k']); }
   for (const q of t.quals || []) out.push([nm(q.word), 'q']);
   if (t.lawQual) out.push(['Law: ' + nm(t.lawQual), 'q']);
   for (const [k, v] of Object.entries(t.counters || {})) if (v && k !== 'age') out.push([`${k[0].toUpperCase() + k.slice(1)} ${v}`, 'c']);
@@ -384,6 +407,7 @@ function render() {
   if (A.screen === 'lobby') return renderLobby();
   if (A.screen === 'editor') return renderEditor();
   if (A.screen === 'fixtures') return renderFixtures();
+  if (A.screen === 'scenario') return renderScenario();
   renderMatch();
   if (A.inspect) renderInspect();
   if (A.modal) renderModal();
@@ -393,9 +417,9 @@ function render() {
 function renderLobby() {
   const decks = allDecks(), groups = [...new Set(decks.map(d => d.group))];
   const opts = sel => groups.map(g => `<optgroup label="${esc(g)}">${decks.filter(d => d.group === g).map(d => `<option value="${esc(d.id)}"${d.id === sel ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</optgroup>`).join('');
-  const last = store.get('wa31.last');
+  const last = store.get('wa32.last');
   root().innerHTML = `<main class="lobby">
-    <header class="lob-head"><h1>The Living Folio</h1>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}<p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
+    <header class="lob-head"><h1>The Workshop</h1>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}<p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
     <form id="lob" class="lob-grid">
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
@@ -408,12 +432,12 @@ function renderLobby() {
       <p class="wide small">For the market comparison, play the same decks and seed once with <b>Original market</b> and once with <b>Market at 3/4 spark</b>.</p>
       <div class="wide btns"><button type="button" id="l-start" class="go">Start match</button>
       ${last ? `<button type="button" id="l-resume">Resume last match${last.result != null ? ' (finished — review)' : ''}</button>` : ''}
-      <button type="button" id="l-editor">Deck editor</button><button type="button" id="l-fix">Scenario fixtures</button><button type="button" id="l-load">Load a replay</button></div>
+      <button type="button" id="l-editor">Deck editor</button><button type="button" id="l-fix">Scenario fixtures</button><button type="button" id="l-scen">Scenario editor</button><button type="button" id="l-load">Load a replay</button></div>
     </form>
     <section class="lob-decks"><h2>${esc(deckById(lobby.mine).label)}</h2><p class="dl">${deckById(lobby.mine).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p>
     <h2>${esc(deckById(lobby.theirs).label)}</h2><p class="dl">${deckById(lobby.theirs).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p></section>
   </main>`;
-  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa31.lobby', lobby); };
+  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa32.lobby', lobby); };
   const v = id => document.getElementById(id).value;
   for (const id of ['l-mine', 'l-theirs', 'l-tier', 'l-style', 'l-ra', 'l-seat', 'l-seed', 'l-format']) document.getElementById(id).addEventListener('change', () => { upd(); if (id === 'l-mine' || id === 'l-theirs') renderLobby(); });
   document.getElementById('l-dice').onclick = () => { document.getElementById('l-seed').value = 1 + Math.floor(Math.random() * 99999); upd(); };
@@ -422,6 +446,7 @@ function renderLobby() {
   document.getElementById('l-start').onclick = () => { upd(); startMatch(); };
   document.getElementById('l-editor').onclick = () => { A.screen = 'editor'; A.ed = A.ed || { words: deckById(lobby.mine).words.slice(), name: 'My test deck', filter: 'all', q: '' }; render(); };
   document.getElementById('l-fix').onclick = () => { A.screen = 'fixtures'; render(); };
+  document.getElementById('l-scen').onclick = () => { A.scen = A.scen || store.get('wa32.scenario') || SC.blank(); A.screen = 'scenario'; render(); };
   document.getElementById('l-load').onclick = () => { A.screen = 'match'; A.modal = { kind: 'load' }; if (!A.C) { A.screen = 'lobby'; } render(); if (!A.C) renderModalOver(); };
   if (last) document.getElementById('l-resume').onclick = () => resumeFrom(last, last.result != null);
 }
@@ -430,16 +455,16 @@ function renderModalOver() { A.modal = { kind: 'load' }; renderModal(); }
 function resumeFrom(rep, review) {
   stopBot();
   try {
-    const cfg = { format: rep.format, decks: rep.decks, seed: rep.seed, first: rep.first, humanSide: rep.humanSide || 0, botPolicy: rep.botPolicy, deckNames: rep.deckNames || ['', ''], fixture: rep.fixture ? FIXTURES[rep.fixture] : null };
+    const cfg = { format: rep.format, decks: rep.decks, seed: rep.seed, first: rep.first, humanSide: rep.humanSide || 0, botPolicy: rep.botPolicy, deckNames: rep.deckNames || ['', ''], fixture: rep.scenario ? SC.asFixture(rep.scenario) : rep.fixture ? FIXTURES[rep.fixture] : null };
     A.cfg = cfg;
-    A.C = restoreController(rep, hooks, FIXTURES);
+    A.C = restoreController(rep, hooks, FIXRES());
     A.review = review ? { rep, k: A.C.restoredActs, total: A.C.totalActs } : null;
     A.screen = 'match'; A.sel = null; A.modal = null; render();
   } catch (e) { A.flash = 'Could not load that replay: ' + e.message; A.screen = 'lobby'; render(); }
 }
 function reviewTo(k) {
   const rep = A.review.rep; k = Math.max(0, Math.min(A.review.total, k));
-  A.C = restoreController(rep, hooks, FIXTURES, k); A.review.k = A.C.restoredActs; render();
+  A.C = restoreController(rep, hooks, FIXRES(), k); A.review.k = A.C.restoredActs; render();
 }
 
 function infoStrip(S, side) {
@@ -465,9 +490,11 @@ function groundSlot(S, side, hiSet) {
 function row(S, side, sel, hiSet) {
   const things = S.things.filter(t => t.ctrl === side);
   const slots = [];
-  for (let k = 0; k < E.FORMAT.slots; k++) {
-    const t = things[k];
-    if (!t) { slots.push('<div class="slot empty"><span>Empty slot</span></div>'); continue; }
+  const gen = E.capGeneral(S), sup = E.capSupply(S);
+  const ordered = things.filter(t => !t.supply).concat(things.filter(t => t.supply));
+  for (let k = 0; k < gen + sup; k++) {
+    const t = ordered[k], isSup = k >= gen;
+    if (!t) { slots.push(`<div class="slot empty${isSup ? ' supply' : ''}"><span>${isSup ? 'Supply space — stock and products only' : 'Empty space'}</span></div>`); continue; }
     const isSel = A.sel && A.sel.anchor && A.sel.anchor.kind === 'thing' && A.sel.anchor.id === t.id;
     const fixedVals = A.sel ? Object.values(A.sel.fixed) : [];
     slots.push(`<div class="slot">${thingCard(S, t, { hi: hiSet.has(t.id), sel: isSel || fixedVals.includes(J(t.id)) })}</div>`);
@@ -488,7 +515,7 @@ function renderMatch() {
   root().innerHTML = `<div class="match">
   <header class="top">
     <button class="ghost" id="m-lobby">Lobby</button>
-    <span class="title">The Living Folio <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
+    <span class="title">The Workshop <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
     <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} · seed ${esc(A.cfg.seed)} · round ${S.round} · turn ${S.turn}${A.review ? ' · reviewing' : ''}</span>
     <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== 'text' ? ' selected' : ''}>Art</option><option value="text"${A.view === 'text' ? ' selected' : ''}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? ' checked' : ''}> Auto-pass my responses</label>
@@ -528,7 +555,10 @@ function centre(S) {
     bits.push(`<div class="clause proc"><b>${own ? 'Your' : 'Rival'} process: ${pr.family === 'bear' ? 'Bear (a crop)' : 'Shape (a Setting)'}</b> <small>${pr.open ? (ready ? 'can complete now' : 'completes at ' + (own ? 'your' : 'its') + ' next turn') : pr.closed}</small>
       <div>Bound: ${pr.inputs.map(x => esc(thingName(S, x.id))).join(', ')}. Breaks if any of these leaves play, changes controller or changes form.</div></div>`);
   }
-  if (S.over != null) bits.push(`<span class="result">${S.over === A.C.human ? 'You win' : S.over === 'draw' ? 'Draw' : 'The rival wins'} — round ${S.round}</span>`);
+  for (const inv of S.invites || []) bits.push(`<span class="weather"><b>${who(inv.owner)} ${inv.kind === 'orchard' ? 'opened ' + esc(thingName(S, inv.host)) + ' to visiting Bees' : 'lent heat (' + esc(nm(S.players[inv.owner].ground ? S.players[inv.owner].ground.word : '')) + ')'}</b> <small>until ${inv.owner === A.C.human ? 'your' : 'its'} next Renew · ${inv.kind === 'heat' ? '1 breath + 1 spark fee to the host' : '1 breath; the Fruit is the host\'s'}</small></span>`);
+  for (const p of S.players) if (p.invitePlan) bits.push(`<span class="weather"><small>${who(p.i)} will ${p.invitePlan.kind === 'orchard' ? 'open an orchard' : 'lend heat'} at End</small></span>`);
+  for (const cl of (S.claims || []).filter(x => x.open || x.closedTurn === S.turn)) bits.push(`<div class="clause proc"><b>${cl.owner === A.C.human ? 'Your' : 'Rival'} work in progress: the World Tree (W5)</b> <small>${cl.open ? 'completes at the start of ' + (cl.owner === A.C.human ? 'your' : 'its') + ' next Main if it still holds' : cl.closed || ''}</small><div>Breaks if ${esc(thingName(S, cl.tree))} or ${esc(thingName(S, cl.ben))} leaves play, changes controller, or the beneficiary loses its Growth. Life loss is checked first.</div></div>`);
+  if (S.over != null) bits.push(`<span class="result">${S.over === A.C.human ? 'You win' : S.over === 'draw' ? 'Draw' : 'The rival wins'}${S.overCause === 'work' ? ' by the World Tree work' : ''} — round ${S.round}</span>`);
   if (!bits.length) bits.push(`<span class="turn">${S.active === A.C.human ? 'Your turn' : 'Rival\'s turn'} · round ${S.round}</span>`);
   return bits.join('');
 }
@@ -545,7 +575,7 @@ function actionPanel(S, sel, vesselN) {
     return flash + `<h3>Your turn</h3>
       <p>Choose a highlighted word in your hand, one of your Things, a market offer or the Vessel. ${A.why ? `<span class="why">${esc(A.why)}</span>` : ''}</p>
       <div class="btns"><button id="a-vessel"${vesselN ? '' : ' disabled'}>Vessel — fuse${vesselN ? ` (${vesselN})` : ''}</button>${sel.all.some(a => a.type === 'catalyst') ? '<button id="a-cat">Refill catalyst</button>' : ''}
-      <button id="a-end" class="go">End turn${p.breath ? ` — keep ${Math.min(S.rules.reserveCap, p.breath)} reserve` : ''}</button></div>
+      <button id="a-end" class="go">End turn${p.breath ? ` — keep ${Math.min(S.rules.reserveCap, p.breath)} reserve` : ''}</button><button id="a-diag">Why not? (diagnostics)</button></div>
       ${vesselN ? '' : '<p class="small">Vessel: no recipe has two ready, owned ingredients with at least one mature Thing, affordable now.</p>'}`;
   }
   return flash + builderHTML(S, sel, false);
@@ -697,6 +727,15 @@ function relationsHTML(S, t) {
   if (mods.includes('workshop') && /copper|silver|lead|tin|iron/.test(card0(t))) { const w = E.shapeWhy(S, t.ctrl, t); out.push(`Work into a Setting: ${w ? 'no — ' + w : 'yes (Shape, or Smith)'}`); }
   if (card0(t) === 'earth.setting') out.push(`Setting worked from ${nm(t.word)}. Set it with a Garnet in the Vessel to make a Signet.`);
   if (t.cropOf) out.push('Crop of the tree ' + thingName(S, t.cropOf) + '.');
+  if (t.visitedBy) out.push('Made by a visiting Bee — the Fruit belongs to the host.');
+  if (mods.includes('visit') || mods.includes('visit_draw')) {
+    if (t.ctrl === A.C.human && E.trait(S, t, 'pollination') === 'insect') { const w = E.invitationWhy(S, t.ctrl, 'orchard', t.id); out.push(`Open to visitors: ${w ? 'no — ' + w : 'yes (free, opens at your End)'}`); }
+    if (t.ctrl === A.C.human && card0(t) === 'life.bee') for (const h of S.things.filter(o => o.ctrl !== t.ctrl && E.trait(S, o, 'pollination'))) { const w = E.visitWhy(S, t.ctrl, t, h); out.push(`Visit ${nm(h.form || h.word)}: ${w ? 'no — ' + w : 'yes'}`); }
+  }
+  if (mods.includes('heat') && t.ctrl === A.C.human && /copper|silver/.test(card0(t))) { const w = E.hotworkWhy(S, t.ctrl, t); out.push(`Borrow the rival's heat: ${w ? 'no — ' + w : 'yes'}`); }
+  if (mods.includes('w5') && card0(t) === 'made.world_tree') { out.push(`Grown from Swamp and Life: ${E.w5Chain(t) ? 'yes' : 'no'}. Gave Growth to: ${(t.wtGrants || []).map(x => thingName(S, x)).join(', ') || 'nobody yet'}.`); if (t.ctrl === A.C.human) for (const b of S.things.filter(o => o.ctrl === t.ctrl && o !== t && E.prop(o, 'living'))) { const w = E.w5Why(S, t.ctrl, t, b); out.push(`Declare the work with ${nm(b.form || b.word)}: ${w ? 'no — ' + w : 'yes'}`); } }
+  { const pw = E.permWhy(S, t); if (pw) out.push(pw[0].toUpperCase() + pw.slice(1) + '. Durability and targeting are unchanged.'); }
+  if (t.supply) out.push('In the supply space (stock and products only).'); if (t.displaced) out.push('Displaced: it changed into something the supply space cannot hold and no general space is free, so it cannot act until one is.');
   return out.length ? `<h4>Relationships</h4><ul class="rel">${out.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 }
 const card0 = t => (t.form || t.word);
@@ -711,6 +750,15 @@ function renderModal() {
       <textarea id="ex-t" rows="12" readonly>${esc(JSON.stringify(rep))}</textarea><div class="btns"><button id="ex-copy" class="go">Copy</button><button id="mo-x">Close</button></div><p id="ex-msg" class="small"></p>`;
   }
   if (m.kind === 'load') html = `<h2>Load a replay</h2><p>Paste an exported replay, or choose its file.</p><textarea id="ld-t" rows="10" placeholder="{&quot;format&quot;:…}"></textarea><input type="file" id="ld-f" accept=".json,application/json"><div class="btns"><button id="ld-review" class="go">Review from the start</button><button id="ld-resume">Resume at the end</button><button id="mo-x">Close</button></div><p id="ld-msg" class="small"></p>`;
+  if (m.kind === 'diag') {
+    const S = A.C.S; let d;
+    try { d = DG.diagnose(S, side => (side === A.C.human ? 'builder:planner' : 'careful:journeyman')); } catch (e) { d = { rows: [], note: 'Diagnostics failed: ' + e.message }; }
+    const L = { best: 'Best', inferior: 'Strategically inferior', unaffordable: 'Unaffordable', 'too slow': 'Too slow', unavailable: 'Unavailable' };
+    html = `<h2>Why not? — this position</h2><p class="small">From what you can see only (the rival's hand and both decks hidden). The bounded planner tries the strongest openings, finishes your turn greedily, lets the rival pass, and values your next Main minus the rival's visible threat. A heuristic, not a verdict.</p>
+      ${d.best ? `<p><b>Planner's line:</b> ${esc(describe(S, d.best.act))}${d.best.line.length ? ', then ' + d.best.line.map(a => esc(describe(S, a))).join(', then ') : ''}. Rival threat afterwards: ${d.best.threat}.</p>` : ''}
+      <table class="sum diag"><thead><tr><th>Interaction</th><th>Status</th><th>Why</th></tr></thead><tbody>${d.rows.map(r => `<tr><td>${esc(r.family)}</td><td class="st-${r.status.replace(' ', '')}">${esc(L[r.status])}</td><td>${esc(r.detail)}</td></tr>`).join('')}</tbody></table>${d.note ? `<p>${esc(d.note)}</p>` : ''}
+      <div class="btns"><button id="mo-x" class="go">Close</button></div>`;
+  }
   if (m.kind === 'zone') {
     const S = A.C.state(), [z, side] = m.zone.split(':'); const list = S.players[+side][z];
     html = `<h2>${who(+side)} — ${z === 'grave' ? 'Grave' : 'Sealed'} (${list.length})</h2><ul class="zl">${list.map(c => `<li><span class="dot s-${schoolOf(c.word)}"></span><button class="lnk" data-inspect-word="${esc(c.word)}">${esc(nm(c.word))}</button>${c.reason ? `<small>${esc(c.reason)}</small>` : ''}</li>`).join('') || '<li>Empty</li>'}</ul><div class="btns"><button id="mo-x" class="go">Close</button></div>`;
@@ -732,16 +780,17 @@ function renderModal() {
 // ---------- events ----------
 function bindMatch() {
   const C = A.C, on = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
-  on('m-lobby', () => { stopBot(); store.set('wa31.left', true); A.screen = 'lobby'; A.sel = null; render(); });
+  on('m-lobby', () => { stopBot(); store.set('wa32.left', true); A.screen = 'lobby'; A.sel = null; render(); });
   on('m-export', () => { A.modal = { kind: 'export' }; renderModal(); }); on('s-export', () => { A.modal = { kind: 'export' }; renderModal(); });
-  const rematch = swap => { stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
+  const rematch = swap => { stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id, cfg.fixture); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
   on('s-lobby', () => { stopBot(); A.screen = 'lobby'; render(); });
   const ap = document.getElementById('m-autopass'); if (ap) ap.onchange = () => { C.auto.passAll = ap.checked; };
-  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa31.view', A.view); render(); };
+  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa32.view', A.view); render(); };
   const sp = document.getElementById('m-speed'); if (sp) sp.onchange = () => { A.speed = +sp.value; };
   if (A.review) { on('rv-0', () => reviewTo(0)); on('rv-p', () => reviewTo(A.review.k - 1)); on('rv-n', () => reviewTo(A.review.k + 1)); on('rv-e', () => reviewTo(A.review.total)); on('rv-play', () => { A.review = null; render(); }); }
   on('a-end', () => { A.flash = null; A.why = null; C.act({ type: 'pass' }); });
+  on('a-diag', () => { A.modal = { kind: 'diag' }; renderModal(); });
   on('a-vessel', () => { A.sel = { anchor: { kind: 'vessel' }, fixed: {} }; A.why = null; render(); });
   on('a-cat', () => { A.sel = { anchor: { kind: 'catalyst' }, fixed: {} }; render(); });
   on('a-cancel', () => { A.sel = null; A.why = null; render(); });
@@ -813,27 +862,110 @@ function renderEditor() {
   for (const b of document.querySelectorAll('[data-add]')) b.onclick = () => { if (ed.words.length < 20) ed.words.push(b.dataset.add); render(); };
   for (const b of document.querySelectorAll('[data-rem]')) b.onclick = () => { ed.words = ed.words.filter(w => w !== b.dataset.rem); render(); };
   for (const b of document.querySelectorAll('[data-inspect-word]')) b.onclick = () => { A.inspect = { word: b.dataset.inspectWord }; renderInspect(); };
-  on('ed-save', () => { const c = store.get('wa31.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa31.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa31.lobby', lobby); A.screen = 'lobby'; render(); });
+  on('ed-save', () => { const c = store.get('wa32.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa32.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa32.lobby', lobby); A.screen = 'lobby'; render(); });
 }
 
 function renderFixtures() {
   root().innerHTML = `<main class="editor"><header class="top"><button class="ghost" id="fx-back">Lobby</button><span class="title">Scenario fixtures <small>constructed positions for testing one mechanic — not claimed reachable in a normal match</small></span></header>
-    <ul class="fixtures">${Object.values(FIXTURES).map(f => `<li><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p><button data-fx="${f.id}" class="go">Open fixture</button></li>`).join('')}</ul>
+    <ul class="fixtures">${Object.values(FIXTURES).map(f => `<li><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p><button data-fx="${f.id}" class="go">Open fixture</button>${f.spec ? `<button data-fxed="${f.id}">Edit as scenario</button>` : ''}</li>`).join('')}</ul>
     <p class="small">Rival skill for fixtures: ${esc(lobby.tier)} (set it in the lobby).</p></main>`;
   document.getElementById('fx-back').onclick = () => { A.screen = 'lobby'; render(); };
   for (const b of document.querySelectorAll('[data-fx]')) b.onclick = () => startFixture(b.dataset.fx);
+  for (const b of document.querySelectorAll('[data-fxed]')) b.onclick = () => { A.scen = JSON.parse(JSON.stringify(FIXTURES[b.dataset.fxed].spec)); A.screen = 'scenario'; render(); };
+}
+
+
+// ---------- V32 scenario editor ----------
+const ALL_FMTS = FMT_GROUPS.flatMap(([, l]) => l.map(x => x[0]));
+function renderScenario() {
+  const sp = A.scen, v = SC.validate(sp), comp = SC.compatibility(sp, ALL_FMTS);
+  const used = i => { const sd = sp.sides[i], u = new Set((sd.hand || []).concat(sd.grave || [], sd.deckTop || [], sd.ground ? [sd.ground] : [])); for (const t of sd.field) { if (SC.TRANSFORMED[t.word]) u.add(SC.TRANSFORMED[t.word].from); else if (SC.MADE[t.word]) SC.ingredients(t.word).forEach(w => u.add(w)); else u.add(t.word); } return u; };
+  const listOpts = sel => Object.entries(SC.LISTS).map(([k, l]) => `<option value="${esc(k)}"${k === sel ? ' selected' : ''}>${esc(l.label)}</option>`).join('');
+  const sideHTML = i => {
+    const sd = sp.sides[i], words = SC.listWords(sd.list) || [], u = used(i), free = words.filter(w => !u.has(w));
+    const zone = (z, label, filt = () => true) => `<div class="sz"><h4>${label} <small>${(sd[z] || []).length}</small></h4><ol class="zl">${(sd[z] || []).map((w, k) => `<li><span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}${z === 'deckTop' && k === 0 ? ' <small>top</small>' : ''}<button class="lnk" data-sx="${i}:${z}:${k}:del">Remove</button></li>`).join('')}</ol>
+      <select data-sadd="${i}:${z}"><option value="">Add…</option>${free.filter(filt).map(w => `<option value="${esc(w)}">${esc(nm(w))}</option>`).join('')}</select></div>`;
+    const extra = Object.keys(SC.TOKENS).concat(Object.keys(SC.MADE), Object.keys(SC.TRANSFORMED));
+    const field = `<div class="sz"><h4>Field <small>${sd.field.length} of ${E.capGeneral({ rules: { modules: (F.resolveFormat(sp.format).variant || {}).modules || [] } })}${E.capSupply({ rules: { modules: (F.resolveFormat(sp.format).variant || {}).modules || [] } }) ? ' + 1 supply' : ''}</small></h4><ol class="zl">${sd.field.map((t, k) => `<li class="fld"><span class="dot s-${schoolOf(t.word)}"></span><b>${esc(nm(t.word))}</b>
+        <label>damage <input type="number" min="0" max="9" value="${t.damage || 0}" data-sx="${i}:field:${k}:damage"></label>
+        <label><input type="checkbox" data-sx="${i}:field:${k}:exhausted"${t.exhausted ? ' checked' : ''}> exhausted</label><label><input type="checkbox" data-sx="${i}:field:${k}:fresh"${t.fresh ? ' checked' : ''}> fresh</label>
+        <label>Growth <input type="number" min="0" max="5" value="${(t.counters || {}).growth || 0}" data-sx="${i}:field:${k}:growth"></label>
+        ${t.word === 'made.world_tree' ? `<label>gave Growth to <select data-sx="${i}:field:${k}:grants"><option value="">nobody yet</option>${sd.field.map((o, j) => j !== k ? `<option value="${j}"${(t.grants || []).includes(j) ? ' selected' : ''}>${esc(nm(o.word))} (#${j + 1})</option>` : '').join('')}</select></label>` : ''}
+        <button class="lnk" data-sx="${i}:field:${k}:del">Remove</button></li>`).join('')}</ol>
+      <select data-sadd="${i}:field"><option value="">Add a Thing…</option><optgroup label="From this list">${free.filter(w => BY_ID[w].type === 'thing').map(w => `<option value="${esc(w)}">${esc(nm(w))}</option>`).join('')}</optgroup><optgroup label="Tokens, made and worked forms">${extra.map(w => `<option value="${esc(w)}">${esc(nm(w))}</option>`).join('')}</optgroup></select></div>`;
+    const num = (k, lo, hi, l) => `<label>${l}<input type="number" min="${lo}" max="${hi}" value="${sd[k]}" data-sv="${i}:${k}"></label>`;
+    const grounds = words.filter(w => BY_ID[w].type === 'ground' && (!u.has(w) || w === sd.ground));
+    return `<section class="sside"><h3>${i === 0 ? 'You' : 'Rival'}${sp.active === i ? ' · acts first' : ''}</h3>
+      <label class="wide">Word list (the side's 20 cards)<select data-sv="${i}:list">${listOpts(sd.list)}</select></label>
+      <div class="nums">${num('life', 1, 30, 'Life')}${num('breath', 0, 10, 'Breath')}${num('reserve', 0, 2, 'Reserve')}${num('spark', 0, 5, 'Spark')}</div>
+      <label>Ground<select data-sv="${i}:ground"><option value="">none</option>${grounds.map(w => `<option value="${esc(w)}"${w === sd.ground ? ' selected' : ''}>${esc(nm(w))}</option>`).join('')}</select></label>
+      ${field}${zone('hand', 'Hand')}${zone('deckTop', 'Top of deck (first = drawn first)')}${zone('grave', 'Grave')}
+      <label>Rest of the deck<select data-sv="${i}:deckRest"><option value="rest"${sd.deckRest !== 'none' ? ' selected' : ''}>every unplaced word, shuffled, below the top cards</option><option value="none"${sd.deckRest === 'none' ? ' selected' : ''}>only the top cards (the rest are set aside)</option></select></label>
+      <p class="small">${free.length} words of this list are not placed${sd.deckRest === 'none' ? ' (set aside)' : ' (they form the rest of the deck)'}.</p>
+      <h4>Invitations already open</h4>
+      ${sd.field.some(t => t.word === 'life.pear' || t.word === 'life.hazel') ? `<label>Orchard open to visitors<select data-sinv="${i}:orchard"><option value="">closed</option>${sd.field.map((t, k) => t.word === 'life.pear' ? `<option value="${k}"${(sp.invites || []).some(x => x.kind === 'orchard' && x.owner === i && x.host === k) ? ' selected' : ''}>${esc(nm(t.word))} (#${k + 1})</option>` : '').join('')}</select></label>` : '<p class="small">No Pear on this side\'s field.</p>'}
+      <label><input type="checkbox" data-sinv="${i}:heat"${(sp.invites || []).some(x => x.kind === 'heat' && x.owner === i) ? ' checked' : ''}> Heat lent (needs Fire or Torch Ground)</label>
+    </section>`;
+  };
+  root().innerHTML = `<main class="editor scen"><header class="top"><button class="ghost" id="sc-back">Lobby</button><span class="title">Scenario editor <small>constructed positions — built and checked by the engine's own rules</small></span></header>
+    <div class="scgrid"><section class="smeta">
+      <label class="wide">Title<input id="sc-title" value="${esc(sp.title)}"></label>
+      <label class="wide">Note for the tester<textarea id="sc-text" rows="3">${esc(sp.text || '')}</textarea></label>
+      <label class="wide">Rules version<select id="sc-format">${FMT_GROUPS.map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(([k, l]) => { const c = comp.find(x => x.id === k); return `<option value="${k}"${k === sp.format ? ' selected' : ''}>${c && c.ok ? '' : '✕ '}${esc(l)}</option>`; }).join('')}</optgroup>`).join('')}</select></label>
+      <label>Acts first<select id="sc-active"><option value="0"${sp.active === 0 ? ' selected' : ''}>You</option><option value="1"${sp.active === 1 ? ' selected' : ''}>Rival</option></select></label>
+      <label>Market<select id="sc-market"><option value="empty"${sp.market === 'empty' ? ' selected' : ''}>Empty (keep the test about the mechanic)</option><option value="keep"${sp.market !== 'empty' ? ' selected' : ''}>Dealt from the seed</option></select></label>
+      <label>Seed (deck order below the top cards)<input id="sc-seed" type="number" value="${esc(sp.seed || 7)}"></label>
+      <div class="val ${v.errors.length ? 'bad' : 'ok'}"><b>${v.errors.length ? 'Not legal yet' : 'Legal position'}</b>${v.errors.length ? `<ul>${v.errors.map(e => `<li>${esc(e)}</li>`).join('')}</ul>` : ''}${v.notes.length ? `<ul class="small">${v.notes.map(e => `<li>${esc(e)}</li>`).join('')}</ul>` : ''}</div>
+      <details><summary>Compatible rules versions (${comp.filter(c => c.ok).length} of ${comp.length})</summary><ul class="small">${comp.map(c => `<li>${c.ok ? '✓' : '✕'} ${esc(c.id)}${c.why ? ' — ' + esc(c.why) : ''}</li>`).join('')}</ul></details>
+      <div class="btns"><button id="sc-play" class="go"${v.errors.length ? ' disabled' : ''}>Play this position</button><button id="sc-save">Save</button><button id="sc-export">Export JSON</button><button id="sc-import">Import JSON</button><button id="sc-new">Blank</button></div>
+      <p class="small">Replays of a scenario carry the whole position, so they always re-run. You play side "You"; the rival uses the lobby's skill and style.</p>
+    </section>${sideHTML(0)}${sideHTML(1)}</div></main>`;
+  const upd = () => { store.set('wa32.scenario', sp); render(); };
+  const g = id => document.getElementById(id);
+  g('sc-back').onclick = () => { A.screen = 'lobby'; render(); };
+  g('sc-title').onchange = e => { sp.title = e.target.value; upd(); }; g('sc-text').onchange = e => { sp.text = e.target.value; upd(); };
+  g('sc-format').onchange = e => { const to = e.target.value, c = comp.find(x => x.id === to); sp.format = to; A.flash = c && !c.ok ? 'Switched — this position is not legal under ' + to + ': ' + c.why : null; upd(); };
+  g('sc-active').onchange = e => { sp.active = +e.target.value; upd(); }; g('sc-market').onchange = e => { sp.market = e.target.value; upd(); }; g('sc-seed').onchange = e => { sp.seed = +e.target.value || 7; upd(); };
+  g('sc-new').onclick = () => { A.scen = SC.blank(sp.format); upd(); };
+  g('sc-save').onclick = () => { store.set('wa32.scenario', sp); A.flash = 'Saved in this browser.'; render(); };
+  g('sc-play').onclick = () => { store.set('wa32.scenario', sp); startFixture('scenario', SC.asFixture(JSON.parse(JSON.stringify(sp)))); };
+  g('sc-export').onclick = () => { A.modal = { kind: 'scexport' }; renderScModal(); };
+  g('sc-import').onclick = () => { A.modal = { kind: 'scimport' }; renderScModal(); };
+  for (const el of document.querySelectorAll('[data-sv]')) el.onchange = () => { const [i, k] = el.dataset.sv.split(':'); const sd = sp.sides[+i]; if (k === 'list') { Object.assign(sd, { list: el.value, field: [], hand: [], grave: [], deckTop: [], ground: null }); sp.invites = (sp.invites || []).filter(x => x.owner !== +i); } else if (k === 'ground') sd.ground = el.value || null; else if (k === 'deckRest') sd.deckRest = el.value; else sd[k] = +el.value; upd(); };
+  for (const el of document.querySelectorAll('[data-sadd]')) el.onchange = () => { if (!el.value) return; const [i, z] = el.dataset.sadd.split(':'); const sd = sp.sides[+i]; if (z === 'field') sd.field.push({ word: el.value }); else sd[z].push(el.value); upd(); };
+  for (const el of document.querySelectorAll('[data-sx]')) {
+    const [i, z, k, f] = el.dataset.sx.split(':'), sd = sp.sides[+i];
+    const h = () => {
+      if (f === 'del') { sd[z].splice(+k, 1); if (z === 'field') { sp.invites = (sp.invites || []).filter(x => !(x.owner === +i && x.kind === 'orchard')); for (const t of sd.field) if (t.grants) t.grants = t.grants.filter(j => j !== +k).map(j => (j > +k ? j - 1 : j)); } }
+      else { const t = sd.field[+k]; if (f === 'damage') t.damage = +el.value || 0; else if (f === 'exhausted' || f === 'fresh') t[f] = el.checked; else if (f === 'growth') { t.counters = { ...(t.counters || {}), growth: +el.value || 0 }; if (!t.counters.growth) delete t.counters.growth; } else if (f === 'grants') t.grants = el.value === '' ? [] : [+el.value]; }
+      upd();
+    };
+    if (f === 'del') el.onclick = h; else el.onchange = h;
+  }
+  for (const el of document.querySelectorAll('[data-sinv]')) el.onchange = () => { const [i, kind] = el.dataset.sinv.split(':'); sp.invites = (sp.invites || []).filter(x => !(x.owner === +i && x.kind === kind)); if (kind === 'orchard' && el.value !== '') sp.invites.push({ kind, owner: +i, host: +el.value }); if (kind === 'heat' && el.checked) sp.invites.push({ kind, owner: +i }); upd(); };
+  if (A.flash) { const p = document.createElement('p'); p.className = 'flash'; p.textContent = A.flash; document.querySelector('.smeta').prepend(p); A.flash = null; }
+}
+function renderScModal() {
+  const m = A.modal, sp = A.scen;
+  const html = m.kind === 'scexport' ? `<h2>Scenario JSON</h2><textarea id="sx-t" rows="14" readonly>${esc(JSON.stringify(sp, null, 1))}</textarea><div class="btns"><button id="sx-copy" class="go">Copy</button><button id="mo-x">Close</button></div><p id="sx-msg" class="small"></p>`
+    : `<h2>Import a scenario</h2><textarea id="sx-t" rows="14" placeholder="{&quot;format&quot;:…}"></textarea><div class="btns"><button id="sx-load" class="go">Load</button><button id="mo-x">Close</button></div><p id="sx-msg" class="small"></p>`;
+  const el = document.createElement('div'); el.className = 'overlay'; el.innerHTML = `<div class="scrim"></div><div class="modal" role="dialog">${html}</div>`; document.body.appendChild(el);
+  const close = () => { A.modal = null; el.remove(); };
+  el.querySelector('.scrim').onclick = close; el.querySelector('#mo-x').onclick = close; el.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  const cp = el.querySelector('#sx-copy'); if (cp) cp.onclick = async () => { const t = el.querySelector('#sx-t'); try { await navigator.clipboard.writeText(t.value); el.querySelector('#sx-msg').textContent = 'Copied.'; } catch (e) { t.select(); el.querySelector('#sx-msg').textContent = 'Copy was refused here: the text is selected, press Ctrl+C or Cmd+C.'; } };
+  const ld = el.querySelector('#sx-load'); if (ld) ld.onclick = () => { try { const x = JSON.parse(el.querySelector('#sx-t').value); if (!x.sides || x.sides.length !== 2) throw new Error('needs two sides'); A.scen = x; close(); store.set('wa32.scenario', x); render(); } catch (e) { el.querySelector('#sx-msg').textContent = 'Not a scenario: ' + e.message; } };
 }
 
 // ---------- boot ----------
 function boot(data) {
-  if (data && data.last) store.set('wa31.last', data.last);
-  const last = store.get('wa31.last');
-  if (last && last.result == null && !store.get('wa31.left')) { resumeFrom(last, false); return; } // carry on where you left off
+  if (data && data.last) store.set('wa32.last', data.last);
+  const last = store.get('wa32.last');
+  if (last && last.result == null && !store.get('wa32.left')) { resumeFrom(last, false); return; } // carry on where you left off
   render();
 }
 if (typeof window !== 'undefined') {
-  window.WA30 = { A, render, startMatch, startFixture, selection, E };
-  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa31.last') }));
+  window.WA30 = { A, render, startMatch, startFixture, selection, E, SC };
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa32.last') }));
   const start = d => boot(d || {});
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start(window.claude && window.claude.hot ? window.claude.hot.data : {});
 }

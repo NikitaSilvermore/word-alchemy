@@ -31,7 +31,8 @@ function value(S, me, w) {
   // C-life: a pending output is worth 60% of what completing it would add (never more, so completing is always preferred)
   const al = w.alchemy || 1, garnet = i => S.things.some(o => o.ctrl === i && E.card(o).id === 'earth.garnet');
   const proc = i => (S.processes || []).filter(x => x.open && x.owner === i && !(S.active === i && P[i].personalTurn >= x.earliest)).reduce( /* completable now = lapses at this End unless completed: no stored value */(a, x) => a + 0.6 * Math.max(0, x.family === 'bear' ? al * 1.2 + 0.55 : al * (0.6 + (garnet(i) ? 0.6 : 0)) - 0.55), 0);
-  return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
+  const claim = i => (S.claims || []).some(x => x.open && x.owner === i) ? V32_OPTS.claimWorth : 0; // W5: an open claim is one rival turn from a win
+  return claim(me) - claim(1 - me) + w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
     - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst)
     + (S.sky ? (S.sky.caster === me ? 1.2 : -1.2) : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0) // lasting effects a one-ply view under-rates + (P[1 - me].life <= 0 ? 1e5 : 0);
 }
@@ -72,6 +73,19 @@ function alchemyWorth(t, S) {
   return v;
 }
 
+// V32 relationship heuristics. invite: 'never' | 'heuristic' | 'always' (diagnostics and sims switch these explicitly)
+const V32_OPTS = { invite: 'heuristic', claimWorth: 8, reorder: 0.35 };
+function v32Bonus(S0, me, a) {
+  if (a.type === 'invite') {
+    if (V32_OPTS.invite === 'never') return -1e3; if (V32_OPTS.invite === 'always') return 1;
+    const rv = 1 - me, ready = t => t.ctrl === rv && !E.incapacitated(t);
+    if (a.kind === 'orchard') return S0.things.some(t => ready(t) && E.card(t).id === 'life.bee') ? 0.6 : -0.1; // host gains the Fruit; the visitor only reorders
+    if (a.kind === 'heat') return S0.players[rv].spark >= 1 && S0.players[me].spark < 5 && S0.things.some(t => t.ctrl === rv && ['earth.copper', 'earth.silver'].includes(E.card(t).id)) ? 0.5 : -0.1;
+  }
+  if (a.type === 'ability' && a.ability === 'visit') return (S0.rules.modules || []).includes('visit_draw') ? 0.3 : V32_OPTS.reorder; // the draw itself is counted by the hand term
+  return 0;
+}
+
 const styleOf = pol => String(pol).split(':')[0];
 const tierOf = pol => String(pol).split(':')[1] || 'journeyman';
 // Optional third segment ':ra' = response-aware (V30 C2). Same visibility rules: redacted copies, own hand, public state.
@@ -87,6 +101,9 @@ const TIERS = {
   specialist: { depth: 2, beam: 4, noise: 0, responses: true },
   expert: { depth: 2, beam: 4, noise: 0, responses: true, samples: 2 },
   master: { depth: 3, beam: 4, noise: 0, responses: true, samples: 3 },
+  // V32 bounded multi-turn planner: top-K openings, greedy completion of the turn, a null-move rival turn, valued at our next
+  // Main (after upkeep, Growth, processes and claims) minus the rival's visible threat. Redacted information only.
+  planner: { depth: 1, beam: 1, noise: 0, responses: true, plan: { k: 5, steps: 5, threat: 0.5 } },
 };
 const TIER_ORDER = Object.keys(TIERS);
 
@@ -217,7 +234,7 @@ function sampleRivalHand(S, me, r) {
 }
 
 function stepValue(S0, c, me, w, a, ra = false) {
-  let bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S0, me, S0.market[a.slot].word) : 0;
+  let bonus = (a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S0, me, S0.market[a.slot].word) : 0) + (S0.rules.modules && S0.rules.modules.length ? v32Bonus(S0, me, a) : 0);
   if (a.type === 'spell' && a.sacrifice && a.targets && S0.rules.modules && S0.rules.modules.length) { // V31 Feast: readied bodies are future strikes this turn, if breath allows
     const p = c.players[me]; let k = p.breath;
     for (const id of a.targets) { const t = c.things.find(x => x.id === id); if (t && !t.exhausted && k >= 1) { bonus += 0.8 * E.curStrike(c, t); k--; } }
@@ -226,8 +243,57 @@ function stepValue(S0, c, me, w, a, ra = false) {
 }
 function tryApply(c, a, ctl) { try { E.apply(c, a, ctl); return true; } catch (e) { return false; } }
 
+// ---------- V32 planner ----------
+// threat: what the rival's visible Things could strike for on its coming turn, less what our untapped interceptors absorb
+function rivalThreat(S, me) {
+  const foes = S.things.filter(t => t.ctrl !== me && !E.incapacitated(t) && E.perm(S, t, 'strike')).map(t => E.curStrike(S, t)).filter(x => x > 0).sort((a, b) => b - a);
+  const guards = S.things.filter(t => t.ctrl === me && !E.incapacitated(t) && E.perm(S, t, 'intercept')).length;
+  return foes.slice(guards).reduce((a, x) => a + x, 0);
+}
+// greedy completion of the current turn on a redacted copy; returns the copy after our End
+function completeTurn(c, me, w, blk, steps) {
+  const line = [];
+  for (let k = 0; k < steps && c.over == null && c.active === me; k++) {
+    const base = value(c, me, w) + holdValue(c, me, w);
+    let best = null;
+    for (const a of E.legalActions(c)) {
+      if (a.type === 'pass') continue;
+      const d = clone(c); if (!tryApply(d, a, { block: blk, respond: null })) continue;
+      const v = stepValue(c, d, me, w, a); if (v > base + 0.05 && (!best || v > best.v)) best = { a, d, v };
+    }
+    if (!best) break; line.push(best.a); c = best.d;
+  }
+  return { c, line };
+}
+function horizon(c, me) { // our End, a null-move rival turn, then on to our next Main
+  for (let k = 0; k < 4 && c.over == null; k++) { if (c.active === me && k > 0 && c.players[me].personalTurn > c._t0) break; if (!tryApply(c, { type: 'pass' }, { block: () => null, respond: null })) return null; }
+  return c;
+}
+function planRank(S, policyOf, groupOf = null) { // groupOf(a): also plan the best opening of every group (diagnostics)
+  const me = S.active, pol = policyOf(me), w = POLICIES[styleOf(pol)], P = (TIERS[tierOf(pol)].plan) || TIERS.planner.plan, blk = blocker(policyOf);
+  const acts = E.legalActions(S);
+  const one = [];
+  for (const a of acts) { const c = clone(S); if (!tryApply(c, a, { block: blk, respond: null })) continue; one.push({ a, c, v: a.type === 'pass' ? value(S, me, w) + holdValue(S, me, w) : stepValue(S, c, me, w, a) }); }
+  one.sort((x, y) => y.v - x.v);
+  const keep = one.slice(0, P.k); if (!keep.some(o => o.a.type === 'pass')) { const ps = one.find(o => o.a.type === 'pass'); if (ps) keep.push(ps); }
+  if (groupOf) { const seen = new Set(keep.map(o => groupOf(o.a))); for (const o of one) { const gk = groupOf(o.a); if (gk && !seen.has(gk)) { seen.add(gk); keep.push(o); } } }
+  for (const o of keep) {
+    let c = o.c, line = [];
+    if (o.a.type !== 'pass' && c.active === me) ({ c, line } = completeTurn(c, me, w, blk, P.steps));
+    const threat = rivalThreat(c, me);
+    const c2 = clone(c); c2._t0 = S.players[me].personalTurn;
+    const end = horizon(c2, me);
+    o.line = line; o.threat = threat;
+    const lethal = threat >= c.players[me].life; // ordinary life loss is checked before any work completes: a null-move rival must not hide it
+    o.lethal = lethal;
+    o.plan = lethal ? value(c, me, w) - P.threat * w.life * threat - 50 : end ? value(end, me, w) - P.threat * w.life * threat : o.v - P.threat * w.life * threat;
+  }
+  return { me, oneply: one, ranked: keep.sort((x, y) => y.plan - x.plan) };
+}
+
 function chooseAction(S, policyOf) {
   const me = S.active, pol = policyOf(me), w = POLICIES[styleOf(pol)], T = TIERS[tierOf(pol)], blk = blocker(policyOf), ra = raOf(pol);
+  if (T.plan) { const r = planRank(S, policyOf); return r.ranked.length ? r.ranked[0].a : { type: 'pass' }; }
   const samples = T.samples || (ra && RA_OPTS.samples && S.players[1 - me].reserve > 0 ? 1 : 0);
   const acts = E.legalActions(S).filter(a => a.type !== 'pass');
   const base = value(S, me, w) + holdValue(S, me, w, ra);
@@ -269,4 +335,4 @@ function chooseAction(S, policyOf) {
   return ranked[0].a;
 }
 
-module.exports = { RA_OPTS, chooseAction, blocker, responder, responderRA, raOf, controller, decider, mulligan, POLICIES, TIERS, TIER_ORDER, clone, redact, value, sampleRivalHand };
+module.exports = { V32_OPTS, planRank, rivalThreat, RA_OPTS, chooseAction, blocker, responder, responderRA, raOf, controller, decider, mulligan, POLICIES, TIERS, TIER_ORDER, clone, redact, value, sampleRivalHand };

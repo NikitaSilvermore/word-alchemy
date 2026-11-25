@@ -101,13 +101,14 @@ function createController(cfg, hooks = {}) {
   C.botAct = () => run({ kind: 'act', act: B.chooseAction(C.S, polOf) });
   C.isBotTurn = () => C.S && C.S.over == null && !C.pending && C.S.active === bot;
   C.state = () => C.view || C.S;
-  C.replay = () => ({ format: cfg.format, formatVersion: F.resolveFormat(cfg.format).version, decks: cfg.decks, seed: cfg.seed, first: cfg.first, humanSide: C.human, botPolicy: botPol(), inputs: C.inputs, result: C.S ? C.S.over : null, finalHash: C.S && C.S.hashes.length ? C.S.hashes[C.S.hashes.length - 1] : null, fixture: cfg.fixture ? cfg.fixture.id : null });
+  C.replay = () => ({ format: cfg.format, formatVersion: F.resolveFormat(cfg.format).version, decks: cfg.decks, seed: cfg.seed, first: cfg.first, humanSide: C.human, botPolicy: botPol(), inputs: C.inputs, result: C.S ? C.S.over : null, finalHash: C.S && C.S.hashes.length ? C.S.hashes[C.S.hashes.length - 1] : null, fixture: cfg.fixture ? cfg.fixture.id : null, scenario: cfg.fixture && cfg.fixture.id === 'scenario' ? cfg.fixture.spec : null });
   return C;
 }
 
 // Rebuild a controller from a saved replay (resume or review). `upto` = number of 'act' inputs to apply (default all).
 function restoreController(rep, hooks = {}, fixtures = {}, upto = Infinity) {
-  const cfg = { format: rep.format, decks: rep.decks, seed: rep.seed, first: rep.first, humanSide: rep.humanSide || 0, botPolicy: rep.botPolicy, fixture: rep.fixture ? fixtures[rep.fixture] : null };
+  const cfg = { format: rep.format, decks: rep.decks, seed: rep.seed, first: rep.first, humanSide: rep.humanSide || 0, botPolicy: rep.botPolicy, fixture: rep.scenario && fixtures.__fromSpec ? fixtures.__fromSpec(rep.scenario) : rep.fixture ? fixtures[rep.fixture] : null };
+  if (rep.fixture && !cfg.fixture) throw new Error('this replay uses a fixture this build does not have: ' + rep.fixture);
   const C = createController(cfg, hooks);
   // feed every recorded input back in order through the same paths
   let k = 0, acts = 0;

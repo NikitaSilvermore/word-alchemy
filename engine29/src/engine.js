@@ -487,7 +487,7 @@ function startTurn(S) {
     if (u === 'worldTree') {
       gainLife(S, p.i, 2, 'world tree');
       const o = S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'living') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
-      if (o && addCounter(S, o, 'growth') > 0) { t.wtGrants = (t.wtGrants || []).concat(o.id); event(S, 'wt-growth', { tree: t.id, beneficiary: o.id }); }
+      if (o && addCounter(S, o, 'growth') > 0) { t.wtGrants = (t.wtGrants || []).concat(o.id); event(S, 'wt-growth', { side: t.ctrl, tree: t.id, beneficiary: o.id }); }
     }
     if (u === 'stone') { const k = decide(S, p.i, 'stoneUpkeep', ['draw', 'breath'], p.hand.length <= 3 && p.deck.length ? 0 : 1); if (k === 0) drawCard(S, p); else gainExtraBreath(p, 1); }
     if (card(t).lifespan) { t.age = (t.age || 0) + 1; if (t.age >= card(t).lifespan) { leaveField(S, t, 'expired'); say(S, `${t.word} disperses.`); continue; } }
