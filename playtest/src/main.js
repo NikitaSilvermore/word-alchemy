@@ -82,7 +82,7 @@ function startFixture(id) {
 }
 function save() {
   if (!A.C || A.review) return;
-  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa31.last', rep); store.set('wa31.left', false);
+  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa30.last', rep); store.set('wa30.left', false);
 }
 function stopBot() { if (A.botTimer) { clearTimeout(A.botTimer); A.botTimer = null; } }
 function driveBot() {
@@ -264,7 +264,6 @@ function whyNot(kind, id) {
   if (kind === 'thing') {
     const t = S.things.find(x => x.id === id); if (!t) return '';
     if (t.ctrl !== C.human) return `Nothing you can do right now targets ${thingName(S, t.id)}.`;
-    if (E.trait(S, t, 'carrier')) { const hs = S.things.filter(h => h.ctrl === C.human && E.trait(S, h, 'pollination')); if (hs.length) return hs.map(h => `${nm(h.form || h.word)}: ${E.pollinationWhy(S, t, h) || 'can pollinate'}`).join('; '); }
     return thingWhy(S, t);
   }
   if (kind === 'target') {
@@ -689,7 +688,7 @@ function renderModal() {
 // ---------- events ----------
 function bindMatch() {
   const C = A.C, on = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
-  on('m-lobby', () => { stopBot(); store.set('wa31.left', true); A.screen = 'lobby'; A.sel = null; render(); });
+  on('m-lobby', () => { stopBot(); store.set('wa30.left', true); A.screen = 'lobby'; A.sel = null; render(); });
   on('m-export', () => { A.modal = { kind: 'export' }; renderModal(); }); on('s-export', () => { A.modal = { kind: 'export' }; renderModal(); });
   const rematch = swap => { stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
@@ -783,9 +782,9 @@ function renderFixtures() {
 
 // ---------- boot ----------
 function boot(data) {
-  if (data && data.last) store.set('wa31.last', data.last);
-  const last = store.get('wa31.last');
-  if (last && last.result == null && !store.get('wa31.left')) { resumeFrom(last, false); return; } // carry on where you left off
+  if (data && data.last) store.set('wa30.last', data.last);
+  const last = store.get('wa30.last');
+  if (last && last.result == null && !store.get('wa30.left')) { resumeFrom(last, false); return; } // carry on where you left off
   render();
 }
 if (typeof window !== 'undefined') {
