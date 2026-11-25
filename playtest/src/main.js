@@ -345,8 +345,20 @@ function actorWhy(S, t) {
   if (t.exhausted) return 'is exhausted: it has already acted or blocked this turn';
   return null;
 }
+// V33: how to light a Naphtha, and where its owner's Kindle is (only what the viewer may know)
+function naphthaHint(S, t) {
+  if (!isCore() || card0(t) !== 'fire.naphtha') return null;
+  if (t.ctrl !== A.C.human) return 'Rival Naphtha: if they Kindle it, it flares for 2 damage to each of your Things and 2 to you. Burn, Scorch or Crush can remove it first.';
+  const p = S.players[A.C.human], k = c => c && c.word === 'fire.kindle';
+  const where = p.hand.some(k) ? (S.active === A.C.human ? (p.breath >= 1 ? 'Kindle is in your hand: click Kindle, then this Naphtha (1 breath).' : 'Kindle is in your hand, but you need 1 breath.') : 'Kindle is in your hand: as a Response, you can light it on the rival\'s turn with 1 reserve.')
+    : p.deck.some(k) ? 'Kindle is still in your deck. Study (2 breath) or Herald can dig for it.'
+    : p.grave.some(k) ? 'Your Kindle is in the grave — nothing else in this deck lights your own Naphtha.'
+    : 'Your deck has no Kindle left — nothing else lights your own Naphtha.';
+  return 'Light it with Kindle: 2 damage to every enemy Thing and 2 to the rival, once. Wet does not stop it. ' + where;
+}
 function thingWhy(S, t) {
   const p = S.players[A.C.human], n = nm(t.form || t.word), id = t.form || t.word;
+  { const nh = naphthaHint(S, t); if (nh) return nh; }
   if (id === 'token.fruit') {
     const r = actorWhy(S, t); if (r) return `This Fruit ${r}. (To spend it on Feast, choose Feast from your hand.)`;
     if (p.breath < 1) return 'Eating a Fruit costs 1 breath; you have none left.';
@@ -806,6 +818,7 @@ function renderInspect() {
 function relationsHTML(S, t) {
   const mods = S.rules.modules || []; if (!mods.length) return '';
   const mine = S.things.filter(o => o.ctrl === t.ctrl && o !== t), out = [];
+  { const nh = naphthaHint(S, t); if (nh) out.push(nh); }
   const ch = E.trait(S, t, 'carrier'), want = E.trait(S, t, 'pollination');
   if (ch) for (const h of mine.filter(o => E.trait(S, o, 'pollination'))) { const w = E.pollinationWhy(S, t, h); out.push(`${nm(t.form || t.word)} → ${nm(h.form || h.word)}: ${w ? 'no — ' + w : 'yes, can pollinate now'}`); }
   if (want) { out.push(`${nm(t.form || t.word)} is ${want}-pollinated (${want === 'insect' ? 'a Bee' : 'a Wind'} carries its pollen).`); for (const c of mine.filter(o => E.trait(S, o, 'carrier'))) { const w = E.pollinationWhy(S, c, t); out.push(`${nm(c.form || c.word)} → this tree: ${w ? 'no — ' + w : 'yes'}`); } }
