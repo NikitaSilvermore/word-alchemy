@@ -31,6 +31,8 @@ const FORMATS = {
   folio_c_life: { version: '0.31.0-c.life', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'clife'] } },
   // V32 The Workshop (Volume II). Each module is its own format on top of Expanded Grammar (B = all three V31 modules), rc1
   // otherwise. Never combined with price34; never two modules at once unless the ID says so.
+  // V33 The Core Duel — the single default research configuration (no Market, no Spark; grouped free combat at the rival only)
+  v33_core: { version: '0.33.0-core.1', status: 'research', arithmetic: 'v29', initiative: 'combo2', reserve: true, market: false, marketBreath: 0, variant: { modules: ['orchard', 'core'] } },
   v32_b: { version: '0.32.0-b', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'] } },
   v32_visit: { version: '0.32.0-visit', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit'] } },
   v32_visit_draw: { version: '0.32.0-visit-draw', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit_draw'] } },

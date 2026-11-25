@@ -126,7 +126,7 @@ function blocker(policyOf) {
       const bv = E.curStrike(S, b) + E.remainingOf(S, b);
       let sc;
       if (!info.target && !info.ground) { // attack on me
-        const lethal = S.players[me].life <= dmg + 2;
+        const lethal = S.players[me].life <= (info.group ? info.group.incoming : dmg) + 2; // V33 grouped combat: the whole remaining wave
         if (dmg < w.blockAt && !lethal) continue;
         sc = (survives ? 6 : 0) + (kills ? 4 : 0) + (lethal ? 50 : dmg) - (survives ? 0 : bv * 0.6);
       } else if (info.ground) {
@@ -239,6 +239,7 @@ function stepValue(S0, c, me, w, a, ra = false) {
     const p = c.players[me]; let k = p.breath;
     for (const id of a.targets) { const t = c.things.find(x => x.id === id); if (t && !t.exhausted && k >= 1) { bonus += 0.8 * E.curStrike(c, t); k--; } }
   }
+  if (S0.rules.modules && S0.rules.modules.includes('core')) bonus -= 0.35 * w.life * rivalThreat(c, me); // V33: leaving no defenders is a risk
   return value(c, me, w) + holdValue(c, me, w, ra) + bonus;
 }
 function tryApply(c, a, ctl) { try { E.apply(c, a, ctl); return true; } catch (e) { return false; } }
