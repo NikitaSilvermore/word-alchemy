@@ -82,7 +82,7 @@ function startFixture(id) {
 }
 function save() {
   if (!A.C || A.review) return;
-  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa30.last', rep);
+  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa31.last', rep); store.set('wa31.left', false);
 }
 function stopBot() { if (A.botTimer) { clearTimeout(A.botTimer); A.botTimer = null; } }
 function driveBot() {
@@ -104,7 +104,8 @@ function baseCands() {
 function anchorMatch(a, an) {
   if (!an) return true;
   if (an.kind === 'card') return a.card === an.id || a.category === an.id || a.qual === an.id;
-  if (an.kind === 'thing') return a.subject === an.id || a.a === an.id || a.b === an.id;
+  if (an.kind === 'thing') return a.subject === an.id || a.a === an.id || a.b === an.id || a.sacrifice === an.id || a.payload === an.id || a.endorse === an.id || a.donor === an.id;
+  if (an.kind === 'foe') return a.target === an.id || (a.targets || []).includes(an.id);
   if (an.kind === 'market') return a.type === 'buy' && a.slot === an.id;
   if (an.kind === 'vessel') return a.type === 'fuse';
   if (an.kind === 'ground') return a.type === 'fuse' && (a.a === 'ground' || a.b === 'ground');
@@ -252,7 +253,9 @@ function whyNot(kind, id) {
     if (d.type === 'action') {
       const mine = S.things.filter(t => t.ctrl === C.human);
       if (!mine.length) return `${nm(c.word)} needs a Thing of yours to say it, and you have none.`;
-      return mine.map(t => `${nm(t.form || t.word)}: ${E.whyIllegal(S, { type: d.verb in { strike: 1, bite: 1, crush: 1, cut: 1 } ? 'attack' : 'remote', subject: t.id, verb: d.verb, card: c.pid, target: 'rival' }) || 'has no legal target for it now'}`).join('; ');
+      const p = S.players[C.human];
+      if (d.cost + (d.verb in { strike: 1, bite: 1, crush: 1, cut: 1 } ? 0 : 0) > p.breath) return `${nm(c.word)} costs ${d.cost} breath; you have ${p.breath}.`;
+      return `${nm(c.word)} is said by one of your Things. ` + mine.map(t => { const r = actorWhy(S, t); if (r) return `${nm(t.form || t.word)} ${r}`; if (!E.caps(S, t).has(d.verb)) return `${nm(t.form || t.word)} cannot ${d.verb} (it lacks that ability)`; return `${nm(t.form || t.word)} has no legal target for ${nm(c.word)} right now`; }).join('; ') + '.';
     }
     if (d.spell === 'be') return 'Be is only spoken as a Law: Category + Be + a Lawful Quality, all in hand and affordable.';
     const r = E.whyIllegal(S, { type: guess, card: c.pid });
@@ -260,8 +263,9 @@ function whyNot(kind, id) {
   }
   if (kind === 'thing') {
     const t = S.things.find(x => x.id === id); if (!t) return '';
-    if (t.ctrl !== C.human) return 'That Thing is the rival\'s. Choose one of your words first, then target it.';
-    return E.whyIllegal(S, { type: 'attack', subject: t.id, verb: 'strike', target: 'rival' }) || `${nm(t.form || t.word)} has no other legal sentence now.`;
+    if (t.ctrl !== C.human) return `Nothing you can do right now targets ${thingName(S, t.id)}.`;
+    if (E.trait(S, t, 'carrier')) { const hs = S.things.filter(h => h.ctrl === C.human && E.trait(S, h, 'pollination')); if (hs.length) return hs.map(h => `${nm(h.form || h.word)}: ${E.pollinationWhy(S, t, h) || 'can pollinate'}`).join('; '); }
+    return thingWhy(S, t);
   }
   if (kind === 'target') {
     const sel = selection(); if (!sel.cands.length || !sel.next) return '';
@@ -269,6 +273,28 @@ function whyNot(kind, id) {
     return E.whyIllegal(S, hyp) || 'Not a legal choice for this sentence.';
   }
   return '';
+}
+
+// Plain reasons why one of your Things cannot act now (null = it can)
+function actorWhy(S, t) {
+  const st = t.status;
+  if (st.asleep) return 'is Asleep'; if (st.frozen) return 'is Frozen'; if (st.bound) return 'is Bound';
+  if (t.fresh && !E.has(S, t, 'swift')) return 'arrived this turn (Fresh) and can act from your next turn';
+  if (t.exhausted) return 'is exhausted: it has already acted or blocked this turn';
+  return null;
+}
+function thingWhy(S, t) {
+  const p = S.players[A.C.human], n = nm(t.form || t.word), id = t.form || t.word;
+  if (id === 'token.fruit') {
+    const r = actorWhy(S, t); if (r) return `This Fruit ${r}. (To spend it on Feast, choose Feast from your hand.)`;
+    if (p.breath < 1) return 'Eating a Fruit costs 1 breath; you have none left.';
+    if (p.life >= 30 && !S.things.some(o => o.ctrl === A.C.human && o.status.poison)) return 'Eating a Fruit heals 2 life or cures 1 poison: your life is full and nothing of yours is poisoned. You can keep it to block, or spend it on Feast.';
+  }
+  const r = actorWhy(S, t); if (r) return `${n} ${r}.`;
+  if (!E.caps(S, t).has('strike')) return `${n} has no Body, so it cannot Strike.${E.card(t).ability ? '' : ' It can still block.'}`;
+  if (p.breath < 1) return `A Strike costs 1 breath; you have none left.`;
+  const w = E.whyIllegal(S, { type: 'attack', subject: t.id, verb: 'strike', target: 'rival' });
+  return w && w !== 'not a legal sentence now' ? `${n}: ${w}.` : `${n} has no legal action right now.`;
 }
 
 // ---------- card rendering ----------
@@ -498,7 +524,7 @@ function actionPanel(S, sel, vesselN) {
 function builderHTML(S, sel, inPrompt) {
   const fixed = Object.entries(A.sel.fixed).map(([k, v]) => `<li><span>${esc(KEY_LABEL[k] || k)}</span> ${esc(valueLabel(S, k, JSON.parse(v)))}</li>`).join('');
   const anchor = A.sel.anchor;
-  const head = anchor ? (anchor.kind === 'card' ? nm(cardWord(S, anchor.id)) : anchor.kind === 'thing' ? thingName(S, anchor.id) : anchor.kind === 'vessel' ? 'The Vessel' : anchor.kind === 'market' ? 'Market offer' : anchor.kind === 'ground' ? 'Your Ground' : '') : '';
+  const head = anchor ? (anchor.kind === 'card' ? nm(cardWord(S, anchor.id)) : anchor.kind === 'thing' ? thingName(S, anchor.id) : anchor.kind === 'foe' ? 'Ways to act on ' + thingName(S, anchor.id) : anchor.kind === 'vessel' ? 'The Vessel' : anchor.kind === 'market' ? 'Market offer' : anchor.kind === 'ground' ? 'Your Ground' : '') : '';
   const aw = anchor && anchor.kind === 'card' ? cardWord(S, anchor.id) : anchor && anchor.kind === 'thing' ? (S.things.find(t => t.id === anchor.id) || {}).form || (S.things.find(t => t.id === anchor.id) || {}).word : null;
   const reader = aw && BY_ID[aw] ? `<p class="reader">${esc(textOf(aw))}</p>` : '';
   if (!sel.cands.length) return `<h3>${esc(head)}</h3>${reader}<p class="why">${esc(A.why || 'Nothing legal to do with this now.')}</p><div class="btns"><button id="a-cancel">Back</button></div>`;
@@ -663,7 +689,7 @@ function renderModal() {
 // ---------- events ----------
 function bindMatch() {
   const C = A.C, on = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
-  on('m-lobby', () => { stopBot(); A.screen = 'lobby'; A.sel = null; render(); });
+  on('m-lobby', () => { stopBot(); store.set('wa31.left', true); A.screen = 'lobby'; A.sel = null; render(); });
   on('m-export', () => { A.modal = { kind: 'export' }; renderModal(); }); on('s-export', () => { A.modal = { kind: 'export' }; renderModal(); });
   const rematch = swap => { stopBot(); const cfg = { ...A.cfg }; if (swap) cfg.first = 1 - cfg.first; if (cfg.fixture) return startFixture(cfg.fixture.id); A.C = createController(cfg, hooks); A.cfg = cfg; A.sel = null; A.review = null; A.C.start(); render(); };
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
@@ -718,6 +744,7 @@ function clickObj(kind, id) {
   if (kind === 'thing') {
     const t = C.state().things.find(x => x.id === id);
     if (t && t.ctrl === C.human && !q) { const has = sel.all.some(a => anchorMatch(a, { kind: 'thing', id })); A.sel = { anchor: { kind: 'thing', id }, fixed: {} }; A.why = has ? null : whyNot('thing', id); render(); return; }
+    if (t && t.ctrl !== C.human && !q && sel.all.some(a => anchorMatch(a, { kind: 'foe', id }))) { A.sel = { anchor: { kind: 'foe', id }, fixed: {} }; A.why = null; render(); return; }
     A.why = whyNot('thing', id); render(); return;
   }
   if (kind === 'ground' && id === C.human && !q) { A.sel = { anchor: { kind: 'ground' }, fixed: {} }; A.why = sel.all.some(a => anchorMatch(a, { kind: 'ground' })) ? null : 'Your Ground can only be used as a fusion ingredient a recipe names.'; render(); }
@@ -756,7 +783,9 @@ function renderFixtures() {
 
 // ---------- boot ----------
 function boot(data) {
-  if (data && data.last) store.set('wa30.last', data.last);
+  if (data && data.last) store.set('wa31.last', data.last);
+  const last = store.get('wa31.last');
+  if (last && last.result == null && !store.get('wa31.left')) { resumeFrom(last, false); return; } // carry on where you left off
   render();
 }
 if (typeof window !== 'undefined') {
