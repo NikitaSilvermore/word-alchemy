@@ -13,8 +13,8 @@ function base(first = 0) {
   S.ptFixture = true;
   return S;
 }
-function fbase(first = 0) { // V31 fixtures: Expanded Grammar with all three modules
-  const S = F.createFromFormat('folio_b_all', { decks: [FOLIO_DECKS.M_returning_garden.words, FOLIO_DECKS.F_seal_cutter.words], seed: 4343, first, mulligan: () => [] });
+function fbase(first = 0, fmt = 'folio_b_all') { // V31 fixtures: Expanded Grammar with all three modules (or C-life)
+  const S = F.createFromFormat(fmt, { decks: [fmt === 'folio_c_life' ? FOLIO_DECKS.O_orchard_crosswind.words : FOLIO_DECKS.M_returning_garden.words, FOLIO_DECKS.F_seal_cutter.words], seed: 4343, first, mulligan: () => [] });
   for (const p of S.players) { p.deck.push(...p.hand); p.hand = []; p.breath = 8; p.reserve = 0; p.spark = 0; }
   S.market = S.market.map(() => null); S.ptFixture = true; return S;
 }
@@ -88,6 +88,10 @@ const FIXTURES = {
   f_mould: {
     format: 'folio_b_all', title: 'Folio · Mould returns the dead to the soil', text: 'Your Grave holds a Seed that died, a Pear that was sacrificed and a Rose you discarded. Mould can seal only a Plant that died. It feeds Growth and age to your Sapling, and Growth on another Plant makes your Pear fruit.',
     build: () => { const S = fbase(); place(S, 0, 'rot.mould'); place(S, 0, 'life.sapling'); place(S, 0, 'life.pear'); const y = (w, r) => { const g = grave(S, 0, w); g.reason = r; }; y('life.seed', 'destroyed'); y('life.bramble', 'sacrificed'); y('life.rose', 'discarded'); give(S, 0, 'rot.exhume'); return S; },
+  },
+  f_clife: {
+    format: 'folio_c_life', title: 'C-life · a crop and a Setting that take a turn', text: 'Start Bear (Bee + Pear) or Shape (Smith + Copper): the work is public and completes at your next turn for 1 breath. Meanwhile the rival can Gust the Bee or Rust the Copper to break it. One process at a time.',
+    build: () => { const S = fbase(0, 'folio_c_life'); place(S, 0, 'life.bee'); place(S, 0, 'life.pear'); place(S, 0, 'fire.smith'); place(S, 0, 'earth.copper'); place(S, 1, 'fire.ember'); give(S, 1, 'air.gust'); give(S, 1, 'rot.rust'); S.players[1].reserve = 2; return S; },
   },
 };
 for (const [id, f] of Object.entries(FIXTURES)) { f.id = id; const b = f.build; f.build = () => { const S = b(); S.ptFixtureId = id; return S; }; }

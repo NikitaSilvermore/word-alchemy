@@ -221,3 +221,30 @@ test('V31 fuzz: random legal play in every B format keeps zones, hashes and repl
   }
   for (const k of ['pollinated', 'feast', 'setting', 'set', 'writ', 'mould']) assert.ok(seen[k] > 0, 'exercised ' + k + ' ' + JSON.stringify(seen));
 });
+
+test('V31 C-life: Bear and Shape are public processes — start, survive a rival turn, complete for 1 breath; breaking an input cancels', () => {
+  const mk = () => { const S = E.createMatch({ decks: [FOLIO_DECKS.O_orchard_crosswind.words, FOLIO_DECKS.F_seal_cutter.words], seed: 31, first: 0, initiative: 'combo2', variant: { modules: ['orchard', 'workshop', 'clife'] } });
+    for (const p of S.players) { p.deck.push(...p.hand); p.hand = []; p.breath = 8; p.reserve = 0; } S.active = 0; return S; };
+  let S = mk(); const bee = place(S, 0, 'life.bee'), pear = place(S, 0, 'life.pear');
+  assert.ok(!E.legalActions(S).some(a => a.ability === 'pollinate'), 'no immediate route in C');
+  const bear = E.legalActions(S).find(a => a.ability === 'bear'); assert.ok(bear);
+  E.apply(S, bear, NOCTL); assert.equal(S.processes.length, 1); assert.ok(bee.exhausted);
+  assert.ok(!E.legalActions(S).some(a => a.type === 'complete'), 'not before a whole rival turn');
+  E.apply(S, { type: 'pass' }, NOCTL); E.apply(S, { type: 'pass' }, NOCTL); // rival turn passes
+  const done = E.legalActions(S).find(a => a.type === 'complete'); assert.ok(done);
+  E.apply(S, done, NOCTL); assert.equal(fruits(S, 0).length, 1); assert.equal(S.processes[0].closed, 'completed');
+  // broken: the rival bounces the Bee during its turn
+  S = mk(); const b2 = place(S, 0, 'life.bee'); place(S, 0, 'life.pear');
+  E.apply(S, E.legalActions(S).find(a => a.ability === 'bear'), NOCTL); E.apply(S, { type: 'pass' }, NOCTL);
+  E.leaveField(S, S.things.find(t => t.id === b2.id), 'bounced'); E.stateCheck(S);
+  assert.equal(S.processes[0].closed, 'broken'); E.apply(S, { type: 'pass' }, NOCTL); assert.ok(!E.legalActions(S).some(a => a.type === 'complete'));
+  // Shape as a process: the metal stays Copper until completion; Rusting it in between breaks it (form changes)
+  S = mk(); const cu = place(S, 0, 'earth.copper'); const sh = give(S, 0, 'earth.shape');
+  E.apply(S, E.legalActions(S).find(a => a.card === sh.pid), NOCTL); assert.equal(E.card(cu).id, 'earth.copper'); assert.equal(S.processes[0].family, 'shape');
+  E.apply(S, { type: 'pass' }, NOCTL); E.apply(S, { type: 'pass' }, NOCTL);
+  E.apply(S, E.legalActions(S).find(a => a.type === 'complete'), NOCTL); assert.equal(cu.form, 'earth.setting');
+  // lapse: an unfinished process expires at the End of its first eligible turn
+  S = mk(); place(S, 0, 'life.bee'); place(S, 0, 'life.pear'); E.apply(S, E.legalActions(S).find(a => a.ability === 'bear'), NOCTL);
+  for (let k = 0; k < 3; k++) E.apply(S, { type: 'pass' }, NOCTL);
+  assert.equal(S.processes[0].closed, 'lapsed'); assert.deepEqual(E.zoneAudit(S), []);
+});

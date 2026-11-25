@@ -26,6 +26,9 @@ const FORMATS = {
   folio_b_decay: { version: '0.31.0-b.decay', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['decay'] } },
   folio_b_garden: { version: '0.31.0-b.garden', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'decay'] } },
   folio_b_all: { version: '0.31.0-b.all', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'] } },
+  // V31 model C-life (isolated harness): the orchard's Bear and the workshop's Shape become public, interruptible processes
+  // completed at the owner's next Main for 1 breath. Ordinary victory only. Set, Feast, Writ, Mould keep their B timing.
+  folio_c_life: { version: '0.31.0-c.life', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'clife'] } },
   // Only for comparison with the V28 maths; never for play.
   legacy_v28_maths: { version: '0.28-emulation', status: 'diagnostic', arithmetic: 'legacy', initiative: 'spec', reserve: true, market: true, marketBreath: 0, variant: {} },
 };

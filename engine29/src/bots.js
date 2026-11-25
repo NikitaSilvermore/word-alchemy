@@ -28,7 +28,8 @@ function value(S, me, w) {
       + (w.alchemy || 0) * alchemyWorth(t, S);
   };
   const board = i => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E.groundRemaining(P[i].ground) : 0);
-  return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
+  const proc = i => (w.alchemy || 1) * (S.processes || []).filter(x => x.open && x.owner === i).reduce((a, x) => a + (x.family === 'bear' ? 1.4 : 1.0), 0); // C-life: a pending output, discounted
+  return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
     - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst)
     + (S.sky ? (S.sky.caster === me ? 1.2 : -1.2) : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0) // lasting effects a one-ply view under-rates + (P[1 - me].life <= 0 ? 1e5 : 0);
 }
@@ -90,6 +91,8 @@ const TIER_ORDER = Object.keys(TIERS);
 const POLICIES = {
   aggressive: { life: 1.4, str: 0.7, st: 0.35, hand: 0.4, blockAt: 6, hold: 0.35, spark: 0.2, alchemy: 1 },
   careful: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2, alchemy: 1 },
+  // V31 engine-building pilot: same public information, values preparation and future outputs (alchemy, processes) more
+  builder: { life: 1.0, str: 0.55, st: 0.55, hand: 0.6, blockAt: 3, hold: 0.6, spark: 0.2, alchemy: 2.2 },
 };
 
 // defender's blocking choice (public information only)
@@ -212,7 +215,11 @@ function sampleRivalHand(S, me, r) {
 }
 
 function stepValue(S0, c, me, w, a, ra = false) {
-  const bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S0, me, S0.market[a.slot].word) : 0;
+  let bonus = a.type === 'deploy' || a.type === 'ground' ? 0.8 : a.type === 'buy' ? cardWorth(S0, me, S0.market[a.slot].word) : 0;
+  if (a.type === 'spell' && a.sacrifice && a.targets && S0.rules.modules && S0.rules.modules.length) { // V31 Feast: readied bodies are future strikes this turn, if breath allows
+    const p = c.players[me]; let k = p.breath;
+    for (const id of a.targets) { const t = c.things.find(x => x.id === id); if (t && !t.exhausted && k >= 1) { bonus += 0.8 * E.curStrike(c, t); k--; } }
+  }
   return value(c, me, w) + holdValue(c, me, w, ra) + bonus;
 }
 function tryApply(c, a, ctl) { try { E.apply(c, a, ctl); return true; } catch (e) { return false; } }

@@ -401,6 +401,7 @@ function stateCheck(S) {
       changed = true; const g = p.ground; p.ground = null; toGrave(S, g, 'destroyed'); say(S, `${g.word} (P${p.i}) is destroyed.`);
     }
   }
+  if (S.processes) checkProcesses(S);
   const dead = S.players.filter(p => p.life <= 0);
   if (dead.length && S.over == null) {
     S.over = dead.length === 2 ? 'draw' : (1 - dead[0].i);
@@ -589,6 +590,7 @@ function endTurn(S) {
   p.reserve = S.rules.reserve ? Math.min(S.rules.reserveCap, p.breath) : 0;
   S.stats.res[p.i].reserveKept += p.reserve; S.stats.res[p.i].breathWasted += p.breath - p.reserve;
   p.breath = 0;
+  if (S.processes) for (const pr of S.processes.filter(x => x.owner === p.i && x.open && p.personalTurn >= x.earliest)) closeProcess(S, p.i, 'lapsed');
   event(S, 'end', { side: p.i, reserve: p.reserve });
   if (S.over == null && S.active !== S.first && S.round >= FORMAT.roundCap) S.over = 'draw';
   if (S.over != null) return;
@@ -790,6 +792,7 @@ function legalActions(S) {
     }
     if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
   }
+  if (folioOn(S, 'clife')) out.push(...processOptions(S, p.i));
   out.push(...fusionOptions(S, p.i));
   out.push(...abilityOptions(S, p.i));
   const foes = S.things.filter(t => t.ctrl !== p.i && !t.status.concealed);
@@ -903,6 +906,7 @@ function ingredientOk(S, side, desc, o, isGround, resolving) {
   if (desc.form && card(o).id !== desc.form) return false;
   if (desc.props && !desc.props.every(x => prop(o, x))) return false;
   if (desc.host && card(o).made) return false; // named forms are not compositional hosts
+  if (S.processes && S.processes.some(pr => pr.open && pr.inputs.some(x => x.id === o.id))) return false; // C-life: committed to a process
   return true;
 }
 function fusionPrice(S, side, base) {
@@ -1024,6 +1028,7 @@ function resolveAbility(S, n, tg) {
       if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; destroy(S, tg); return true;
     }
     case 'pollinate': case 'shapeWork': case 'signet': case 'mould': return resolveFolioAbility(S, n, tg);
+    case 'bear': case 'shapeStart': return resolveProcessStart(S, n, tg);
     case 'eatFruit': if (a.branch === 'life') { gainLife(S, side, 2, 'fruit'); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
   }
   return false;
@@ -1099,11 +1104,11 @@ const nameOf = t => { const w = String((t.form || t.word) || '').split('.').pop(
 const feastable = (S, t) => t.exhausted && prop(t, 'living') && prop(t, 'body') && curStrike(S, t) > 0 && !incapacitated(t) && !(t.fresh && !has(S, t, 'swift')) && t.actions < 2;
 const mouldSeals = (S, side) => S.players[side].grave.filter(g => (BY_ID[g.word].props || []).includes('plant') && ['destroyed', 'sacrificed'].includes(g.reason) && !BY_ID[g.word].token);
 const mouldTargets = (S, side, m) => S.things.filter(t => t.ctrl === side && t !== m && prop(t, 'plant') && (((t.counters.growth || 0) < FORMAT.growthCap && !t.status.measured) || plantNext(S, t)));
-function abilityCost(S, t, id) { return id === 'shapeWork' ? 2 : id === 'pollinate' ? 1 : ((card(t).ability || {}).cost || 1); }
+function abilityCost(S, t, id) { return id === 'shapeWork' || id === 'shapeStart' ? 2 : id === 'pollinate' || id === 'bear' ? 1 : ((card(t).ability || {}).cost || 1); }
 function folioPlays(S, side, c, d) {
   const out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
   if (d.spell === 'feast') { const tg = mine.filter(t => feastable(S, t)).map(t => t.id); for (const f of mine.filter(o => card(o).id === 'token.fruit')) for (const ts of combos(tg, 1, 2)) out.push({ type: 'spell', card: c.pid, sacrifice: f.id, targets: ts }); }
-  if (d.spell === 'shape') for (const t of mine) if (!shapeWhy(S, side, t)) out.push({ type: 'spell', card: c.pid, target: t.id });
+  if (d.spell === 'shape') for (const t of mine) if (!shapeWhy(S, side, t) && (!folioOn(S, 'clife') || canStartProcess(S, side))) out.push({ type: 'spell', card: c.pid, target: t.id });
   if (d.spell === 'writ') {
     for (const f of foes.filter(t => !t.exhausted && (prop(t, 'person') || prop(t, 'speaker')))) out.push({ type: 'spell', card: c.pid, target: f.id });
     for (const sg of mine.filter(t => card(t).id === 'made.signet' && canAct(S, t))) for (const ts of combos(foes.filter(t => !t.exhausted).map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: ts, endorse: sg.id });
@@ -1113,10 +1118,10 @@ function folioPlays(S, side, c, d) {
 function folioAbilityOptions(S, side) {
   const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side);
   for (const t of mine) {
-    if (folioOn(S, 'orchard') && trait(S, t, 'carrier')) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id });
+    if (folioOn(S, 'orchard') && !folioOn(S, 'clife') && trait(S, t, 'carrier')) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id });
     if (!canAct(S, t)) continue;
     const ab = trait(S, t, 'ability') || {};
-    if (ab.id === 'shapeWork' && p.breath >= 2) for (const m of mine) if (m !== t && !shapeWhy(S, side, m)) out.push({ type: 'ability', subject: t.id, ability: 'shapeWork', target: m.id });
+    if (ab.id === 'shapeWork' && p.breath >= 2 && !folioOn(S, 'clife')) for (const m of mine) if (m !== t && !shapeWhy(S, side, m)) out.push({ type: 'ability', subject: t.id, ability: 'shapeWork', target: m.id });
     if (ab.id === 'signet' && p.breath >= 1) for (const f of mine.filter(o => isOriginal(o) && !o.status.named)) out.push({ type: 'ability', subject: t.id, ability: 'signet', target: f.id });
     if (ab.id === 'mould' && p.breath >= 1) { const seals = mouldSeals(S, side); for (const f of mouldTargets(S, side, t)) for (const g of seals) out.push({ type: 'ability', subject: t.id, ability: 'mould', target: f.id, seal: 'g:' + g.pid }); }
   }
@@ -1154,7 +1159,7 @@ function resolveFolioSpell(S, n, d, tg) {
     for (const t of ts) { t.exhausted = false; t.feastTurn = p.personalTurn; event(S, 'feast', { tid: t.id }); }
     return true;
   }
-  if (d.spell === 'shape') { if (shapeWhy(S, side, tg)) return false; toSetting(S, tg); return true; }
+  if (d.spell === 'shape') { if (shapeWhy(S, side, tg)) return false; if (folioOn(S, 'clife')) return openProcess(S, side, 'shape', [tg.id], tg.id); toSetting(S, tg); return true; }
   if (d.spell === 'writ') {
     if (n.endorsed) {
       const ts = a.targets.map(id => thingById(S, id)).filter(t => t && t.ctrl !== side && !t.status.concealed);
@@ -1168,6 +1173,59 @@ function resolveFolioSpell(S, n, d, tg) {
   }
   return false;
 }
+// ---------- V31 C-life (persistent, interruptible processes; ordinary victory only) ----------
+// One pending process per player; at most one start per own turn. Start opens the ordinary Clause; completion is a paid
+// (1 breath) activated declaration during the owner's next Main, after a whole rival turn. Inputs stay on the field, targetable;
+// a bound input leaving, changing controller or form cancels the process at once. Unfinished processes lapse at that End.
+function canStartProcess(S, side) { const p = S.players[side]; return !(S.processes || []).some(x => x.owner === side && x.open) && p.processStartTurn !== p.personalTurn; }
+function processOptions(S, side) {
+  const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side);
+  const open = (S.processes || []).find(x => x.owner === side && x.open);
+  if (open) { out.push({ type: 'abandon' }); if (p.personalTurn >= open.earliest && p.breath >= 1) out.push({ type: 'complete' }); return out; }
+  if (!canStartProcess(S, side)) return out;
+  for (const t of mine.filter(t => canAct(S, t))) {
+    if (trait(S, t, 'carrier') && p.breath >= 1) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: 'ability', subject: t.id, ability: 'bear', target: h.id });
+    if ((trait(S, t, 'ability') || {}).id === 'shapeWork' && p.breath >= 2) for (const m of mine) if (m !== t && !shapeWhy(S, side, m)) out.push({ type: 'ability', subject: t.id, ability: 'shapeStart', target: m.id });
+  }
+  return out;
+}
+function openProcess(S, side, family, inputs, output) {
+  const p = S.players[side]; S.processes = S.processes || [];
+  if (!canStartProcess(S, side)) return false;
+  const pr = { id: 'pr' + (++S.seq), family, owner: side, inputs: inputs.map(id => ({ id, form: card(thingById(S, id)).id, ctrl: side })), output, start: p.personalTurn, earliest: p.personalTurn + 1, open: true };
+  if (family === 'shape') thingById(S, output).ladderTurn = p.personalTurn; // the start reserves this turn's metal advance for this metal
+  S.processes.push(pr); p.processStartTurn = p.personalTurn; event(S, 'process-start', { pid: pr.id, family, owner: side, inputs: pr.inputs.map(x => x.id) }); return true;
+}
+function resolveProcessStart(S, n, tg) {
+  const a = n.act, side = n.side, sub = thingById(S, a.subject);
+  if (!sub || sub.ctrl !== side) return false;
+  if (a.ability === 'bear') { const why = pollinationWhy(S, sub, tg, true); if (why) return false; return openProcess(S, side, 'bear', [sub.id, tg.id], tg.id); }
+  if (a.ability === 'shapeStart') { if (incapacitated(sub) || shapeWhy(S, side, tg)) return false; return openProcess(S, side, 'shape', [sub.id, tg.id], tg.id); }
+  return false;
+}
+function closeProcess(S, side, why) { for (const pr of (S.processes || []).filter(x => x.owner === side && x.open)) { pr.open = false; pr.closed = why; event(S, 'process-' + why, { pid: pr.id, family: pr.family }); } }
+function checkProcesses(S) {
+  for (const pr of S.processes.filter(x => x.open)) for (const inp of pr.inputs) {
+    const t = thingById(S, inp.id);
+    if (!t || t.ctrl !== inp.ctrl || card(t).id !== inp.form) { pr.open = false; pr.closed = 'broken'; event(S, 'process-broken', { pid: pr.id, family: pr.family, input: inp.id, why: !t ? 'left' : t.ctrl !== inp.ctrl ? 'control' : 'form' }); break; }
+  }
+}
+function completeProcess(S, n) {
+  const side = n.side, p = S.players[side], pr = (S.processes || []).find(x => x.owner === side && x.open);
+  if (!pr) return false;
+  pr.open = false;
+  const ins = pr.inputs.map(x => thingById(S, x.id));
+  let ok = false;
+  if (pr.family === 'bear') { const [c, h] = ins; ok = !pollinationWhy(S, c, h, true); if (ok) { const f = createToken(S, side, 'token.fruit'); ok = !!f; if (f) { f.cropOf = h.id; f.bornOf = 'bear'; } } }
+  if (pr.family === 'shape') {
+    const m = ins[ins.length - 1], actor = ins.length > 1 ? ins[0] : null;
+    ok = !!m && !shapeWhy(S, side, m) && !(actor && incapacitated(actor)); // shapeWhy also refuses a metal that already changed form this turn
+    if (ok) toSetting(S, m);
+  }
+  pr.closed = ok ? 'completed' : 'failed'; event(S, ok ? 'process-completed' : 'process-failed', { pid: pr.id, family: pr.family });
+  return ok;
+}
+
 function folioWhy(S, act) {
   const p = S.players[S.active];
   if (act.type === 'ability' && act.ability === 'pollinate') return pollinationWhy(S, thingById(S, act.subject), thingById(S, act.target));
@@ -1187,6 +1245,7 @@ function declare(S, act, side, kind, ctl) {
   if (act.card) { node.card = takeCard(p, act.card); d = card(node.card); node.cardUsed = true; node.cardPid = node.card.pid; }
   let cost = d ? d.cost : (act.type === 'attack' ? (S.rules.freeStrike ? 0 : 1) : 0); // §15 Q4 experiment: free basic Strike
   if (act.type === 'fuse') cost = 0; // priced below once ingredients are known
+  if (act.type === 'complete') cost = 1;
   if (act.type === 'ability') cost = abilityCost(S, thingById(S, act.subject), act.ability);
   if (act.type === 'law') { // compound: Category + Be + Lawful Quality; one sentence, all three costs
     node.extra = [takeCard(p, act.category), takeCard(p, act.qual)];
@@ -1253,6 +1312,7 @@ function apply(S, act, ctl) {
   if (!legalActions(S).some(a => sameAction(a, act))) throw new Error('illegal action ' + JSON.stringify(act) + ': ' + whyIllegal(S, act));
   if (act.type === 'pass') { endTurn(S); S.hashes.push(hashState(S)); return; }
   if (act.type === 'buy' || act.type === 'catalyst') { economy(S, act); S.hashes.push(hashState(S)); return; } // no response window
+  if (act.type === 'abandon') { closeProcess(S, S.active, 'abandoned'); S.hashes.push(hashState(S)); return; } // public housekeeping, no Clause
   S.clause = { nodes: [] };
   S.clause.nodes.push(declare(S, act, S.active, 'main', ctl));
   stateCheck(S); // cost-generated automatic events resolve before the window
@@ -1409,6 +1469,7 @@ function resolveNode(S, n, k) {
       say(S, `P${side}: ${s.word} ${d.verb}s.`); return true;
     }
     case 'attack': return resolveAttack(S, n);
+    case 'complete': return completeProcess(S, n);
   }
   return false;
 }
@@ -1627,7 +1688,7 @@ function sameAction(a, b) {
 
 function hashState(S) {
   const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map(p => [p.life, p.breath, p.reserve, p.hand.map(c => c.pid), p.deck.map(c => c.pid), p.grave.map(c => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map(o => o && o.word), sky: S.sky && S.sky.pid, law: S.law && S.law.cards.map(c => c.pid), bd: S.players.map(p => p.burden && [p.burden.pid, p.burden.ticks]), th: S.things.map(t => [t.id, t.pid, t.form, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status, t.mods, t.lineage && lineagePids(t.lineage).map(r => r.pid), (t.quals || []).map(q => q.pid)]) });
-  const extra = S.rules.modules && S.rules.modules.length ? JSON.stringify(S.things.map(t => [t.id, t.feastTurn || 0, t.cropOf || 0])) : ''; // V31 formats only: rc1 hashes unchanged
+  const extra = S.rules.modules && S.rules.modules.length ? JSON.stringify(S.things.map(t => [t.id, t.feastTurn || 0, t.cropOf || 0])) + JSON.stringify((S.processes || []).map(x => [x.id, x.open, x.closed || ''])) : ''; // V31 formats only: rc1 hashes unchanged
   const all = pub + extra;
   let h = 2166136261; for (let i = 0; i < all.length; i++) { h ^= all.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16);
 }
@@ -1640,7 +1701,7 @@ const REVISION = { id: 'r30.1', log: [
 ] };
 
 module.exports = {
-  pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost,
+  pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost, processOptions,
   REVISION, FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,

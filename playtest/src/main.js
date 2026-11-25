@@ -19,6 +19,7 @@ const FMT_GROUPS = [
   ['Market comparison', [['grammar_v30_exp_price34', 'Market at 3/4 spark (experiment)']]],
   ['Other test variants', [['grammar_v30_exp_nosentence', 'No spark from sentences'], ['grammar_v30_exp_income2', 'Spark income every second turn'], ['grammar_v30_exp_buy2', 'Buy every second turn'], ['grammar_v30_exp_reserve3', 'Reserve cap 3'], ['grammar_v30_exp_cheapresp', 'Cheaper responses']]],
   ['V31 Living Folio · Expanded Grammar (experiment)', [['folio_b_all', 'All three modules: orchard, workshop, decay'], ['folio_b_orchard', 'Orchard only (Bee, Hazel, Feast)'], ['folio_b_workshop', 'Workshop only (Shape, Garnet, Signet, Writ)'], ['folio_b_garden', 'Orchard + decay (Mould)'], ['folio_b_decay', 'Decay only (Mould)']]],
+  ['V31 C-life · persistent processes (isolated experiment)', [['folio_c_life', 'Bear and Shape as public processes (ordinary victory only)']]],
   ['Earlier', [['grammar_v29_spec', 'V29 specification']]],
 ];
 const VERSION = 'V31 Living Folio experiment 1 (on the V30 Crucible 2 build)';
@@ -172,7 +173,7 @@ function valueLabel(S, key, v) {
   if (key === 'recipe') return nm('made.' + v) || v;
   if (key === 'branch') return nm(v);
   if (key === 'mode') return { hot: 'Hot — ignite', liquid: 'Liquid — make Wet', toxic: 'Toxic — 1 poison' }[v] || v;
-  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)', pollinate: 'Pollinate (make Fruit)', shapeWork: 'Work metal into a Setting', signet: 'Seal with the Signet (Named)', mould: 'Return the dead to the soil' }[v] || v;
+  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)', pollinate: 'Pollinate (make Fruit)', shapeWork: 'Work metal into a Setting', signet: 'Seal with the Signet (Named)', mould: 'Return the dead to the soil', bear: 'Start Bear (crop next turn)', shapeStart: 'Start Shape (Setting next turn)' }[v] || v;
   if (key === 'endorse') return v ? 'Endorse with ' + thingName(S, v) : 'No endorsement';
   if (key === 'seal') return targetLabel(S, v);
   if (key === 'type') return { deploy: 'Bring forth', ground: 'Lay Ground', spell: 'Speak', attack: 'Attack', remote: 'Act', fuse: 'Fuse', ability: 'Ability', buy: 'Buy', catalyst: 'Refill catalyst', quality: 'Attach', weather: 'Weather', burden: 'Burden', law: 'Law' }[v] || v;
@@ -204,6 +205,8 @@ function describe0(S, a) {
   const tgt = a.target != null ? ' → ' + targetLabel(S, a.target) : a.targets ? ' → ' + a.targets.map(x => thingName(S, x)).join(', ') : '';
   switch (a.type) {
     case 'pass': return 'End turn';
+    case 'complete': return 'Complete your process (1 breath)';
+    case 'abandon': return 'Abandon your process (free)';
     case 'deploy': return 'Bring forth ' + c;
     case 'ground': return 'Lay ' + c + ' as Ground';
     case 'spell': return 'Speak ' + c + tgt + (a.branch ? ' (becomes ' + nm(a.branch) + ')' : '') + (a.sacrifice ? ', sacrificing ' + thingName(S, a.sacrifice) : '') + (a.donor ? ' with ' + thingName(S, a.donor) : '');
@@ -372,7 +375,7 @@ function renderLobby() {
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
       <label>Rival skill<select id="l-tier">${TIERS.map(t => `<option${t === lobby.tier ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
-      <label>Rival style<select id="l-style">${['careful', 'aggressive'].map(t => `<option${t === lobby.style ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Rival style<select id="l-style">${['careful', 'aggressive', 'builder'].map(t => `<option${t === lobby.style ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Rival responses<select id="l-ra">${[['ra', 'Response-aware (holds reserve, answers)'], ['', 'Reference (rarely responds)']].map(([v, l]) => `<option value="${v}"${v === lobby.ra ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label>Your seat<select id="l-seat">${[['first', 'You start'], ['second', 'Rival starts'], ['random', 'Seed decides']].map(([v, l]) => `<option value="${v}"${v === lobby.seat ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label>Seed<span class="inrow"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
@@ -494,6 +497,11 @@ function centre(S) {
   if (S.law) bits.push(`<span class="weather"><b>Law: every ${esc(S.law.category)} has ${esc(nm(S.law.qual))}</b> <small>by ${who(S.law.caster)}, ends at their turn ${S.law.until}</small></span>`);
   if (S.clause && S.clause.nodes.length) {
     bits.push(`<div class="clause"><b>Pending sentence${S.clause.nodes.length > 1 ? 's — resolve last to first' : ''}</b><ol>${S.clause.nodes.map((n, k) => `<li class="${n.side === A.C.human ? 'me' : 'them'}"><span>${k === 0 ? 'Declared' : k === 1 ? 'Response' : 'Answer'} · ${who(n.side)}:</span> ${esc(describe(S, n.act, n.side))}${n.act.type === 'attack' ? ` <small>${n.blocker ? 'blocked by ' + esc(thingName(S, n.blocker)) : n.retaliates ? 'target will strike back' : 'unblocked'}</small>` : ''}${n.cancelled ? ' <small class="bad">cancelled</small>' : ''}</li>`).join('')}</ol></div>`);
+  }
+  for (const pr of (S.processes || []).filter(x => x.open || x.closedTurn === S.turn)) {
+    const own = pr.owner === A.C.human, ready = S.players[pr.owner].personalTurn >= pr.earliest;
+    bits.push(`<div class="clause proc"><b>${own ? 'Your' : 'Rival'} process: ${pr.family === 'bear' ? 'Bear (a crop)' : 'Shape (a Setting)'}</b> <small>${pr.open ? (ready ? 'can complete now' : 'completes at ' + (own ? 'your' : 'its') + ' next turn') : pr.closed}</small>
+      <div>Bound: ${pr.inputs.map(x => esc(thingName(S, x.id))).join(', ')}. Breaks if any of these leaves play, changes controller or changes form.</div></div>`);
   }
   if (S.over != null) bits.push(`<span class="result">${S.over === A.C.human ? 'You win' : S.over === 'draw' ? 'Draw' : 'The rival wins'} — round ${S.round}</span>`);
   if (!bits.length) bits.push(`<span class="turn">${S.active === A.C.human ? 'Your turn' : 'Rival\'s turn'} · round ${S.round}</span>`);
