@@ -114,8 +114,14 @@ function restoreController(rep, hooks = {}, fixtures = {}, upto = Infinity) {
   const inputs = rep.inputs;
   const next = (kind, side) => { const x = inputs[k++]; if (!x || x.kind !== kind || x.side !== side) throw new Error(`replay diverged at input ${k - 1}`); return x.value; };
   const log = [];
-  const S = cfg.fixture ? cfg.fixture.build((S0, i) => { const v = next('mulligan', i); log.push({ kind: 'mulligan', side: i, value: v }); return v; })
-    : F.createFromFormat(cfg.format, { decks: cfg.decks, seed: cfg.seed, first: cfg.first, mulligan: (S0, i) => { const v = next('mulligan', i); log.push({ kind: 'mulligan', side: i, value: v }); return v; } });
+  let S;
+  try {
+    S = cfg.fixture ? cfg.fixture.build((S0, i) => { const v = next('mulligan', i); log.push({ kind: 'mulligan', side: i, value: v }); return v; })
+      : F.createFromFormat(cfg.format, { decks: cfg.decks, seed: cfg.seed, first: cfg.first, mulligan: (S0, i) => { const v = next('mulligan', i); log.push({ kind: 'mulligan', side: i, value: v }); return v; } });
+  } catch (e) { // saved while the opening hand was still on offer: the seeded deal is identical, so simply start again
+    if (k >= inputs.length) { const C2 = createController(cfg, hooks); C2.start(); Object.assign(C2, { restoredActs: 0, totalActs: 0 }); return C2; }
+    throw e;
+  }
   E.setDecider(S, (S0, side, kind) => { const v = next('decide:' + kind, side); log.push({ kind: 'decide:' + kind, side, value: v }); return v; });
   const ctl = {
     block: (S0, info) => { const side = 1 - info.attacker.ctrl; const v = next('block', side); log.push({ kind: 'block', side, value: v }); return v; },
@@ -123,7 +129,12 @@ function restoreController(rep, hooks = {}, fixtures = {}, upto = Infinity) {
   };
   while (S.over == null && k < inputs.length && acts < upto) {
     const a = next('act', S.active); log.push({ kind: 'act', side: S.active, value: a });
-    const before = snap(S); E.apply(S, a, ctl); acts++;
+    const before = snap(S), k0 = k, log0 = log.length;
+    try { E.apply(S, a, ctl); } catch (e) { // saved part-way through a sentence: resume just before it
+      if (k < inputs.length) throw e;
+      const r = S.rand; S = before; if (r) S.rand = r; log.length = log0 - 1; void k0; break;
+    }
+    acts++;
     C.chronicle.push({ round: S.round, turn: S.turn, actor: before.active, act: a, lines: S.log.slice(before.log.length), packets: S.stats.packets.slice(before.stats.packets.length), events: [] });
   }
   C.S = S; C.inputs = log; C.S.ptFormat = cfg.format;
