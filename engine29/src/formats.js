@@ -19,6 +19,13 @@ const FORMATS = {
   grammar_v30_exp_buy2: { version: '0.30.0-exp.buy2', status: 'experiment', base: 'grammar_v30_rc1', variant: { buyEvery: 2 } },
   grammar_v30_exp_reserve3: { version: '0.30.0-exp.reserve3', status: 'experiment', base: 'grammar_v30_rc1', variant: { reserveCap: 3 } },
   grammar_v30_exp_cheapresp: { version: '0.30.0-exp.cheapresp', status: 'experiment', base: 'grammar_v30_rc1', variant: { responseDiscount: { 'water.sleep': 1, 'water.frozen': 1, 'air.gust': 1, 'word.doubt': 1 } } },
+  // V31 Living Folio — model B (Expanded Grammar). Each module is a separate format; 'all' combines them. Market and
+  // every other lever stay at the rc1 reference so module effects are never confused with price experiments.
+  folio_b_orchard: { version: '0.31.0-b.orchard', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard'] } },
+  folio_b_workshop: { version: '0.31.0-b.workshop', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['workshop'] } },
+  folio_b_decay: { version: '0.31.0-b.decay', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['decay'] } },
+  folio_b_garden: { version: '0.31.0-b.garden', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'decay'] } },
+  folio_b_all: { version: '0.31.0-b.all', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'] } },
   // Only for comparison with the V28 maths; never for play.
   legacy_v28_maths: { version: '0.28-emulation', status: 'diagnostic', arithmetic: 'legacy', initiative: 'spec', reserve: true, market: true, marketBreath: 0, variant: {} },
 };

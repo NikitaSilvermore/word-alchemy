@@ -4,6 +4,7 @@
 const F = require('../../engine29/src/formats');
 const E = require('../../engine29/src/engine');
 const { REF } = require('../../engine29/data/reference_decks');
+const { FOLIO_DECKS } = require('../../engine29/data/folio_decks');
 
 function base(first = 0) {
   const S = F.createFromFormat('grammar_v30_rc1', { decks: [REF.D1_living_sky, REF.D2_lockkeepers_wall], seed: 4242, first, mulligan: () => [] });
@@ -11,6 +12,11 @@ function base(first = 0) {
   S.market = S.market.map(() => null); // keep the fixture about the mechanic
   S.ptFixture = true;
   return S;
+}
+function fbase(first = 0) { // V31 fixtures: Expanded Grammar with all three modules
+  const S = F.createFromFormat('folio_b_all', { decks: [FOLIO_DECKS.M_returning_garden.words, FOLIO_DECKS.F_seal_cutter.words], seed: 4343, first, mulligan: () => [] });
+  for (const p of S.players) { p.deck.push(...p.hand); p.hand = []; p.breath = 8; p.reserve = 0; p.spark = 0; }
+  S.market = S.market.map(() => null); S.ptFixture = true; return S;
 }
 function place(S, side, word, o = {}) {
   const t = { id: 't' + (++S.seq), pid: 'fx' + S.seq, word, owner: side, ctrl: side, entry: S.seq, damage: 0, counters: {}, status: {}, exhausted: false, fresh: false, actions: 0, arrivedTurn: 0, ...o };
@@ -61,6 +67,27 @@ const FIXTURES = {
   poison: {
     title: 'Poison', text: 'Your Spider is Venomous; Miasma poisons every enemy Living Thing and the rival. Doses tick at the owner\'s upkeep, cap 3.',
     build: () => { const S = base(); place(S, 0, 'rot.spider'); place(S, 0, 'rot.rat'); give(S, 0, 'rot.miasma'); give(S, 0, 'rot.poison'); place(S, 1, 'life.stag', { status: { poison: 1 } }); place(S, 1, 'life.wolf'); return S; },
+  },
+  // ---- V31 Living Folio (model B) ----
+  f_pollen: {
+    format: 'folio_b_all', title: 'Folio · who can pollinate what', text: 'Bee (insect) and Wind (wind) beside Pear (insect-pollinated) and Hazel (wind-pollinated). Click a carrier: only the matching tree is offered. Inspect any of them to see why. The rival holds Gust and Drench (Wet grounds a Bee, not the Wind).',
+    build: () => { const S = fbase(); place(S, 0, 'life.bee'); place(S, 0, 'air.wind'); place(S, 0, 'life.pear'); place(S, 0, 'life.hazel'); place(S, 1, 'water.otter'); give(S, 1, 'air.gust'); give(S, 1, 'water.drench'); S.players[1].reserve = 2; return S; },
+  },
+  f_feast: {
+    format: 'folio_b_all', title: 'Folio · Feast for a second wave', text: 'Your Wolf and Otter have already struck and are exhausted. Eat the Fruit with Feast to ready them; a second Strike still costs 1 breath. Or keep the Fruit to block or heal.',
+    build: () => { const S = fbase(); place(S, 0, 'life.wolf', { exhausted: true, actions: 1 }); place(S, 0, 'water.otter', { exhausted: true, actions: 1 }); place(S, 0, 'token.fruit', { form: 'token.fruit', token: true, pid: null }); give(S, 0, 'life.feast'); S.players[0].breath = 4; place(S, 1, 'earth.boulder'); return S; },
+  },
+  f_workshop: {
+    format: 'folio_b_all', title: 'Folio · from Copper to Signet', text: 'Work Copper into a Setting (Shape in hand, or Smith\'s native ability), then next turn Set it with Garnet in the Vessel to make a Signet. Silver is Sacred; shaping it gives that up. Inspect the Signet: it shows its Setting and Garnet and the original Copper.',
+    build: () => { const S = fbase(); place(S, 0, 'fire.smith'); place(S, 0, 'earth.copper'); place(S, 0, 'earth.silver'); place(S, 0, 'earth.garnet'); give(S, 0, 'earth.shape'); give(S, 0, 'word.writ'); place(S, 1, 'word.scribe'); place(S, 1, 'earth.boulder'); return S; },
+  },
+  f_signet: {
+    format: 'folio_b_all', title: 'Folio · Signet endorses a Writ', text: 'A finished Signet (Setting from Copper + Garnet). Endorse Writ by exhausting it to exhaust two rival blockers, then attack. The rival holds Doubt with 2 reserve; a countered Writ keeps its costs.',
+    build: () => { const S = fbase(); S.registry.fls1 = S.registry.fls2 = true; place(S, 0, 'made.signet', { form: 'made.signet', pid: null, lineage: [{ pid: 'fls1', word: 'earth.copper', form: 'earth.setting', owner: 0 }, { pid: 'fls2', word: 'earth.garnet', form: 'earth.garnet', owner: 0 }] }); place(S, 0, 'earth.iron'); place(S, 0, 'fire.ember'); give(S, 0, 'word.writ'); place(S, 1, 'earth.boulder'); place(S, 1, 'water.ice'); give(S, 1, 'word.doubt'); S.players[1].reserve = 2; return S; },
+  },
+  f_mould: {
+    format: 'folio_b_all', title: 'Folio · Mould returns the dead to the soil', text: 'Your Grave holds a Seed that died, a Pear that was sacrificed and a Rose you discarded. Mould can seal only a Plant that died. It feeds Growth and age to your Sapling, and Growth on another Plant makes your Pear fruit.',
+    build: () => { const S = fbase(); place(S, 0, 'rot.mould'); place(S, 0, 'life.sapling'); place(S, 0, 'life.pear'); const y = (w, r) => { const g = grave(S, 0, w); g.reason = r; }; y('life.seed', 'destroyed'); y('life.bramble', 'sacrificed'); y('life.rose', 'discarded'); give(S, 0, 'rot.exhume'); return S; },
   },
 };
 for (const [id, f] of Object.entries(FIXTURES)) { f.id = id; const b = f.build; f.build = () => { const S = b(); S.ptFixtureId = id; return S; }; }

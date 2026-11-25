@@ -25,7 +25,7 @@ function value(S, me, w) {
   const thingV = t => {
     const out = E.incapacitated(t) ? 0.5 : 1;
     return out * E.curStrike(S, t) * w.str + Math.max(0, E.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0)
-      + (w.alchemy || 0) * alchemyWorth(t);
+      + (w.alchemy || 0) * alchemyWorth(t, S);
   };
   const board = i => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E.groundRemaining(P[i].ground) : 0);
   return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
@@ -50,9 +50,19 @@ function mulligan(S, i) {
 // Worth a one-ply search cannot see: engines, recursion and progress along a recipe chain or ladder.
 const ENGINE = { energy: 1.6, gold: 1.6, lifeHeal: 1.2, worldTree: 2.5, stone: 2.5 };
 const FORM_PROGRESS = { 'earth.tin': 0.6, 'earth.copper': 0.6, 'earth.silver': 1.2, 'earth.gold': 2, 'life.sapling': 0.8, 'life.oak': 1.5, 'life.willow': 1.2 };
-function alchemyWorth(t) {
+// V31 (formats with modules only): preparation and future outputs a one-ply search cannot see
+const FOLIO_WORTH = { 'token.fruit': 1.2, 'earth.setting': 0.6, 'made.signet': 1.6, 'earth.garnet': 0.4, 'rot.mould': 0.5 };
+function folioWorth(S, t) {
+  const c = E.card(t); let v = FOLIO_WORTH[c.id] || 0;
+  if (E.trait(S, t, 'carrier') && S.things.some(h => h.ctrl === t.ctrl && E.trait(S, h, 'pollination') === E.trait(S, t, 'carrier'))) v += 0.5; // a working pollination pair
+  if (E.trait(S, t, 'pollination') && S.things.some(h => h.ctrl === t.ctrl && E.trait(S, h, 'carrier') === E.trait(S, t, 'pollination'))) v += 0.5;
+  if ((c.id === 'earth.copper' || c.id === 'earth.silver') && S.things.some(o => o.ctrl === t.ctrl && E.card(o).id === 'earth.garnet')) v += 0.3; // a jewel waiting for a setting
+  if (c.id === 'earth.setting' && S.things.some(o => o.ctrl === t.ctrl && E.card(o).id === 'earth.garnet')) v += 0.6;
+  return v;
+}
+function alchemyWorth(t, S) {
   const c = E.card(t);
-  let v = (ENGINE[c.upkeep] || 0) + (FORM_PROGRESS[c.id] || 0);
+  let v = (ENGINE[c.upkeep] || 0) + (FORM_PROGRESS[c.id] || 0) + (S && S.rules.modules && S.rules.modules.length ? folioWorth(S, t) : 0);
   if (t.lineage) v += 0.8 + (c.made ? 0.5 * (c.kw || []).includes('final') + 0.4 * ((c.schools || []).length) : 0.6 * ((t.mods && t.mods.infusions.length) || 0));
   if (c.rebirth) v += 1.5;
   if (t.token) v -= 0.3;
@@ -196,7 +206,8 @@ function stateRand(S, salt, pub = false) { let h = parseInt(E.hashState(pub ? re
 function sampleRivalHand(S, me, r) {
   const rv = S.players[1 - me];
   const seen = new Set(rv.grave.map(g => g.word).concat(rv.sealed.map(g => g.word), S.things.filter(t => t.owner === rv.i && t.pid).map(t => t.word)));
-  const pool = Object.values(require('./cards').BY_ID).filter(c => c.deckLegal && rv.schools.includes(c.school) && !seen.has(c.id)).map(c => c.id);
+  const mods = (S.rules && S.rules.modules) || [];
+  const pool = Object.values(require('./cards').BY_ID).filter(c => (c.deckLegal || (c.folio && !c.made && !c.transformedOnly && mods.includes(c.folio))) && rv.schools.includes(c.school) && !seen.has(c.id)).map(c => c.id);
   return rv.hand.map((x, k) => ({ pid: '?s' + k, word: pool.length ? pool[Math.floor(r() * pool.length)] : HIDDEN, owner: rv.i }));
 }
 

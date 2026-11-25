@@ -202,6 +202,26 @@ const MADE = [
   MD('made.philosophers_stone', ['earth', 'word', 'fire', 'air', 'water'], 3, 6, ['stone', 'metal', 'body'], { kw: ['final'], upkeep: 'stone' }),
 ];
 
+// V31 Expanded Grammar (B) test vocabulary — only legal in formats whose variant.modules lists the module.
+// Never deck-legal in rc1, never in the market, never sampled by bots outside those formats.
+const FX = (o, module) => ({ ...o, deckLegal: false, market: false, folio: module });
+const FOLIO = [
+  FX(T('life.bee', 'life', 1, 1, 2, ['living', 'beast', 'insect', 'body', 'winged', 'flammable'], { kw: ['flying'], carrier: 'insect' }), 'orchard'),
+  FX(T('life.hazel', 'life', 2, 0, 4, ['living', 'plant', 'tree', 'orchard', 'flower', 'flammable'], { pollination: 'wind' }), 'orchard'),
+  FX(S('life.feast', 'life', 2, { spell: 'feast' }), 'orchard'),
+  FX(S('earth.shape', 'earth', 2, { spell: 'shape' }), 'workshop'),
+  FX(T('earth.garnet', 'earth', 1, 0, 3, ['stone', 'jewel', 'settable']), 'workshop'),
+  FX(S('word.writ', 'word', 3, { spell: 'writ' }), 'workshop'),
+  FX(T('rot.mould', 'rot', 1, 0, 2, ['living', 'fungus', 'decomposer'], { ability: { id: 'mould', cost: 1 } }), 'decay'),
+];
+// transformed-only and made-only forms of the workshop module
+const FOLIO_FORMS = [
+  { id: 'earth.setting', school: 'earth', type: 'thing', cost: 0, strike: 0, stand: 3, props: ['metal', 'socket'], deckLegal: false, market: false, folio: 'workshop', ladderOnly: true, transformedOnly: true },
+  MD('made.signet', ['earth'], 0, 4, ['metal', 'artefact', 'instrument'], { folio: 'workshop', ability: { id: 'signet', cost: 1 } }),
+];
+// B overlays on unchanged rc1 words (apply only while the module is active)
+const OVERLAYS = { orchard: { 'life.pear': { pollination: 'insect' }, 'air.wind': { carrier: 'wind' } }, workshop: { 'fire.smith': { ability: { id: 'shapeWork', cost: 2 } } } };
+
 // Stage H experiments only (never in normal play): WA_PATCH=miasma4,oak3 adjusts printed costs for a controlled test.
 for (const patch of String(process.env.WA_PATCH || '').split(',').filter(Boolean)) {
   const f = patch.match(/^([a-z_]+):([a-z]+)=(\d+)$/); // name:field=value, e.g. boulder:stand=5
@@ -209,7 +229,7 @@ for (const patch of String(process.env.WA_PATCH || '').split(',').filter(Boolean
   const m = patch.match(/^([a-z_]+?)(\d+)$/); if (!m) continue;
   const c = CARDS.find(x => x.id.split('.')[1] === m[1]); if (c) c.cost = +m[2];
 }
-const BY_ID = Object.fromEntries(CARDS.concat(TOKENS, MADE).map(c => [c.id, c]));
+const BY_ID = Object.fromEntries(CARDS.concat(TOKENS, MADE, FOLIO, FOLIO_FORMS).map(c => [c.id, c]));
 
 // Derived capabilities (spec §5.3). Explicit `cap` adds to these.
 function capabilities(card, kws) {
@@ -241,4 +261,4 @@ function validateRegistry() {
   return errs;
 }
 
-module.exports = { CARDS, TOKENS, MADE, BY_ID, capabilities, validateRegistry };
+module.exports = { CARDS, TOKENS, MADE, FOLIO, FOLIO_FORMS, OVERLAYS, BY_ID, capabilities, validateRegistry };

@@ -48,7 +48,7 @@ with sync_playwright() as p:
     for width in (1280, 400):
         page = br.new_page(viewport={'width': width, 'height': 900})
         page.on('console', lambda m: m.type == 'error' and 'fonts.g' not in m.text and errors.append(m.text))
-        page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))
+        page.on('pageerror', lambda e: errors.append('pageerror: ' + (e.stack or str(e))[:600]))
         page.goto(url); page.wait_for_selector('#lob')
         for g in range(games if width == 1280 else 1):
             page.goto(url); page.wait_for_selector('#lob')
@@ -91,7 +91,7 @@ with sync_playwright() as p:
     # artifact viewers run the page in a sandboxed frame without form submission: start a match there too
     import os
     open(os.path.join(dist, '_sandbox.html'), 'w').write('<iframe id=f sandbox="allow-scripts allow-same-origin" src="index.html" style="width:1200px;height:900px"></iframe>')
-    page = br.new_page(viewport={'width': 1240, 'height': 940}); page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))
+    page = br.new_page(viewport={'width': 1240, 'height': 940}); page.on('pageerror', lambda e: errors.append('pageerror: ' + (e.stack or str(e))[:600]))
     page.goto(f'http://127.0.0.1:{srv.server_port}/_sandbox.html'); fr = page.frame_locator('#f')
     fr.locator('#l-start').click(); fr.locator('.match, .mull').first.wait_for(timeout=5000)
     report.append({'sandboxed_frame_start': 'ok'}); os.remove(os.path.join(dist, '_sandbox.html'))

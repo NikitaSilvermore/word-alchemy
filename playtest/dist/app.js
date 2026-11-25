@@ -212,6 +212,21 @@
         MD("made.quintessence", ["fire", "air", "earth", "water"], 2, 4, ["body"]),
         MD("made.philosophers_stone", ["earth", "word", "fire", "air", "water"], 3, 6, ["stone", "metal", "body"], { kw: ["final"], upkeep: "stone" })
       ];
+      var FX = (o, module2) => ({ ...o, deckLegal: false, market: false, folio: module2 });
+      var FOLIO = [
+        FX(T("life.bee", "life", 1, 1, 2, ["living", "beast", "insect", "body", "winged", "flammable"], { kw: ["flying"], carrier: "insect" }), "orchard"),
+        FX(T("life.hazel", "life", 2, 0, 4, ["living", "plant", "tree", "orchard", "flower", "flammable"], { pollination: "wind" }), "orchard"),
+        FX(S("life.feast", "life", 2, { spell: "feast" }), "orchard"),
+        FX(S("earth.shape", "earth", 2, { spell: "shape" }), "workshop"),
+        FX(T("earth.garnet", "earth", 1, 0, 3, ["stone", "jewel", "settable"]), "workshop"),
+        FX(S("word.writ", "word", 3, { spell: "writ" }), "workshop"),
+        FX(T("rot.mould", "rot", 1, 0, 2, ["living", "fungus", "decomposer"], { ability: { id: "mould", cost: 1 } }), "decay")
+      ];
+      var FOLIO_FORMS = [
+        { id: "earth.setting", school: "earth", type: "thing", cost: 0, strike: 0, stand: 3, props: ["metal", "socket"], deckLegal: false, market: false, folio: "workshop", ladderOnly: true, transformedOnly: true },
+        MD("made.signet", ["earth"], 0, 4, ["metal", "artefact", "instrument"], { folio: "workshop", ability: { id: "signet", cost: 1 } })
+      ];
+      var OVERLAYS = { orchard: { "life.pear": { pollination: "insect" }, "air.wind": { carrier: "wind" } }, workshop: { "fire.smith": { ability: { id: "shapeWork", cost: 2 } } } };
       for (const patch of String(define_process_env_default.WA_PATCH || "").split(",").filter(Boolean)) {
         const f = patch.match(/^([a-z_]+):([a-z]+)=(\d+)$/);
         if (f) {
@@ -224,7 +239,7 @@
         const c = CARDS2.find((x) => x.id.split(".")[1] === m[1]);
         if (c) c.cost = +m[2];
       }
-      var BY_ID2 = Object.fromEntries(CARDS2.concat(TOKENS, MADE).map((c) => [c.id, c]));
+      var BY_ID2 = Object.fromEntries(CARDS2.concat(TOKENS, MADE, FOLIO, FOLIO_FORMS).map((c) => [c.id, c]));
       function capabilities(card, kws) {
         const p = card.props || [], c = new Set(card.cap || []);
         if (p.includes("body")) c.add("strike");
@@ -259,7 +274,7 @@
         for (const c of TOKENS.concat(MADE)) if (c.deckLegal || !Number.isInteger(c.strike) || !Number.isInteger(c.stand)) errs.push("template " + c.id);
         return errs;
       }
-      module.exports = { CARDS: CARDS2, TOKENS, MADE, BY_ID: BY_ID2, capabilities, validateRegistry };
+      module.exports = { CARDS: CARDS2, TOKENS, MADE, FOLIO, FOLIO_FORMS, OVERLAYS, BY_ID: BY_ID2, capabilities, validateRegistry };
     }
   });
 
@@ -354,7 +369,7 @@
     "../engine29/src/engine.js"(exports, module) {
       "use strict";
       init_define_process_env();
-      var { BY_ID: BY_ID2, capabilities } = require_cards();
+      var { BY_ID: BY_ID2, capabilities, OVERLAYS } = require_cards();
       var R2 = require_recipes();
       var FORMAT = {
         id: "grammar_v29_test",
@@ -436,7 +451,7 @@
         }
         return a;
       }
-      function deckErrors(deck) {
+      function deckErrors(deck, modules = []) {
         const e = [];
         if (deck.length !== FORMAT.deckSize) e.push("deck must have " + FORMAT.deckSize + " words");
         if (new Set(deck).size !== deck.length) e.push("words must be distinct");
@@ -447,7 +462,7 @@
             e.push("unknown " + id);
             continue;
           }
-          if (!c.deckLegal) e.push("not deck-legal " + id);
+          if (!c.deckLegal && !(c.folio && !c.transformedOnly && !c.made && modules.includes(c.folio))) e.push("not deck-legal " + id);
           sch.add(c.school);
         }
         if (sch.size < 1 || sch.size > 3) e.push("1\u20133 schools");
@@ -463,7 +478,7 @@
       }
       function createMatch({ decks, seed = 1, arithmetic = "v29", first = null, reserve = true, market = true, initiative = "spec", mulligan = null, marketBreath = 0, variant = {} }) {
         decks.forEach((d, i) => {
-          const e = deckErrors(d);
+          const e = deckErrors(d, variant.modules || []);
           if (e.length) throw new Error("deck " + i + ": " + e.join("; "));
         });
         const r = rng(seed);
@@ -492,7 +507,8 @@
             incomeEvery: variant.incomeEvery || 1,
             buyEvery: variant.buyEvery || 1,
             reserveCap: variant.reserveCap || FORMAT.reserveCap,
-            responseDiscount: variant.responseDiscount || null
+            responseDiscount: variant.responseDiscount || null,
+            modules: (variant.modules || []).slice()
           },
           mseed: (seed ^ 1540483477) >>> 0,
           market: [],
@@ -1314,7 +1330,7 @@
       function ready(S, t, onTurn) {
         if (t.exhausted || incapacitated(t)) return false;
         if (t.fresh && !has(S, t, "swift")) return false;
-        return onTurn ? t.actions < (t.quickUsed ? 2 : 1) : true;
+        return onTurn ? t.actions < (t.quickUsed || t.feastTurn === S.players[t.ctrl].personalTurn ? 2 : 1) : true;
       }
       var isOriginal = (t) => !!t.pid && !t.lineage && !t.token;
       var pushable = (S, t, maxSt) => !has(S, t, "heavy") && maxStand(S, t) <= maxSt;
@@ -1492,6 +1508,10 @@
               for (const sac of mine) for (const f of foes) out.push({ type: "spell", card: c.pid, target: f.id, sacrifice: sac.id });
               continue;
             }
+            if (d.folio && folioOn(S, d.folio)) {
+              out.push(...folioPlays(S, side, c, d));
+              continue;
+            }
             if (d.spell === "be") {
               for (const cat of p.hand.filter((x) => card(x).type === "category")) for (const q of p.hand.filter((x) => card(x).lawful)) {
                 if (d.cost + card(cat).cost + card(q).cost <= budget) out.push({ type: "law", card: c.pid, category: cat.pid, qual: q.pid });
@@ -1499,7 +1519,7 @@
               continue;
             }
           }
-          if (["tide", "squall", "abundance", "graft", "decay", "be"].includes(d.spell)) continue;
+          if (["tide", "squall", "abundance", "graft", "decay", "be", "feast", "shape", "writ"].includes(d.spell)) continue;
           if (d.spell === "transmute") {
             if (mode === "main") {
               for (const t of mine) for (const to of METAL_NEXT[card(t).id] || []) if (t.ladderTurn !== p.personalTurn) out.push({ type: "spell", card: c.pid, target: t.id, branch: to });
@@ -1592,9 +1612,11 @@
       }
       function abilityOptions(S, side) {
         const p = S.players[side], out = [], mine = S.things.filter((t) => t.ctrl === side), foes = S.things.filter((t) => t.ctrl !== side && !t.status.concealed);
+        if (S.rules.modules.length) out.push(...folioAbilityOptions(S, side));
         for (const t of mine) {
           const ab = card(t).ability;
-          if (!ab || ab.cost > p.breath) continue;
+          if (!ab || ab.cost > p.breath || ab.folio) continue;
+          if (card(t).folio && ["mould", "signet"].includes(ab.id)) continue;
           if (ab.sacrificeSelf) {
             if (incapacitated(t)) continue;
           } else if (!canAct(S, t)) continue;
@@ -1632,6 +1654,10 @@
       function whyIllegal(S, act) {
         if (legalActions(S).some((a) => sameAction(a, act))) return null;
         const p = S.players[S.active];
+        if (S.rules.modules && S.rules.modules.length) {
+          const w = folioWhy(S, act);
+          if (w) return w;
+        }
         if (act.card) {
           const c = p.hand.find((x) => x.pid === act.card);
           if (!c) return "that word is not in your hand";
@@ -1719,7 +1745,7 @@
         const objs = S.things.filter((t) => t.ctrl === side).map((t) => ({ o: t, g: false, ref: t.id }));
         if (p.ground) objs.push({ o: p.ground, g: true, ref: "ground" });
         const out = [];
-        for (const recipe of R2.NAMED.concat(R2.INFUSIONS)) for (const x of objs) for (const y of objs) {
+        for (const recipe of R2.NAMED.concat(R2.INFUSIONS, folioOn(S, "workshop") ? FOLIO_RECIPES : [])) for (const x of objs) for (const y of objs) {
           if (x === y) continue;
           const pv = previewFusion(S, side, recipe, x.o, x.g, y.o, y.g);
           if (!pv || pv.cost > p.breath || pv.catalyst && p.catalyst < 1) continue;
@@ -1727,7 +1753,7 @@
         }
         return out;
       }
-      var recipeById = (id) => R2.NAMED.find((r) => r.id === id) || R2.INFUSIONS.find((r) => r.id === id);
+      var recipeById = (id) => R2.NAMED.find((r) => r.id === id) || R2.INFUSIONS.find((r) => r.id === id) || FOLIO_RECIPES.find((r) => r.id === id);
       var refObj = (S, side, ref) => ref === "ground" ? S.players[side].ground : thingById(S, ref);
       function resolveFuse(S, n) {
         const side = n.side, p = S.players[side], recipe = recipeById(n.act.recipe);
@@ -1867,6 +1893,11 @@
             destroy(S, tg);
             return true;
           }
+          case "pollinate":
+          case "shapeWork":
+          case "signet":
+          case "mould":
+            return resolveFolioAbility(S, n, tg);
           case "eatFruit":
             if (a.branch === "life") {
               gainLife(S, side, 2, "fruit");
@@ -1899,6 +1930,189 @@
         if (k < 0) throw new Error("card not in hand " + pid);
         return p.hand.splice(k, 1)[0];
       }
+      var folioOn = (S, m) => !!(S.rules.modules && S.rules.modules.includes(m));
+      function trait(S, t, k) {
+        const c = card(t);
+        if (c.folio && !folioOn(S, c.folio)) return void 0;
+        if (c[k] !== void 0) return c[k];
+        for (const m of S.rules.modules || []) {
+          const o = OVERLAYS[m] && OVERLAYS[m][c.id];
+          if (o && o[k] !== void 0) return o[k];
+        }
+        return void 0;
+      }
+      var FOLIO_RECIPES = [
+        { id: "set", out: "made.signet", cost: 2, a: { thing: true, form: "earth.setting" }, b: { thing: true, props: ["jewel"] }, module: "workshop" }
+      ];
+      var SHAPEABLE = ["earth.copper", "earth.silver"];
+      var hasFruit = (S, side) => S.things.some((o) => o.ctrl === side && card(o).id === "token.fruit");
+      var freeSlot = (S, side) => S.things.filter((o) => o.ctrl === side).length < FORMAT.slots;
+      var wingFlight = (S, t) => has(S, t, "flying") && prop(t, "winged");
+      function pollinationWhy(S, carrier, host, resolving) {
+        const side = carrier ? carrier.ctrl : S.active;
+        if (!folioOn(S, "orchard")) return "pollination is not part of this format";
+        if (!carrier) return "the carrier has left play";
+        const ch = trait(S, carrier, "carrier");
+        if (!ch) return `${nameOf(carrier)} carries no pollen: only an insect (Bee) or the wind (Wind) can pollinate`;
+        if (!host || host.ctrl !== side) return "choose one of your own trees";
+        const want = trait(S, host, "pollination");
+        if (!want || !prop(host, "orchard") || !prop(host, "flower")) return `${nameOf(host)} is not a flowering Orchard tree`;
+        if (want !== ch) return `${nameOf(host)} is ${want}-pollinated; ${nameOf(carrier)} carries pollen by ${ch === "insect" ? "insect" : "wind"}`;
+        if (ch === "insect" && !wingFlight(S, carrier)) return `${nameOf(carrier)} needs working wings to pollinate${carrier.status.wet ? " (it is Wet)" : S.sky && card(S.sky).weather === "desert" ? " (Desert grounds winged flight)" : ""}`;
+        if (!resolving) {
+          if (!canAct(S, carrier)) return `${nameOf(carrier)} must be mature and ready (it is ${carrier.exhausted ? "exhausted" : carrier.fresh ? "Fresh" : incapacitated(carrier) ? "unable to act" : "out of actions"})`;
+          if (S.players[side].breath < 1) return "pollinating costs 1 breath";
+        } else if (incapacitated(carrier)) return `${nameOf(carrier)} cannot act`;
+        if (hasFruit(S, side)) return "you already have a Fruit";
+        if (!freeSlot(S, side)) return "no empty field space for the Fruit";
+        return null;
+      }
+      function shapeWhy(S, side, t) {
+        if (!t || t.ctrl !== side || t.owner !== side) return "choose a metal you own and control";
+        if (!SHAPEABLE.includes(card(t).id)) return `only Copper or Silver can be worked into a Setting (${nameOf(t)} is ${card(t).id.split(".")[1]})`;
+        if (has(S, t, "fixed")) return `${nameOf(t)} is Fixed`;
+        if (t.ladderTurn === S.players[side].personalTurn) return `${nameOf(t)} has already changed form this turn`;
+        const st = BY_ID2["earth.setting"].stand + modsOf(t).stand + (t.counters.bedrock || 0) + (t.tempStand || 0);
+        if (st - t.damage <= 0) return `as a Setting (stand ${st}) it would die from its ${t.damage} damage`;
+        return null;
+      }
+      var nameOf = (t) => {
+        const w = String(t.form || t.word || "").split(".").pop();
+        return w.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase());
+      };
+      var feastable = (S, t) => t.exhausted && prop(t, "living") && prop(t, "body") && curStrike(S, t) > 0 && !incapacitated(t) && !(t.fresh && !has(S, t, "swift")) && t.actions < 2;
+      var mouldSeals = (S, side) => S.players[side].grave.filter((g) => (BY_ID2[g.word].props || []).includes("plant") && ["destroyed", "sacrificed"].includes(g.reason) && !BY_ID2[g.word].token);
+      var mouldTargets = (S, side, m) => S.things.filter((t) => t.ctrl === side && t !== m && prop(t, "plant") && ((t.counters.growth || 0) < FORMAT.growthCap && !t.status.measured || plantNext(S, t)));
+      function abilityCost(S, t, id) {
+        return id === "shapeWork" ? 2 : id === "pollinate" ? 1 : (card(t).ability || {}).cost || 1;
+      }
+      function folioPlays(S, side, c, d) {
+        const out = [], mine = S.things.filter((t) => t.ctrl === side), foes = S.things.filter((t) => t.ctrl !== side && !t.status.concealed);
+        if (d.spell === "feast") {
+          const tg = mine.filter((t) => feastable(S, t)).map((t) => t.id);
+          for (const f of mine.filter((o) => card(o).id === "token.fruit")) for (const ts of combos(tg, 1, 2)) out.push({ type: "spell", card: c.pid, sacrifice: f.id, targets: ts });
+        }
+        if (d.spell === "shape") {
+          for (const t of mine) if (!shapeWhy(S, side, t)) out.push({ type: "spell", card: c.pid, target: t.id });
+        }
+        if (d.spell === "writ") {
+          for (const f of foes.filter((t) => !t.exhausted && (prop(t, "person") || prop(t, "speaker")))) out.push({ type: "spell", card: c.pid, target: f.id });
+          for (const sg of mine.filter((t) => card(t).id === "made.signet" && canAct(S, t))) for (const ts of combos(foes.filter((t) => !t.exhausted).map((t) => t.id), 1, 2)) out.push({ type: "spell", card: c.pid, targets: ts, endorse: sg.id });
+        }
+        return out;
+      }
+      function folioAbilityOptions(S, side) {
+        const p = S.players[side], out = [], mine = S.things.filter((t) => t.ctrl === side);
+        for (const t of mine) {
+          if (folioOn(S, "orchard") && trait(S, t, "carrier")) {
+            for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: "ability", subject: t.id, ability: "pollinate", target: h.id });
+          }
+          if (!canAct(S, t)) continue;
+          const ab = trait(S, t, "ability") || {};
+          if (ab.id === "shapeWork" && p.breath >= 2) {
+            for (const m of mine) if (m !== t && !shapeWhy(S, side, m)) out.push({ type: "ability", subject: t.id, ability: "shapeWork", target: m.id });
+          }
+          if (ab.id === "signet" && p.breath >= 1) for (const f of mine.filter((o) => isOriginal(o) && !o.status.named)) out.push({ type: "ability", subject: t.id, ability: "signet", target: f.id });
+          if (ab.id === "mould" && p.breath >= 1) {
+            const seals = mouldSeals(S, side);
+            for (const f of mouldTargets(S, side, t)) for (const g of seals) out.push({ type: "ability", subject: t.id, ability: "mould", target: f.id, seal: "g:" + g.pid });
+          }
+        }
+        return out;
+      }
+      function resolveFolioAbility(S, n, tg) {
+        const a = n.act, side = n.side, sub = thingById(S, a.subject);
+        if (!sub || sub.ctrl !== side) return false;
+        switch (a.ability) {
+          case "pollinate": {
+            const why = pollinationWhy(S, sub, tg, true);
+            if (why) {
+              event(S, "folio-failed", { why });
+              return false;
+            }
+            const f = createToken(S, side, "token.fruit");
+            if (!f) return false;
+            f.cropOf = tg.id;
+            event(S, "pollinated", { carrier: sub.id, host: tg.id, fruit: f.id });
+            return true;
+          }
+          case "shapeWork": {
+            if (incapacitated(sub)) return false;
+            const why = shapeWhy(S, side, tg);
+            if (why) return false;
+            toSetting(S, tg);
+            return true;
+          }
+          case "signet":
+            if (!tg || tg.ctrl !== side || !isOriginal(tg) || tg.status.named) return false;
+            tg.status.named = true;
+            event(S, "signet-named", { tid: tg.id });
+            return true;
+          case "mould": {
+            if (incapacitated(sub) || !tg || tg.ctrl !== side || !prop(tg, "plant")) return false;
+            let did = false;
+            if ((tg.counters.growth || 0) < FORMAT.growthCap && addCounter(S, tg, "growth")) did = true;
+            if (plantNext(S, tg)) {
+              ageUp(S, tg);
+              did = true;
+            }
+            return did;
+          }
+        }
+        return false;
+      }
+      function toSetting(S, t) {
+        transform(S, t, "earth.setting");
+        for (const q of (t.quals || []).slice()) {
+          const qd = BY_ID2[q.word].qual;
+          if (qd.needsProp && !prop(t, qd.needsProp)) {
+            t.quals = t.quals.filter((x) => x !== q);
+            toGrave(S, q, "retired");
+          }
+        }
+      }
+      function resolveFolioSpell(S, n, d, tg) {
+        const side = n.side, a = n.act, p = S.players[side];
+        if (d.spell === "feast") {
+          const ts = a.targets.map((id) => thingById(S, id)).filter((t) => t && t.ctrl === side && feastable(S, t));
+          if (!ts.length) return false;
+          for (const t of ts) {
+            t.exhausted = false;
+            t.feastTurn = p.personalTurn;
+            event(S, "feast", { tid: t.id });
+          }
+          return true;
+        }
+        if (d.spell === "shape") {
+          if (shapeWhy(S, side, tg)) return false;
+          toSetting(S, tg);
+          return true;
+        }
+        if (d.spell === "writ") {
+          if (n.endorsed) {
+            const ts = a.targets.map((id) => thingById(S, id)).filter((t) => t && t.ctrl !== side && !t.status.concealed);
+            if (!ts.length) return false;
+            for (const t of ts) {
+              if (ts.length === 1 && a.targets.length === 1 && wardBlocks(S, n, t)) continue;
+              exhaust(t);
+              event(S, "writ", { tid: t.id });
+            }
+            return true;
+          }
+          if (!tg || tg.ctrl === side || !(prop(tg, "person") || prop(tg, "speaker"))) return false;
+          if (wardBlocks(S, n, tg)) return true;
+          exhaust(tg);
+          event(S, "writ", { tid: tg.id });
+          return true;
+        }
+        return false;
+      }
+      function folioWhy(S, act) {
+        const p = S.players[S.active];
+        if (act.type === "ability" && act.ability === "pollinate") return pollinationWhy(S, thingById(S, act.subject), thingById(S, act.target));
+        if (act.type === "ability" && act.ability === "shapeWork" || act.card && p.hand.some((c) => c.pid === act.card && card(c).spell === "shape")) return shapeWhy(S, p.i, thingById(S, act.target));
+        return null;
+      }
       function normCtl(ctl) {
         if (typeof ctl === "function") return { block: ctl, respond: null };
         return ctl || {};
@@ -1915,7 +2129,7 @@
         }
         let cost = d ? d.cost : act.type === "attack" ? S.rules.freeStrike ? 0 : 1 : 0;
         if (act.type === "fuse") cost = 0;
-        if (act.type === "ability") cost = card(thingById(S, act.subject)).ability.cost;
+        if (act.type === "ability") cost = abilityCost(S, thingById(S, act.subject), act.ability);
         if (act.type === "law") {
           node.extra = [takeCard(p, act.category), takeCard(p, act.qual)];
           cost += node.extra.reduce((a, c) => a + card(c).cost, 0);
@@ -1966,12 +2180,25 @@
           event(S, "sacrifice", { tid: v.id });
         }
         if (act.payload) exhaust(thingById(S, act.payload));
+        if (act.seal) {
+          const pid = act.seal.slice(2), k = p.grave.findIndex((g2) => g2.pid === pid);
+          const g = p.grave.splice(k, 1)[0];
+          p.sealed.push({ pid: g.pid, word: g.word, owner: g.owner });
+          event(S, "sealed", { pid: g.pid, why: "mould" });
+        }
+        if (act.endorse) {
+          const sg = thingById(S, act.endorse);
+          exhaust(sg);
+          sg.actions++;
+          node.endorsed = true;
+          event(S, "endorse", { tid: sg.id });
+        }
         if (d && d.spell === "squall") for (const id of act.targets) {
           const f = thingById(S, id);
           exhaust(f);
           f.actions++;
         }
-        if (act.type === "ability" && card(thingById(S, act.subject)).ability.sacrificeSelf) {
+        if (act.type === "ability" && (card(thingById(S, act.subject)).ability || {}).sacrificeSelf && (card(thingById(S, act.subject)).ability || {}).id === act.ability) {
           const f = thingById(S, act.subject);
           node.selfSacrificed = true;
           if (leaveField(S, f, "sacrificed")) deathTrigger(S, f, "sacrificed");
@@ -2371,6 +2598,10 @@
             }
             break;
           }
+          case "feast":
+          case "shape":
+          case "writ":
+            return resolveFolioSpell(S, n, d, tg);
           case "transmute": {
             if (!friendly || tg.ladderTurn === p.personalTurn || !(METAL_NEXT[card(tg).id] || []).includes(a.branch)) return false;
             transform(S, tg, a.branch);
@@ -2670,13 +2901,15 @@
         return true;
       }
       function sameAction(a, b) {
-        return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null) && a.recipe === b.recipe && a.a === b.a && a.b === b.b && a.sacrifice === b.sacrifice && a.branch === b.branch && a.payload === b.payload && a.mode === b.mode && a.donor === b.donor && a.might === b.might && a.replace === b.replace && a.category === b.category && a.qual === b.qual && a.ability === b.ability && JSON.stringify(a.targets || null) === JSON.stringify(b.targets || null);
+        return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null) && a.recipe === b.recipe && a.a === b.a && a.b === b.b && a.sacrifice === b.sacrifice && a.branch === b.branch && a.payload === b.payload && a.mode === b.mode && a.donor === b.donor && a.might === b.might && a.replace === b.replace && a.category === b.category && a.qual === b.qual && a.ability === b.ability && JSON.stringify(a.targets || null) === JSON.stringify(b.targets || null) && a.seal === b.seal && a.endorse === b.endorse;
       }
       function hashState(S) {
         const pub = JSON.stringify({ t: S.turn, a: S.active, p: S.players.map((p) => [p.life, p.breath, p.reserve, p.hand.map((c) => c.pid), p.deck.map((c) => c.pid), p.grave.map((c) => c.pid + c.reason), p.poison, p.spark, p.catalyst, p.ground && [p.ground.pid, p.ground.damage]]), m: S.market.map((o) => o && o.word), sky: S.sky && S.sky.pid, law: S.law && S.law.cards.map((c) => c.pid), bd: S.players.map((p) => p.burden && [p.burden.pid, p.burden.ticks]), th: S.things.map((t) => [t.id, t.pid, t.form, t.ctrl, t.damage, t.exhausted, t.fresh, t.counters, t.status, t.mods, t.lineage && lineagePids(t.lineage).map((r) => r.pid), (t.quals || []).map((q) => q.pid)]) });
+        const extra = S.rules.modules && S.rules.modules.length ? JSON.stringify(S.things.map((t) => [t.id, t.feastTurn || 0, t.cropOf || 0])) : "";
+        const all = pub + extra;
         let h = 2166136261;
-        for (let i = 0; i < pub.length; i++) {
-          h ^= pub.charCodeAt(i);
+        for (let i = 0; i < all.length; i++) {
+          h ^= all.charCodeAt(i);
           h = Math.imul(h, 16777619);
         }
         return (h >>> 0).toString(16);
@@ -2686,6 +2919,12 @@
         { id: "r30.1", note: "Alkahest gains its printed ability (1 breath, sacrifice: destroy an enemy Thing or damageable Ground). Changes play only in matches where Alkahest is made. Healing is now recorded in stats (not in the state hash)." }
       ] };
       module.exports = {
+        pollinationWhy,
+        shapeWhy,
+        trait,
+        folioOn,
+        FOLIO_RECIPES,
+        abilityCost,
         REVISION,
         FORMAT,
         INITIATIVE,
@@ -2773,7 +3012,7 @@
         const P = S.players, side = (i) => S.things.filter((t) => t.ctrl === i);
         const thingV = (t) => {
           const out = E2.incapacitated(t) ? 0.5 : 1;
-          return out * E2.curStrike(S, t) * w.str + Math.max(0, E2.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0) + (w.alchemy || 0) * alchemyWorth(t);
+          return out * E2.curStrike(S, t) * w.str + Math.max(0, E2.remainingOf(S, t)) * w.st - (t.status.burning ? 2 : 0) - (t.status.poison || 0) + (t.status.ward ? 0.5 : 0) + (w.alchemy || 0) * alchemyWorth(t, S);
         };
         const board = (i) => side(i).reduce((a, t) => a + thingV(t), 0) + (P[i].ground ? 1 + 0.2 * E2.groundRemaining(P[i].ground) : 0);
         return w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length) - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst) + (S.sky ? S.sky.caster === me ? 1.2 : -1.2 : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0);
@@ -2790,9 +3029,19 @@
       }
       var ENGINE = { energy: 1.6, gold: 1.6, lifeHeal: 1.2, worldTree: 2.5, stone: 2.5 };
       var FORM_PROGRESS = { "earth.tin": 0.6, "earth.copper": 0.6, "earth.silver": 1.2, "earth.gold": 2, "life.sapling": 0.8, "life.oak": 1.5, "life.willow": 1.2 };
-      function alchemyWorth(t) {
+      var FOLIO_WORTH = { "token.fruit": 1.2, "earth.setting": 0.6, "made.signet": 1.6, "earth.garnet": 0.4, "rot.mould": 0.5 };
+      function folioWorth(S, t) {
         const c = E2.card(t);
-        let v = (ENGINE[c.upkeep] || 0) + (FORM_PROGRESS[c.id] || 0);
+        let v = FOLIO_WORTH[c.id] || 0;
+        if (E2.trait(S, t, "carrier") && S.things.some((h) => h.ctrl === t.ctrl && E2.trait(S, h, "pollination") === E2.trait(S, t, "carrier"))) v += 0.5;
+        if (E2.trait(S, t, "pollination") && S.things.some((h) => h.ctrl === t.ctrl && E2.trait(S, h, "carrier") === E2.trait(S, t, "pollination"))) v += 0.5;
+        if ((c.id === "earth.copper" || c.id === "earth.silver") && S.things.some((o) => o.ctrl === t.ctrl && E2.card(o).id === "earth.garnet")) v += 0.3;
+        if (c.id === "earth.setting" && S.things.some((o) => o.ctrl === t.ctrl && E2.card(o).id === "earth.garnet")) v += 0.6;
+        return v;
+      }
+      function alchemyWorth(t, S) {
+        const c = E2.card(t);
+        let v = (ENGINE[c.upkeep] || 0) + (FORM_PROGRESS[c.id] || 0) + (S && S.rules.modules && S.rules.modules.length ? folioWorth(S, t) : 0);
         if (t.lineage) v += 0.8 + (c.made ? 0.5 * (c.kw || []).includes("final") + 0.4 * (c.schools || []).length : 0.6 * (t.mods && t.mods.infusions.length || 0));
         if (c.rebirth) v += 1.5;
         if (t.token) v -= 0.3;
@@ -2960,7 +3209,8 @@
       function sampleRivalHand(S, me, r) {
         const rv = S.players[1 - me];
         const seen = new Set(rv.grave.map((g) => g.word).concat(rv.sealed.map((g) => g.word), S.things.filter((t) => t.owner === rv.i && t.pid).map((t) => t.word)));
-        const pool = Object.values(require_cards().BY_ID).filter((c) => c.deckLegal && rv.schools.includes(c.school) && !seen.has(c.id)).map((c) => c.id);
+        const mods = S.rules && S.rules.modules || [];
+        const pool = Object.values(require_cards().BY_ID).filter((c) => (c.deckLegal || c.folio && !c.made && !c.transformedOnly && mods.includes(c.folio)) && rv.schools.includes(c.school) && !seen.has(c.id)).map((c) => c.id);
         return rv.hand.map((x, k) => ({ pid: "?s" + k, word: pool.length ? pool[Math.floor(r() * pool.length)] : HIDDEN, owner: rv.i }));
       }
       function stepValue(S0, c, me, w, a, ra = false) {
@@ -3051,6 +3301,13 @@
         grammar_v30_exp_buy2: { version: "0.30.0-exp.buy2", status: "experiment", base: "grammar_v30_rc1", variant: { buyEvery: 2 } },
         grammar_v30_exp_reserve3: { version: "0.30.0-exp.reserve3", status: "experiment", base: "grammar_v30_rc1", variant: { reserveCap: 3 } },
         grammar_v30_exp_cheapresp: { version: "0.30.0-exp.cheapresp", status: "experiment", base: "grammar_v30_rc1", variant: { responseDiscount: { "water.sleep": 1, "water.frozen": 1, "air.gust": 1, "word.doubt": 1 } } },
+        // V31 Living Folio — model B (Expanded Grammar). Each module is a separate format; 'all' combines them. Market and
+        // every other lever stay at the rc1 reference so module effects are never confused with price experiments.
+        folio_b_orchard: { version: "0.31.0-b.orchard", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["orchard"] } },
+        folio_b_workshop: { version: "0.31.0-b.workshop", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["workshop"] } },
+        folio_b_decay: { version: "0.31.0-b.decay", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["decay"] } },
+        folio_b_garden: { version: "0.31.0-b.garden", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["orchard", "decay"] } },
+        folio_b_all: { version: "0.31.0-b.all", status: "experiment", base: "grammar_v30_rc1", variant: { modules: ["orchard", "workshop", "decay"] } },
         // Only for comparison with the V28 maths; never for play.
         legacy_v28_maths: { version: "0.28-emulation", status: "diagnostic", arithmetic: "legacy", initiative: "spec", reserve: true, market: true, marketBreath: 0, variant: {} }
       };
@@ -3347,6 +3604,93 @@
         )
       };
       module.exports = { THEMED: THEMED2, COUNTERS: COUNTERS2, ALL: { ...THEMED2, ...COUNTERS2 } };
+    }
+  });
+
+  // ../engine29/data/folio_decks.js
+  var require_folio_decks = __commonJS({
+    "../engine29/data/folio_decks.js"(exports, module) {
+      "use strict";
+      init_define_process_env();
+      var O_B = [
+        "life.bee",
+        "life.pear",
+        "life.hazel",
+        "life.feast",
+        "life.seed",
+        "life.sapling",
+        "life.bramble",
+        "life.grow",
+        "life.rose",
+        "life.wolf",
+        "life.hare",
+        "life.plants",
+        "water.water",
+        "water.dew",
+        "water.otter",
+        "water.seep",
+        "air.wind",
+        "air.gust",
+        "air.owl",
+        "air.herald"
+      ];
+      var F_B = [
+        "earth.copper",
+        "earth.silver",
+        "earth.garnet",
+        "earth.shape",
+        "earth.guard",
+        "earth.boulder",
+        "earth.iron",
+        "earth.flint",
+        "earth.crush",
+        "earth.temper",
+        "fire.smith",
+        "fire.ember",
+        "fire.scorch",
+        "fire.calcine",
+        "fire.kindle",
+        "word.writ",
+        "word.scribe",
+        "word.protect",
+        "word.doubt",
+        "word.scream"
+      ];
+      var M_B = [
+        "life.pear",
+        "life.seed",
+        "life.sapling",
+        "life.bee",
+        "life.bramble",
+        "life.grow",
+        "life.feast",
+        "life.wolf",
+        "rot.mould",
+        "rot.rat",
+        "rot.barrow",
+        "rot.decay",
+        "rot.wither",
+        "rot.exhume",
+        "rot.adder",
+        "rot.poison",
+        "rot.spider",
+        "water.water",
+        "water.dew",
+        "water.otter"
+      ];
+      var swap = (d, m) => d.map((w) => m[w] || w);
+      var FOLIO_DECKS2 = {
+        O_orchard_crosswind: { words: O_B, modules: ["orchard"], note: "The orchard in a crosswind" },
+        F_seal_cutter: { words: F_B, modules: ["workshop"], note: "The seal-cutter" },
+        M_returning_garden: { words: M_B, modules: ["orchard", "decay"], note: "The returning garden" }
+      };
+      var ABLATIONS2 = {
+        // A ablations (rc1-legal): file 05 "Fair paired substitutions"
+        O_A: swap(O_B, { "life.bee": "life.scarab", "life.hazel": "life.aloe", "life.feast": "life.abundance" }),
+        F_A: swap(F_B, { "earth.garnet": "earth.clay", "earth.shape": "earth.transmute", "word.writ": "word.omen" }),
+        M_A: swap(M_B, { "life.bee": "life.scarab", "life.feast": "life.abundance", "rot.mould": "rot.toadstool" })
+      };
+      module.exports = { FOLIO_DECKS: FOLIO_DECKS2, ABLATIONS: ABLATIONS2, O_B, F_B, M_B };
     }
   });
 
@@ -5168,8 +5512,22 @@
       var F2 = require_formats();
       var E2 = require_engine();
       var { REF } = require_reference_decks();
+      var { FOLIO_DECKS: FOLIO_DECKS2 } = require_folio_decks();
       function base(first = 0) {
         const S = F2.createFromFormat("grammar_v30_rc1", { decks: [REF.D1_living_sky, REF.D2_lockkeepers_wall], seed: 4242, first, mulligan: () => [] });
+        for (const p of S.players) {
+          p.deck.push(...p.hand);
+          p.hand = [];
+          p.breath = 8;
+          p.reserve = 0;
+          p.spark = 0;
+        }
+        S.market = S.market.map(() => null);
+        S.ptFixture = true;
+        return S;
+      }
+      function fbase(first = 0) {
+        const S = F2.createFromFormat("folio_b_all", { decks: [FOLIO_DECKS2.M_returning_garden.words, FOLIO_DECKS2.F_seal_cutter.words], seed: 4343, first, mulligan: () => [] });
         for (const p of S.players) {
           p.deck.push(...p.hand);
           p.hand = [];
@@ -5338,6 +5696,94 @@
             place(S, 1, "life.wolf");
             return S;
           }
+        },
+        // ---- V31 Living Folio (model B) ----
+        f_pollen: {
+          format: "folio_b_all",
+          title: "Folio \xB7 who can pollinate what",
+          text: "Bee (insect) and Wind (wind) beside Pear (insect-pollinated) and Hazel (wind-pollinated). Click a carrier: only the matching tree is offered. Inspect any of them to see why. The rival holds Gust and Drench (Wet grounds a Bee, not the Wind).",
+          build: () => {
+            const S = fbase();
+            place(S, 0, "life.bee");
+            place(S, 0, "air.wind");
+            place(S, 0, "life.pear");
+            place(S, 0, "life.hazel");
+            place(S, 1, "water.otter");
+            give(S, 1, "air.gust");
+            give(S, 1, "water.drench");
+            S.players[1].reserve = 2;
+            return S;
+          }
+        },
+        f_feast: {
+          format: "folio_b_all",
+          title: "Folio \xB7 Feast for a second wave",
+          text: "Your Wolf and Otter have already struck and are exhausted. Eat the Fruit with Feast to ready them; a second Strike still costs 1 breath. Or keep the Fruit to block or heal.",
+          build: () => {
+            const S = fbase();
+            place(S, 0, "life.wolf", { exhausted: true, actions: 1 });
+            place(S, 0, "water.otter", { exhausted: true, actions: 1 });
+            place(S, 0, "token.fruit", { form: "token.fruit", token: true, pid: null });
+            give(S, 0, "life.feast");
+            S.players[0].breath = 4;
+            place(S, 1, "earth.boulder");
+            return S;
+          }
+        },
+        f_workshop: {
+          format: "folio_b_all",
+          title: "Folio \xB7 from Copper to Signet",
+          text: "Work Copper into a Setting (Shape in hand, or Smith's native ability), then next turn Set it with Garnet in the Vessel to make a Signet. Silver is Sacred; shaping it gives that up. Inspect the Signet: it shows its Setting and Garnet and the original Copper.",
+          build: () => {
+            const S = fbase();
+            place(S, 0, "fire.smith");
+            place(S, 0, "earth.copper");
+            place(S, 0, "earth.silver");
+            place(S, 0, "earth.garnet");
+            give(S, 0, "earth.shape");
+            give(S, 0, "word.writ");
+            place(S, 1, "word.scribe");
+            place(S, 1, "earth.boulder");
+            return S;
+          }
+        },
+        f_signet: {
+          format: "folio_b_all",
+          title: "Folio \xB7 Signet endorses a Writ",
+          text: "A finished Signet (Setting from Copper + Garnet). Endorse Writ by exhausting it to exhaust two rival blockers, then attack. The rival holds Doubt with 2 reserve; a countered Writ keeps its costs.",
+          build: () => {
+            const S = fbase();
+            S.registry.fls1 = S.registry.fls2 = true;
+            place(S, 0, "made.signet", { form: "made.signet", pid: null, lineage: [{ pid: "fls1", word: "earth.copper", form: "earth.setting", owner: 0 }, { pid: "fls2", word: "earth.garnet", form: "earth.garnet", owner: 0 }] });
+            place(S, 0, "earth.iron");
+            place(S, 0, "fire.ember");
+            give(S, 0, "word.writ");
+            place(S, 1, "earth.boulder");
+            place(S, 1, "water.ice");
+            give(S, 1, "word.doubt");
+            S.players[1].reserve = 2;
+            return S;
+          }
+        },
+        f_mould: {
+          format: "folio_b_all",
+          title: "Folio \xB7 Mould returns the dead to the soil",
+          text: "Your Grave holds a Seed that died, a Pear that was sacrificed and a Rose you discarded. Mould can seal only a Plant that died. It feeds Growth and age to your Sapling, and Growth on another Plant makes your Pear fruit.",
+          build: () => {
+            const S = fbase();
+            place(S, 0, "rot.mould");
+            place(S, 0, "life.sapling");
+            place(S, 0, "life.pear");
+            const y = (w, r) => {
+              const g = grave(S, 0, w);
+              g.reason = r;
+            };
+            y("life.seed", "destroyed");
+            y("life.bramble", "sacrificed");
+            y("life.rose", "discarded");
+            give(S, 0, "rot.exhume");
+            return S;
+          }
         }
       };
       for (const [id, f] of Object.entries(FIXTURES2)) {
@@ -5369,6 +5815,7 @@
   var { BY_ID, CARDS } = require_cards();
   var { REFERENCE_DECKS } = require_reference_decks();
   var { THEMED, COUNTERS } = require_themed_decks();
+  var { FOLIO_DECKS, ABLATIONS } = require_folio_decks();
   var SPEC = require_spec_catalogue();
   var { createController, restoreController } = require_controller();
   var { FIXTURES } = require_fixtures();
@@ -5377,9 +5824,10 @@
     ["Reference", [["grammar_v30_rc1", "V30 rc1 \u2014 original market (2/3 spark)"]]],
     ["Market comparison", [["grammar_v30_exp_price34", "Market at 3/4 spark (experiment)"]]],
     ["Other test variants", [["grammar_v30_exp_nosentence", "No spark from sentences"], ["grammar_v30_exp_income2", "Spark income every second turn"], ["grammar_v30_exp_buy2", "Buy every second turn"], ["grammar_v30_exp_reserve3", "Reserve cap 3"], ["grammar_v30_exp_cheapresp", "Cheaper responses"]]],
+    ["V31 Living Folio \xB7 Expanded Grammar (experiment)", [["folio_b_all", "All three modules: orchard, workshop, decay"], ["folio_b_orchard", "Orchard only (Bee, Hazel, Feast)"], ["folio_b_workshop", "Workshop only (Shape, Garnet, Signet, Writ)"], ["folio_b_garden", "Orchard + decay (Mould)"], ["folio_b_decay", "Decay only (Mould)"]]],
     ["Earlier", [["grammar_v29_spec", "V29 specification"]]]
   ];
-  var VERSION = "V30 Crucible playtest 2";
+  var VERSION = "V31 Living Folio experiment 1 (on the V30 Crucible 2 build)";
   var SCHOOLS = ["fire", "water", "air", "earth", "life", "rot", "word"];
   var SCHOOL_NAME = { fire: "Fire", water: "Water", air: "Air", earth: "Earth", life: "Life", rot: "Rot", word: "The Word" };
   var TIERS = B.TIER_ORDER;
@@ -5423,8 +5871,22 @@
     const w = String(id).split(".").pop();
     return SPECIAL[w] || w.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
+  var FOLIO_TEXT = {
+    "life.bee": "Living Beast, Insect, Winged, Flying, Body, Flammable. Pollinate: Main, 1 breath, exhaust this mature ready Bee: your insect-pollinated flowering Orchard tree (Pear) makes 1 Fruit, if you have none and a space is free. Needs working wings: Wet or Desert grounds it.",
+    "life.hazel": "Living Plant, Tree, Orchard, Flower, Flammable. Wind-pollinated: your mature ready Wind can pollinate it (Main, 1 breath, exhaust the Wind) to make 1 Fruit (a nut). A Bee, an Owl or a Rose cannot.",
+    "life.feast": "Main. Additional cost: sacrifice your Fruit. Ready 1 or 2 of your exhausted, mature Living Things with Body and strike that have acted fewer than twice this turn. Each may act once more (a Strike still costs 1). Never a third action.",
+    "earth.shape": "Main. Work your Copper or Silver into a Setting: same card, same damage, compatible attachments stay. Not if Fixed, not if it would die, at most one metal change per turn.",
+    "earth.garnet": "Non-living Stone, Jewel, settable. Can block. Set it into a Setting in the Vessel to make a Signet.",
+    "earth.setting": "Transformed only (from Copper or Silver). Metal, Socket. No Body. Can block. Remembers its original card: bounced, it returns as that word. Set + Garnet in the Vessel = Signet.",
+    "made.signet": "Made: Setting + Garnet (Set recipe, 2 breath). Metal, Artefact, Instrument. Main, 1 breath, exhaust: give a friendly original Thing Named. Or exhaust it to endorse Writ. Separate restores the Setting and the Garnet.",
+    "word.writ": "Main. Exhaust a ready rival Person or Speaker. Or endorse it by exhausting your mature ready Signet: exhaust up to two ready rival Things. Each target is rechecked; Ward stops it on a single target. Doubt can counter it.",
+    "rot.mould": "Living Fungus, Decomposer. Main, 1 breath, exhaust: seal a Plant card of yours that died (destroyed or sacrificed) from your Grave; another friendly Plant gains 1 Growth and 1 age. A discarded Plant or a released ingredient cannot pay."
+  };
+  var OVERLAY_TEXT = { "life.pear": " Folio: insect-pollinated (a Bee can pollinate it).", "air.wind": " Folio: wind carrier (can pollinate Hazel, even when Wet).", "fire.smith": " Folio: Main, 2 breath, exhaust: work your Copper or Silver into a Setting (native, cannot be Doubted)." };
   function textOf(id) {
-    return SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || "";
+    const base = FOLIO_TEXT[id] || (SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || "");
+    const fm = A.C && A.C.S && A.C.S.rules.modules || [];
+    return base + (fm.length && OVERLAY_TEXT[id] && (id !== "fire.smith" && fm.includes("orchard") || id === "fire.smith" && fm.includes("workshop")) ? OVERLAY_TEXT[id] : "");
   }
   function schoolOf(id) {
     const c = BY_ID[id];
@@ -5432,14 +5894,16 @@
   }
   var esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   var TYPE_NAME = { thing: "Thing", action: "Action", spell: "Spell", ground: "Ground", quality: "Quality", weather: "Weather", burden: "Burden", category: "Category" };
-  var A = { view: store.get("wa30.view") || "art", names: {}, screen: "lobby", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-  var lobby = Object.assign({ ra: "ra", mine: "D1_living_sky", theirs: "D2_lockkeepers_wall", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "grammar_v30_rc1" }, store.get("wa30.lobby") || {});
+  var A = { view: store.get("wa31.view") || "art", names: {}, screen: "lobby", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+  var lobby = Object.assign({ ra: "ra", mine: "O_orchard_crosswind", theirs: "D3_furnace_wind", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "folio_b_all" }, store.get("wa31.lobby") || {});
   function allDecks() {
-    const custom = store.get("wa30.custom") || {};
+    const custom = store.get("wa31.custom") || {};
     const out = [];
     for (const [k, v] of Object.entries(REFERENCE_DECKS)) out.push({ id: k, group: "Reference decks (frozen)", label: k.replace(/_/g, " ") + " \u2014 " + v.rival, words: v.words });
     for (const [k, v] of Object.entries(THEMED)) out.push({ id: k, group: "Themed test decks", label: k.slice(2).replace(/_/g, " "), words: v });
     for (const [k, v] of Object.entries(COUNTERS)) out.push({ id: k, group: "Counter test decks", label: k.slice(2).replace(/_/g, " "), words: v });
+    for (const [k, v] of Object.entries(FOLIO_DECKS)) out.push({ id: k, group: "V31 Folio decks (need a Folio rules version)", label: v.note + " (" + k[0] + ")", words: v.words, modules: v.modules });
+    for (const [k, v] of Object.entries(ABLATIONS)) out.push({ id: k, group: "V31 A-ablations (rc1-legal twins)", label: k.replace("_A", "") + " list with rc1 substitutes", words: v });
     for (const [k, v] of Object.entries(custom)) out.push({ id: "custom:" + k, group: "Your test decks", label: k, words: v });
     return out;
   }
@@ -5454,6 +5918,13 @@
   function startMatch(cfgOverride) {
     stopBot();
     const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
+    const mods = (F.resolveFormat(lobby.format).variant || {}).modules || [];
+    const bad = [d1, d2].map((d) => E.deckErrors(d.words, mods)).find((e) => e.length);
+    if (!cfgOverride && bad) {
+      A.flash = "That deck needs a different rules version: " + bad.join("; ") + ". Choose a V31 Living Folio rules version for the Folio decks.";
+      renderLobby();
+      return;
+    }
     const first = lobby.seat === "first" ? 0 : lobby.seat === "second" ? 1 : lobby.seed % 2;
     const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ":" + lobby.tier + (lobby.ra ? ":" + lobby.ra : "") };
     A.cfg = cfg;
@@ -5467,7 +5938,7 @@
   }
   function startFixture(id) {
     stopBot();
-    const cfg = { format: "grammar_v30_rc1", decks: [], seed: 0, first: FIXTURES[id].build().first, humanSide: 0, botPolicy: "careful:" + lobby.tier, fixture: FIXTURES[id], deckNames: ["Fixture", "Fixture"] };
+    const cfg = { format: FIXTURES[id].format || "grammar_v30_rc1", decks: [], seed: 0, first: FIXTURES[id].build().first, humanSide: 0, botPolicy: "careful:" + lobby.tier, fixture: FIXTURES[id], deckNames: ["Fixture", "Fixture"] };
     A.cfg = cfg;
     A.C = createController(cfg, hooks);
     A.sel = null;
@@ -5480,7 +5951,7 @@
     if (!A.C || A.review) return;
     const rep = A.C.replay();
     rep.deckNames = A.cfg.deckNames;
-    store.set("wa30.last", rep);
+    store.set("wa31.last", rep);
   }
   function stopBot() {
     if (A.botTimer) {
@@ -5499,8 +5970,8 @@
       render();
     }, A.speed);
   }
-  var KEYS = ["type", "card", "subject", "ability", "recipe", "a", "b", "category", "qual", "sacrifice", "payload", "mode", "targets", "target", "branch", "replace", "might", "donor", "slot", "verb"];
-  var KEY_LABEL = { type: "What to do", card: "Word", subject: "Who acts", ability: "Ability", recipe: "Recipe", a: "First ingredient", b: "Second ingredient", category: "Category", qual: "Lawful Quality", sacrifice: "Sacrifice (cost)", payload: "Payload", mode: "Property to blow", targets: "Targets", target: "Target", branch: "Becomes", replace: "Replace attachment", might: "Gains Might", donor: "Donor plant", slot: "Offer", verb: "Verb" };
+  var KEYS = ["type", "card", "subject", "ability", "recipe", "a", "b", "category", "qual", "sacrifice", "endorse", "payload", "mode", "targets", "target", "seal", "branch", "replace", "might", "donor", "slot", "verb"];
+  var KEY_LABEL = { type: "What to do", card: "Word", subject: "Who acts", ability: "Ability", recipe: "Recipe", a: "First ingredient", b: "Second ingredient", category: "Category", qual: "Lawful Quality", sacrifice: "Sacrifice (cost)", payload: "Payload", mode: "Property to blow", targets: "Targets", target: "Target", branch: "Becomes", replace: "Replace attachment", might: "Gains Might", donor: "Donor plant", slot: "Offer", verb: "Verb", endorse: "Endorse with Signet (exhausts it)", seal: "Seal a dead Plant from your Grave (cost)" };
   var J = (v) => JSON.stringify(v == null ? null : v);
   function baseCands() {
     const C = A.C;
@@ -5579,7 +6050,9 @@
     if (key === "recipe") return nm("made." + v) || v;
     if (key === "branch") return nm(v);
     if (key === "mode") return { hot: "Hot \u2014 ignite", liquid: "Liquid \u2014 make Wet", toxic: "Toxic \u2014 1 poison" }[v] || v;
-    if (key === "ability") return { heal2: "Heal 2", tend: "Tend", etch: "Etch (3 to Metal/Stone)", eatFruit: "Eat fruit", alkahest: "Dissolve (destroy)" }[v] || v;
+    if (key === "ability") return { heal2: "Heal 2", tend: "Tend", etch: "Etch (3 to Metal/Stone)", eatFruit: "Eat fruit", alkahest: "Dissolve (destroy)", pollinate: "Pollinate (make Fruit)", shapeWork: "Work metal into a Setting", signet: "Seal with the Signet (Named)", mould: "Return the dead to the soil" }[v] || v;
+    if (key === "endorse") return v ? "Endorse with " + thingName(S, v) : "No endorsement";
+    if (key === "seal") return targetLabel(S, v);
     if (key === "type") return { deploy: "Bring forth", ground: "Lay Ground", spell: "Speak", attack: "Attack", remote: "Act", fuse: "Fuse", ability: "Ability", buy: "Buy", catalyst: "Refill catalyst", quality: "Attach", weather: "Weather", burden: "Burden", law: "Law" }[v] || v;
     if (Array.isArray(v)) return v.map((x) => thingName(S, x)).join(" and ");
     return targetLabel(S, v);
@@ -5631,7 +6104,7 @@
       case "fuse":
         return "Fuse " + nm("made." + a.recipe) + ": " + (a.a === "ground" ? "your Ground" : thingName(S, a.a)) + " + " + (a.b === "ground" ? "your Ground" : thingName(S, a.b));
       case "ability":
-        return thingName(S, a.subject) + " \u2014 " + valueLabel(S, "ability", a.ability) + tgt + (a.branch ? " (" + a.branch + ")" : "");
+        return thingName(S, a.subject) + " \u2014 " + valueLabel(S, "ability", a.ability) + tgt + (a.branch ? " (" + a.branch + ")" : "") + (a.seal ? ", sealing " + targetLabel(S, a.seal) : "");
       case "buy":
         return "Buy " + valueLabel(S, "slot", a.slot);
       case "catalyst":
@@ -5652,14 +6125,14 @@
     if (a.type === "buy") return E.priceOf(S, p.i, S.market[a.slot].word) + " spark";
     if (a.type === "catalyst") return "2 spark";
     if (a.type === "fuse") {
-      const r = R.NAMED.concat(R.INFUSIONS).find((x) => x.id === a.recipe);
+      const r = E.recipeById(a.recipe);
       const o = (id) => id === "ground" ? p.ground : S.things.find((t) => t.id === id);
       const pv = E.previewFusion(S, p.i, r, o(a.a), a.a === "ground", o(a.b), a.b === "ground");
       return pv ? pv.cost + " breath" + (pv.catalyst ? " + catalyst" : "") : "?";
     }
     if (a.type === "ability") {
       const t = S.things.find((x) => x.id === a.subject);
-      return t ? E.card(t).ability.cost + " breath" : "";
+      return t ? E.abilityCost(S, t, a.ability) + " breath" + (a.ability === "pollinate" ? " (exhausts the carrier)" : a.seal ? " + seal a dead Plant" : "") : "";
     }
     if (a.type === "law") return [a.card, a.category, a.qual].reduce((s, pid) => s + BY_ID[cardWord(S, pid)].cost, 0) + " breath";
     if (a.card) {
@@ -5728,6 +6201,10 @@
       const t = S.things.find((x) => x.id === id);
       if (!t) return "";
       if (t.ctrl !== C.human) return "That Thing is the rival's. Choose one of your words first, then target it.";
+      if (E.trait(S, t, "carrier")) {
+        const hs = S.things.filter((h) => h.ctrl === C.human && E.trait(S, h, "pollination"));
+        if (hs.length) return hs.map((h) => `${nm(h.form || h.word)}: ${E.pollinationWhy(S, t, h) || "can pollinate"}`).join("; ");
+      }
       return E.whyIllegal(S, { type: "attack", subject: t.id, verb: "strike", target: "rival" }) || `${nm(t.form || t.word)} has no other legal sentence now.`;
     }
     if (kind === "target") {
@@ -5820,9 +6297,9 @@
   function renderLobby() {
     const decks = allDecks(), groups = [...new Set(decks.map((d) => d.group))];
     const opts = (sel) => groups.map((g) => `<optgroup label="${esc(g)}">${decks.filter((d) => d.group === g).map((d) => `<option value="${esc(d.id)}"${d.id === sel ? " selected" : ""}>${esc(d.label)}</option>`).join("")}</optgroup>`).join("");
-    const last = store.get("wa30.last");
+    const last = store.get("wa31.last");
     root().innerHTML = `<main class="lobby">
-    <header class="lob-head"><h1>The Crucible</h1><p>${esc(VERSION)} \xB7 experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
+    <header class="lob-head"><h1>The Living Folio</h1>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ""}<p>${esc(VERSION)} \xB7 experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
     <form id="lob" class="lob-grid">
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
@@ -5842,7 +6319,7 @@
   </main>`;
     const upd = () => {
       Object.assign(lobby, { mine: v("l-mine"), theirs: v("l-theirs"), tier: v("l-tier"), style: v("l-style"), seat: v("l-seat"), seed: +v("l-seed") || 1, format: v("l-format"), ra: v("l-ra") });
-      store.set("wa30.lobby", lobby);
+      store.set("wa31.lobby", lobby);
     };
     const v = (id) => document.getElementById(id).value;
     for (const id of ["l-mine", "l-theirs", "l-tier", "l-style", "l-ra", "l-seat", "l-seed", "l-format"]) document.getElementById(id).addEventListener("change", () => {
@@ -5966,7 +6443,7 @@
     root().innerHTML = `<div class="match">
   <header class="top">
     <button class="ghost" id="m-lobby">Lobby</button>
-    <span class="title">The Crucible <small>${esc(A.cfg.fixture ? "Fixture: " + A.cfg.fixture.title : (A.cfg.deckNames || []).join(" vs "))}</small></span>
+    <span class="title">The Living Folio <small>${esc(A.cfg.fixture ? "Fixture: " + A.cfg.fixture.title : (A.cfg.deckNames || []).join(" vs "))}</small></span>
     <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} \xB7 seed ${esc(A.cfg.seed)} \xB7 round ${S.round} \xB7 turn ${S.turn}${A.review ? " \xB7 reviewing" : ""}</span>
     <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== "text" ? " selected" : ""}>Art</option><option value="text"${A.view === "text" ? " selected" : ""}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? " checked" : ""}> Auto-pass my responses</label>
@@ -6159,6 +6636,7 @@
       <p><b>Status</b> ${statusChips(S, t) || "none"}</p>
       <p><b>Owner</b> ${who(t.owner)} \xB7 <b>controller</b> ${who(t.ctrl)}${t.word !== (t.form || t.word) ? ` \xB7 printed word ${esc(nm(t.word))}` : ""}</p>
       ${(t.quals || []).length ? `<p><b>Attached</b> ${t.quals.map((q) => `${esc(nm(q.word))}: ${esc(textOf(q.word))}`).join(" \xB7 ")}</p>` : ""}
+      ${relationsHTML(S, t)}
       ${t.lineage ? `<p><b>Lineage</b> ${esc(lineageText(t.lineage))}. If destroyed: one death; originals go to their owners' Graves. If bounced: dissolves to Grave without a death.</p>` : ""}`;
     }
     const html = `<div class="scrim" id="in-close"></div><div class="inspect" role="dialog" aria-label="Inspect ${esc(nm(word))}">
@@ -6179,8 +6657,33 @@
       if (e.key === "Escape") close();
     });
   }
+  function relationsHTML(S, t) {
+    const mods = S.rules.modules || [];
+    if (!mods.length) return "";
+    const mine = S.things.filter((o) => o.ctrl === t.ctrl && o !== t), out = [];
+    const ch = E.trait(S, t, "carrier"), want = E.trait(S, t, "pollination");
+    if (ch) for (const h of mine.filter((o) => E.trait(S, o, "pollination"))) {
+      const w = E.pollinationWhy(S, t, h);
+      out.push(`${nm(t.form || t.word)} \u2192 ${nm(h.form || h.word)}: ${w ? "no \u2014 " + w : "yes, can pollinate now"}`);
+    }
+    if (want) {
+      out.push(`${nm(t.form || t.word)} is ${want}-pollinated (${want === "insect" ? "a Bee" : "a Wind"} carries its pollen).`);
+      for (const c of mine.filter((o) => E.trait(S, o, "carrier"))) {
+        const w = E.pollinationWhy(S, c, t);
+        out.push(`${nm(c.form || c.word)} \u2192 this tree: ${w ? "no \u2014 " + w : "yes"}`);
+      }
+    }
+    if (mods.includes("workshop") && /copper|silver|lead|tin|iron/.test(card0(t))) {
+      const w = E.shapeWhy(S, t.ctrl, t);
+      out.push(`Work into a Setting: ${w ? "no \u2014 " + w : "yes (Shape, or Smith)"}`);
+    }
+    if (card0(t) === "earth.setting") out.push(`Setting worked from ${nm(t.word)}. Set it with a Garnet in the Vessel to make a Signet.`);
+    if (t.cropOf) out.push("Crop of the tree " + thingName(S, t.cropOf) + ".");
+    return out.length ? `<h4>Relationships</h4><ul class="rel">${out.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+  }
+  var card0 = (t) => t.form || t.word;
   function lineageText(recs) {
-    return recs.map((r) => r.token ? nm(r.token) + " (token)" : r.ground ? nm(r.word) + " (Ground)" : r.made ? nm(r.form) + " [" + lineageText(r.lineage || []) + "]" : nm(r.form || r.word)).join(" + ");
+    return recs.map((r) => r.token ? nm(r.token) + " (token)" : r.ground ? nm(r.word) + " (Ground)" : r.made ? nm(r.form) + " [" + lineageText(r.lineage || []) + "]" : r.form && r.form !== r.word ? nm(r.form) + " (worked from " + nm(r.word) + ")" : nm(r.word)).join(" + ");
   }
   function renderModal() {
     const m = A.modal;
@@ -6299,7 +6802,7 @@
     const vw = document.getElementById("m-view");
     if (vw) vw.onchange = () => {
       A.view = vw.value;
-      store.set("wa30.view", A.view);
+      store.set("wa31.view", A.view);
       render();
     };
     const sp = document.getElementById("m-speed");
@@ -6505,11 +7008,11 @@
       renderInspect();
     };
     on("ed-save", () => {
-      const c = store.get("wa30.custom") || {};
+      const c = store.get("wa31.custom") || {};
       c[ed.name] = ed.words.slice();
-      store.set("wa30.custom", c);
+      store.set("wa31.custom", c);
       lobby.mine = "custom:" + ed.name;
-      store.set("wa30.lobby", lobby);
+      store.set("wa31.lobby", lobby);
       A.screen = "lobby";
       render();
     });
@@ -6525,12 +7028,12 @@
     for (const b of document.querySelectorAll("[data-fx]")) b.onclick = () => startFixture(b.dataset.fx);
   }
   function boot(data) {
-    if (data && data.last) store.set("wa30.last", data.last);
+    if (data && data.last) store.set("wa31.last", data.last);
     render();
   }
   if (typeof window !== "undefined") {
     window.WA30 = { A, render, startMatch, startFixture, selection, E };
-    if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get("wa30.last") }));
+    if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get("wa31.last") }));
     const start = (d) => boot(d || {});
     if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
     else start(window.claude && window.claude.hot ? window.claude.hot.data : {});

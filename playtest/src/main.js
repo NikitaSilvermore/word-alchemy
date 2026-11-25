@@ -8,6 +8,7 @@ const R = require('../../engine29/src/recipes');
 const { BY_ID, CARDS } = require('../../engine29/src/cards');
 const { REFERENCE_DECKS } = require('../../engine29/data/reference_decks');
 const { THEMED, COUNTERS } = require('../../engine29/data/themed_decks');
+const { FOLIO_DECKS, ABLATIONS } = require('../../engine29/data/folio_decks');
 const SPEC = require('../../engine29/data/spec_catalogue.json');
 const { createController, restoreController } = require('./controller');
 const { FIXTURES } = require('./fixtures');
@@ -17,9 +18,10 @@ const FMT_GROUPS = [
   ['Reference', [['grammar_v30_rc1', 'V30 rc1 — original market (2/3 spark)']]],
   ['Market comparison', [['grammar_v30_exp_price34', 'Market at 3/4 spark (experiment)']]],
   ['Other test variants', [['grammar_v30_exp_nosentence', 'No spark from sentences'], ['grammar_v30_exp_income2', 'Spark income every second turn'], ['grammar_v30_exp_buy2', 'Buy every second turn'], ['grammar_v30_exp_reserve3', 'Reserve cap 3'], ['grammar_v30_exp_cheapresp', 'Cheaper responses']]],
+  ['V31 Living Folio · Expanded Grammar (experiment)', [['folio_b_all', 'All three modules: orchard, workshop, decay'], ['folio_b_orchard', 'Orchard only (Bee, Hazel, Feast)'], ['folio_b_workshop', 'Workshop only (Shape, Garnet, Signet, Writ)'], ['folio_b_garden', 'Orchard + decay (Mould)'], ['folio_b_decay', 'Decay only (Mould)']]],
   ['Earlier', [['grammar_v29_spec', 'V29 specification']]],
 ];
-const VERSION = 'V30 Crucible playtest 2';
+const VERSION = 'V31 Living Folio experiment 1 (on the V30 Crucible 2 build)';
 const SCHOOLS = ['fire', 'water', 'air', 'earth', 'life', 'rot', 'word'];
 const SCHOOL_NAME = { fire: 'Fire', water: 'Water', air: 'Air', earth: 'Earth', life: 'Life', rot: 'Rot', word: 'The Word' };
 const TIERS = B.TIER_ORDER;
@@ -46,20 +48,34 @@ const MADE_TEXT = {
 };
 const SPECIAL = { philosophers_stone: 'Philosopher\'s Stone', world_tree: 'World Tree' };
 function nm(id) { if (!id) return ''; if (id === '?') return 'Hidden word'; const w = String(id).split('.').pop(); return SPECIAL[w] || w.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
-function textOf(id) { return SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || ''; }
+const FOLIO_TEXT = {
+  'life.bee': 'Living Beast, Insect, Winged, Flying, Body, Flammable. Pollinate: Main, 1 breath, exhaust this mature ready Bee: your insect-pollinated flowering Orchard tree (Pear) makes 1 Fruit, if you have none and a space is free. Needs working wings: Wet or Desert grounds it.',
+  'life.hazel': 'Living Plant, Tree, Orchard, Flower, Flammable. Wind-pollinated: your mature ready Wind can pollinate it (Main, 1 breath, exhaust the Wind) to make 1 Fruit (a nut). A Bee, an Owl or a Rose cannot.',
+  'life.feast': 'Main. Additional cost: sacrifice your Fruit. Ready 1 or 2 of your exhausted, mature Living Things with Body and strike that have acted fewer than twice this turn. Each may act once more (a Strike still costs 1). Never a third action.',
+  'earth.shape': 'Main. Work your Copper or Silver into a Setting: same card, same damage, compatible attachments stay. Not if Fixed, not if it would die, at most one metal change per turn.',
+  'earth.garnet': 'Non-living Stone, Jewel, settable. Can block. Set it into a Setting in the Vessel to make a Signet.',
+  'earth.setting': 'Transformed only (from Copper or Silver). Metal, Socket. No Body. Can block. Remembers its original card: bounced, it returns as that word. Set + Garnet in the Vessel = Signet.',
+  'made.signet': 'Made: Setting + Garnet (Set recipe, 2 breath). Metal, Artefact, Instrument. Main, 1 breath, exhaust: give a friendly original Thing Named. Or exhaust it to endorse Writ. Separate restores the Setting and the Garnet.',
+  'word.writ': 'Main. Exhaust a ready rival Person or Speaker. Or endorse it by exhausting your mature ready Signet: exhaust up to two ready rival Things. Each target is rechecked; Ward stops it on a single target. Doubt can counter it.',
+  'rot.mould': 'Living Fungus, Decomposer. Main, 1 breath, exhaust: seal a Plant card of yours that died (destroyed or sacrificed) from your Grave; another friendly Plant gains 1 Growth and 1 age. A discarded Plant or a released ingredient cannot pay.',
+};
+const OVERLAY_TEXT = { 'life.pear': ' Folio: insect-pollinated (a Bee can pollinate it).', 'air.wind': ' Folio: wind carrier (can pollinate Hazel, even when Wet).', 'fire.smith': ' Folio: Main, 2 breath, exhaust: work your Copper or Silver into a Setting (native, cannot be Doubted).' };
+function textOf(id) { const base = FOLIO_TEXT[id] || (SPEC_BY[id] ? SPEC_BY[id].text : MADE_TEXT[id] || ''); const fm = A.C && A.C.S && A.C.S.rules.modules || []; return base + (fm.length && OVERLAY_TEXT[id] && ((id !== 'fire.smith' && fm.includes('orchard')) || (id === 'fire.smith' && fm.includes('workshop'))) ? OVERLAY_TEXT[id] : ''); }
 function schoolOf(id) { const c = BY_ID[id]; return c ? c.school : 'word'; }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const TYPE_NAME = { thing: 'Thing', action: 'Action', spell: 'Spell', ground: 'Ground', quality: 'Quality', weather: 'Weather', burden: 'Burden', category: 'Category' };
 
 // ---------- app state ----------
-const A = { view: store.get('wa30.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-const lobby = Object.assign({ ra: 'ra', mine: 'D1_living_sky', theirs: 'D2_lockkeepers_wall', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'grammar_v30_rc1' }, store.get('wa30.lobby') || {});
+const A = { view: store.get('wa31.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+const lobby = Object.assign({ ra: 'ra', mine: 'O_orchard_crosswind', theirs: 'D3_furnace_wind', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'folio_b_all' }, store.get('wa31.lobby') || {});
 function allDecks() {
-  const custom = store.get('wa30.custom') || {};
+  const custom = store.get('wa31.custom') || {};
   const out = [];
   for (const [k, v] of Object.entries(REFERENCE_DECKS)) out.push({ id: k, group: 'Reference decks (frozen)', label: k.replace(/_/g, ' ') + ' — ' + v.rival, words: v.words });
   for (const [k, v] of Object.entries(THEMED)) out.push({ id: k, group: 'Themed test decks', label: k.slice(2).replace(/_/g, ' '), words: v });
   for (const [k, v] of Object.entries(COUNTERS)) out.push({ id: k, group: 'Counter test decks', label: k.slice(2).replace(/_/g, ' '), words: v });
+  for (const [k, v] of Object.entries(FOLIO_DECKS)) out.push({ id: k, group: 'V31 Folio decks (need a Folio rules version)', label: v.note + ' (' + k[0] + ')', words: v.words, modules: v.modules });
+  for (const [k, v] of Object.entries(ABLATIONS)) out.push({ id: k, group: 'V31 A-ablations (rc1-legal twins)', label: k.replace('_A', '') + ' list with rc1 substitutes', words: v });
   for (const [k, v] of Object.entries(custom)) out.push({ id: 'custom:' + k, group: 'Your test decks', label: k, words: v });
   return out;
 }
@@ -70,6 +86,9 @@ const hooks = { changed: () => { save(); render(); }, prompt: () => render(), er
 function startMatch(cfgOverride) {
   stopBot();
   const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
+  const mods = (F.resolveFormat(lobby.format).variant || {}).modules || [];
+  const bad = [d1, d2].map(d => E.deckErrors(d.words, mods)).find(e => e.length);
+  if (!cfgOverride && bad) { A.flash = 'That deck needs a different rules version: ' + bad.join('; ') + '. Choose a V31 Living Folio rules version for the Folio decks.'; renderLobby(); return; }
   const first = lobby.seat === 'first' ? 0 : lobby.seat === 'second' ? 1 : (lobby.seed % 2);
   const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ':' + lobby.tier + (lobby.ra ? ':' + lobby.ra : '') };
   A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.review = null; A.screen = 'match';
@@ -77,12 +96,12 @@ function startMatch(cfgOverride) {
 }
 function startFixture(id) {
   stopBot();
-  const cfg = { format: 'grammar_v30_rc1', decks: [], seed: 0, first: FIXTURES[id].build().first, humanSide: 0, botPolicy: 'careful:' + lobby.tier, fixture: FIXTURES[id], deckNames: ['Fixture', 'Fixture'] };
+  const cfg = { format: FIXTURES[id].format || 'grammar_v30_rc1', decks: [], seed: 0, first: FIXTURES[id].build().first, humanSide: 0, botPolicy: 'careful:' + lobby.tier, fixture: FIXTURES[id], deckNames: ['Fixture', 'Fixture'] };
   A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.screen = 'match'; A.C.start(); render();
 }
 function save() {
   if (!A.C || A.review) return;
-  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa30.last', rep);
+  const rep = A.C.replay(); rep.deckNames = A.cfg.deckNames; store.set('wa31.last', rep);
 }
 function stopBot() { if (A.botTimer) { clearTimeout(A.botTimer); A.botTimer = null; } }
 function driveBot() {
@@ -92,8 +111,8 @@ function driveBot() {
 }
 
 // ---------- selection: narrowing the engine's legal actions ----------
-const KEYS = ['type', 'card', 'subject', 'ability', 'recipe', 'a', 'b', 'category', 'qual', 'sacrifice', 'payload', 'mode', 'targets', 'target', 'branch', 'replace', 'might', 'donor', 'slot', 'verb'];
-const KEY_LABEL = { type: 'What to do', card: 'Word', subject: 'Who acts', ability: 'Ability', recipe: 'Recipe', a: 'First ingredient', b: 'Second ingredient', category: 'Category', qual: 'Lawful Quality', sacrifice: 'Sacrifice (cost)', payload: 'Payload', mode: 'Property to blow', targets: 'Targets', target: 'Target', branch: 'Becomes', replace: 'Replace attachment', might: 'Gains Might', donor: 'Donor plant', slot: 'Offer', verb: 'Verb' };
+const KEYS = ['type', 'card', 'subject', 'ability', 'recipe', 'a', 'b', 'category', 'qual', 'sacrifice', 'endorse', 'payload', 'mode', 'targets', 'target', 'seal', 'branch', 'replace', 'might', 'donor', 'slot', 'verb'];
+const KEY_LABEL = { type: 'What to do', card: 'Word', subject: 'Who acts', ability: 'Ability', recipe: 'Recipe', a: 'First ingredient', b: 'Second ingredient', category: 'Category', qual: 'Lawful Quality', sacrifice: 'Sacrifice (cost)', payload: 'Payload', mode: 'Property to blow', targets: 'Targets', target: 'Target', branch: 'Becomes', replace: 'Replace attachment', might: 'Gains Might', donor: 'Donor plant', slot: 'Offer', verb: 'Verb', endorse: 'Endorse with Signet (exhausts it)', seal: 'Seal a dead Plant from your Grave (cost)' };
 const J = v => JSON.stringify(v == null ? null : v);
 function baseCands() {
   const C = A.C; if (!C) return [];
@@ -153,7 +172,9 @@ function valueLabel(S, key, v) {
   if (key === 'recipe') return nm('made.' + v) || v;
   if (key === 'branch') return nm(v);
   if (key === 'mode') return { hot: 'Hot — ignite', liquid: 'Liquid — make Wet', toxic: 'Toxic — 1 poison' }[v] || v;
-  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)' }[v] || v;
+  if (key === 'ability') return { heal2: 'Heal 2', tend: 'Tend', etch: 'Etch (3 to Metal/Stone)', eatFruit: 'Eat fruit', alkahest: 'Dissolve (destroy)', pollinate: 'Pollinate (make Fruit)', shapeWork: 'Work metal into a Setting', signet: 'Seal with the Signet (Named)', mould: 'Return the dead to the soil' }[v] || v;
+  if (key === 'endorse') return v ? 'Endorse with ' + thingName(S, v) : 'No endorsement';
+  if (key === 'seal') return targetLabel(S, v);
   if (key === 'type') return { deploy: 'Bring forth', ground: 'Lay Ground', spell: 'Speak', attack: 'Attack', remote: 'Act', fuse: 'Fuse', ability: 'Ability', buy: 'Buy', catalyst: 'Refill catalyst', quality: 'Attach', weather: 'Weather', burden: 'Burden', law: 'Law' }[v] || v;
   if (Array.isArray(v)) return v.map(x => thingName(S, x)).join(' and ');
   return targetLabel(S, v);
@@ -189,7 +210,7 @@ function describe0(S, a) {
     case 'attack': return thingName(S, a.subject) + ' — ' + (a.card ? c : 'Strike') + tgt;
     case 'remote': return thingName(S, a.subject) + ' — ' + c + tgt + (a.payload ? ' (payload ' + thingName(S, a.payload) + ', ' + a.mode + ')' : '');
     case 'fuse': return 'Fuse ' + nm('made.' + a.recipe) + ': ' + (a.a === 'ground' ? 'your Ground' : thingName(S, a.a)) + ' + ' + (a.b === 'ground' ? 'your Ground' : thingName(S, a.b));
-    case 'ability': return thingName(S, a.subject) + ' — ' + valueLabel(S, 'ability', a.ability) + tgt + (a.branch ? ' (' + a.branch + ')' : '');
+    case 'ability': return thingName(S, a.subject) + ' — ' + valueLabel(S, 'ability', a.ability) + tgt + (a.branch ? ' (' + a.branch + ')' : '') + (a.seal ? ', sealing ' + targetLabel(S, a.seal) : '');
     case 'buy': return 'Buy ' + valueLabel(S, 'slot', a.slot);
     case 'catalyst': return 'Refill the catalyst';
     case 'quality': return 'Attach ' + c + tgt + (a.replace ? ', replacing ' + nm(cardWord(S, a.replace)) : '');
@@ -203,8 +224,8 @@ function costOf(S, a) {
   const p = S.players[A.C.human];
   if (a.type === 'buy') return E.priceOf(S, p.i, S.market[a.slot].word) + ' spark';
   if (a.type === 'catalyst') return '2 spark';
-  if (a.type === 'fuse') { const r = R.NAMED.concat(R.INFUSIONS).find(x => x.id === a.recipe); const o = id => id === 'ground' ? p.ground : S.things.find(t => t.id === id); const pv = E.previewFusion(S, p.i, r, o(a.a), a.a === 'ground', o(a.b), a.b === 'ground'); return pv ? pv.cost + ' breath' + (pv.catalyst ? ' + catalyst' : '') : '?'; }
-  if (a.type === 'ability') { const t = S.things.find(x => x.id === a.subject); return t ? E.card(t).ability.cost + ' breath' : ''; }
+  if (a.type === 'fuse') { const r = E.recipeById(a.recipe); const o = id => id === 'ground' ? p.ground : S.things.find(t => t.id === id); const pv = E.previewFusion(S, p.i, r, o(a.a), a.a === 'ground', o(a.b), a.b === 'ground'); return pv ? pv.cost + ' breath' + (pv.catalyst ? ' + catalyst' : '') : '?'; }
+  if (a.type === 'ability') { const t = S.things.find(x => x.id === a.subject); return t ? E.abilityCost(S, t, a.ability) + ' breath' + (a.ability === 'pollinate' ? ' (exhausts the carrier)' : a.seal ? ' + seal a dead Plant' : '') : ''; }
   if (a.type === 'law') return [a.card, a.category, a.qual].reduce((s, pid) => s + BY_ID[cardWord(S, pid)].cost, 0) + ' breath';
   if (a.card) { const w = cardWord(S, a.card); return BY_ID[w].cost + (A.C.pending && A.C.pending.type === 'respond' && A.C.pending.kind === 'response' ? ' reserve' : ' breath'); }
   if (a.type === 'attack') return '1 breath';
@@ -261,6 +282,7 @@ function whyNot(kind, id) {
   if (kind === 'thing') {
     const t = S.things.find(x => x.id === id); if (!t) return '';
     if (t.ctrl !== C.human) return 'That Thing is the rival\'s. Choose one of your words first, then target it.';
+    if (E.trait(S, t, 'carrier')) { const hs = S.things.filter(h => h.ctrl === C.human && E.trait(S, h, 'pollination')); if (hs.length) return hs.map(h => `${nm(h.form || h.word)}: ${E.pollinationWhy(S, t, h) || 'can pollinate'}`).join('; '); }
     return E.whyIllegal(S, { type: 'attack', subject: t.id, verb: 'strike', target: 'rival' }) || `${nm(t.form || t.word)} has no other legal sentence now.`;
   }
   if (kind === 'target') {
@@ -343,9 +365,9 @@ function render() {
 function renderLobby() {
   const decks = allDecks(), groups = [...new Set(decks.map(d => d.group))];
   const opts = sel => groups.map(g => `<optgroup label="${esc(g)}">${decks.filter(d => d.group === g).map(d => `<option value="${esc(d.id)}"${d.id === sel ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</optgroup>`).join('');
-  const last = store.get('wa30.last');
+  const last = store.get('wa31.last');
   root().innerHTML = `<main class="lobby">
-    <header class="lob-head"><h1>The Crucible</h1><p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
+    <header class="lob-head"><h1>The Living Folio</h1>${A.flash ? `<p class="flash">${esc(A.flash)}</p>` : ''}<p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
     <form id="lob" class="lob-grid">
       <label>Your deck<select id="l-mine">${opts(lobby.mine)}</select></label>
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
@@ -363,7 +385,7 @@ function renderLobby() {
     <section class="lob-decks"><h2>${esc(deckById(lobby.mine).label)}</h2><p class="dl">${deckById(lobby.mine).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p>
     <h2>${esc(deckById(lobby.theirs).label)}</h2><p class="dl">${deckById(lobby.theirs).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p></section>
   </main>`;
-  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa30.lobby', lobby); };
+  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa31.lobby', lobby); };
   const v = id => document.getElementById(id).value;
   for (const id of ['l-mine', 'l-theirs', 'l-tier', 'l-style', 'l-ra', 'l-seat', 'l-seed', 'l-format']) document.getElementById(id).addEventListener('change', () => { upd(); if (id === 'l-mine' || id === 'l-theirs') renderLobby(); });
   document.getElementById('l-dice').onclick = () => { document.getElementById('l-seed').value = 1 + Math.floor(Math.random() * 99999); upd(); };
@@ -438,7 +460,7 @@ function renderMatch() {
   root().innerHTML = `<div class="match">
   <header class="top">
     <button class="ghost" id="m-lobby">Lobby</button>
-    <span class="title">The Crucible <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
+    <span class="title">The Living Folio <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
     <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} · seed ${esc(A.cfg.seed)} · round ${S.round} · turn ${S.turn}${A.review ? ' · reviewing' : ''}</span>
     <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== 'text' ? ' selected' : ''}>Art</option><option value="text"${A.view === 'text' ? ' selected' : ''}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? ' checked' : ''}> Auto-pass my responses</label>
@@ -621,6 +643,7 @@ function renderInspect() {
       <p><b>Status</b> ${statusChips(S, t) || 'none'}</p>
       <p><b>Owner</b> ${who(t.owner)} · <b>controller</b> ${who(t.ctrl)}${t.word !== (t.form || t.word) ? ` · printed word ${esc(nm(t.word))}` : ''}</p>
       ${(t.quals || []).length ? `<p><b>Attached</b> ${t.quals.map(q => `${esc(nm(q.word))}: ${esc(textOf(q.word))}`).join(' · ')}</p>` : ''}
+      ${relationsHTML(S, t)}
       ${t.lineage ? `<p><b>Lineage</b> ${esc(lineageText(t.lineage))}. If destroyed: one death; originals go to their owners' Graves. If bounced: dissolves to Grave without a death.</p>` : ''}`;
   }
   const html = `<div class="scrim" id="in-close"></div><div class="inspect" role="dialog" aria-label="Inspect ${esc(nm(word))}">
@@ -631,7 +654,20 @@ function renderInspect() {
   el.querySelector('#in-close').onclick = close; el.querySelector('#in-x').onclick = close; el.querySelector('#in-x').focus();
   el.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 }
-function lineageText(recs) { return recs.map(r => r.token ? nm(r.token) + ' (token)' : r.ground ? nm(r.word) + ' (Ground)' : r.made ? nm(r.form) + ' [' + lineageText(r.lineage || []) + ']' : nm(r.form || r.word)).join(' + '); }
+// V31: why the relationships of this Thing hold or not, straight from the engine's own checks
+function relationsHTML(S, t) {
+  const mods = S.rules.modules || []; if (!mods.length) return '';
+  const mine = S.things.filter(o => o.ctrl === t.ctrl && o !== t), out = [];
+  const ch = E.trait(S, t, 'carrier'), want = E.trait(S, t, 'pollination');
+  if (ch) for (const h of mine.filter(o => E.trait(S, o, 'pollination'))) { const w = E.pollinationWhy(S, t, h); out.push(`${nm(t.form || t.word)} → ${nm(h.form || h.word)}: ${w ? 'no — ' + w : 'yes, can pollinate now'}`); }
+  if (want) { out.push(`${nm(t.form || t.word)} is ${want}-pollinated (${want === 'insect' ? 'a Bee' : 'a Wind'} carries its pollen).`); for (const c of mine.filter(o => E.trait(S, o, 'carrier'))) { const w = E.pollinationWhy(S, c, t); out.push(`${nm(c.form || c.word)} → this tree: ${w ? 'no — ' + w : 'yes'}`); } }
+  if (mods.includes('workshop') && /copper|silver|lead|tin|iron/.test(card0(t))) { const w = E.shapeWhy(S, t.ctrl, t); out.push(`Work into a Setting: ${w ? 'no — ' + w : 'yes (Shape, or Smith)'}`); }
+  if (card0(t) === 'earth.setting') out.push(`Setting worked from ${nm(t.word)}. Set it with a Garnet in the Vessel to make a Signet.`);
+  if (t.cropOf) out.push('Crop of the tree ' + thingName(S, t.cropOf) + '.');
+  return out.length ? `<h4>Relationships</h4><ul class="rel">${out.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+}
+const card0 = t => (t.form || t.word);
+function lineageText(recs) { return recs.map(r => r.token ? nm(r.token) + ' (token)' : r.ground ? nm(r.word) + ' (Ground)' : r.made ? nm(r.form) + ' [' + lineageText(r.lineage || []) + ']' : (r.form && r.form !== r.word ? nm(r.form) + ' (worked from ' + nm(r.word) + ')' : nm(r.word))).join(' + '); }
 
 // ---------- modals: export, load, zones ----------
 function renderModal() {
@@ -669,7 +705,7 @@ function bindMatch() {
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
   on('s-lobby', () => { stopBot(); A.screen = 'lobby'; render(); });
   const ap = document.getElementById('m-autopass'); if (ap) ap.onchange = () => { C.auto.passAll = ap.checked; };
-  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa30.view', A.view); render(); };
+  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa31.view', A.view); render(); };
   const sp = document.getElementById('m-speed'); if (sp) sp.onchange = () => { A.speed = +sp.value; };
   if (A.review) { on('rv-0', () => reviewTo(0)); on('rv-p', () => reviewTo(A.review.k - 1)); on('rv-n', () => reviewTo(A.review.k + 1)); on('rv-e', () => reviewTo(A.review.total)); on('rv-play', () => { A.review = null; render(); }); }
   on('a-end', () => { A.flash = null; A.why = null; C.act({ type: 'pass' }); });
@@ -743,7 +779,7 @@ function renderEditor() {
   for (const b of document.querySelectorAll('[data-add]')) b.onclick = () => { if (ed.words.length < 20) ed.words.push(b.dataset.add); render(); };
   for (const b of document.querySelectorAll('[data-rem]')) b.onclick = () => { ed.words = ed.words.filter(w => w !== b.dataset.rem); render(); };
   for (const b of document.querySelectorAll('[data-inspect-word]')) b.onclick = () => { A.inspect = { word: b.dataset.inspectWord }; renderInspect(); };
-  on('ed-save', () => { const c = store.get('wa30.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa30.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa30.lobby', lobby); A.screen = 'lobby'; render(); });
+  on('ed-save', () => { const c = store.get('wa31.custom') || {}; c[ed.name] = ed.words.slice(); store.set('wa31.custom', c); lobby.mine = 'custom:' + ed.name; store.set('wa31.lobby', lobby); A.screen = 'lobby'; render(); });
 }
 
 function renderFixtures() {
@@ -756,12 +792,12 @@ function renderFixtures() {
 
 // ---------- boot ----------
 function boot(data) {
-  if (data && data.last) store.set('wa30.last', data.last);
+  if (data && data.last) store.set('wa31.last', data.last);
   render();
 }
 if (typeof window !== 'undefined') {
   window.WA30 = { A, render, startMatch, startFixture, selection, E };
-  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa30.last') }));
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ last: A.C && !A.review ? A.C.replay() : store.get('wa31.last') }));
   const start = d => boot(d || {});
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start(window.claude && window.claude.hot ? window.claude.hot.data : {});
 }
