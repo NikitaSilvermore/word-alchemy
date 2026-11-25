@@ -219,6 +219,22 @@ const FOLIO_FORMS = [
   { id: 'earth.setting', school: 'earth', type: 'thing', cost: 0, strike: 0, stand: 3, props: ['metal', 'socket'], deckLegal: false, market: false, folio: 'workshop', ladderOnly: true, transformedOnly: true },
   MD('made.signet', ['earth'], 0, 4, ['metal', 'artefact', 'instrument'], { folio: 'workshop', ability: { id: 'signet', cost: 1 } }),
 ];
+// Core Duel "Three Decks Worth Mastering" trial vocabulary (module 'three'). New senses get their own stable ids;
+// `name` is the display headword. Never deck-legal outside the module; archived senses (life.graft, earth.shape,
+// word.writ, made.signet, made.golem, reserve Signet Ground) keep their meanings.
+const THREE = [
+  FX(T('life.apple', 'life', 3, 1, 4, ['living', 'plant', 'tree', 'flower', 'orchard', 'body', 'flammable'], { pollination: 'insect', appleArrive: true }), 'three'),
+  FX(T('fire.tinder', 'fire', 1, 0, 1, ['flammable'], { ability: { id: 'tinder', cost: 1, sacrificeSelf: true } }), 'three'),
+  FX(T('earth.hammer', 'earth', 3, 2, 3, ['metal', 'body', 'tool'], { cap: ['crush'], ability: { id: 'hammer', cost: 1 } }), 'three'),
+  FX(S('life.graft3', 'life', 2, { spell: 'graft3', name: 'Graft' }), 'three'),
+  FX(S('earth.shape3', 'earth', 2, { spell: 'shape3', name: 'Shape' }), 'three'),
+  FX(S('word.writ3', 'word', 3, { spell: 'writ3', name: 'Writ' }), 'three'),
+];
+const THREE_FORMS = [
+  { id: 'earth.signet3', name: 'Signet', school: 'earth', type: 'thing', cost: 0, strike: 0, stand: 4, props: ['metal', 'instrument'], deckLegal: false, market: false, folio: 'three', ladderOnly: true, transformedOnly: true, ability: { id: 'seal', cost: 1 } },
+  MD('made.espalier', ['life'], 3, 5, ['living', 'plant', 'tree', 'orchard', 'flammable', 'body'], { folio: 'three', kw: ['reach'], cap: ['bind'], upkeep: 'espalier' }),
+  MD('made.golem3', ['earth', 'word'], 4, 5, ['clay', 'stone', 'body'], { folio: 'three', name: 'Golem', kw: ['heavy', 'guard', 'reach'], golemSpill: true }),
+];
 // B overlays on unchanged rc1 words (apply only while the module is active)
 const OVERLAYS = { orchard: { 'life.pear': { pollination: 'insect' }, 'air.wind': { carrier: 'wind' } }, workshop: { 'fire.smith': { ability: { id: 'shapeWork', cost: 2 } } } };
 
@@ -229,7 +245,7 @@ for (const patch of String(process.env.WA_PATCH || '').split(',').filter(Boolean
   const m = patch.match(/^([a-z_]+?)(\d+)$/); if (!m) continue;
   const c = CARDS.find(x => x.id.split('.')[1] === m[1]); if (c) c.cost = +m[2];
 }
-const BY_ID = Object.fromEntries(CARDS.concat(TOKENS, MADE, FOLIO, FOLIO_FORMS).map(c => [c.id, c]));
+const BY_ID = Object.fromEntries(CARDS.concat(TOKENS, MADE, FOLIO, FOLIO_FORMS, THREE, THREE_FORMS).map(c => [c.id, c]));
 
 // Derived capabilities (spec §5.3). Explicit `cap` adds to these.
 function capabilities(card, kws) {
@@ -261,4 +277,4 @@ function validateRegistry() {
   return errs;
 }
 
-module.exports = { CARDS, TOKENS, MADE, FOLIO, FOLIO_FORMS, OVERLAYS, BY_ID, capabilities, validateRegistry };
+module.exports = { THREE, THREE_FORMS, CARDS, TOKENS, MADE, FOLIO, FOLIO_FORMS, OVERLAYS, BY_ID, capabilities, validateRegistry };

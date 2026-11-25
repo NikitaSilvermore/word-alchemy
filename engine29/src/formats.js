@@ -33,6 +33,9 @@ const FORMATS = {
   // otherwise. Never combined with price34; never two modules at once unless the ID says so.
   // V33 The Core Duel — the single default research configuration (no Market, no Spark; grouped free combat at the rival only)
   v33_core: { version: '0.33.0-core.1', status: 'research', arithmetic: 'v29', initiative: 'combo2', reserve: true, market: false, marketBreath: 0, variant: { modules: ['orchard', 'core'] } },
+  // Core Duel trial "Three Decks Worth Mastering" — the one player-facing Core Duel; 'exchange' is the isolatable full-hand Study option
+  v33_core3: { version: '0.33.0-core.2-3dm', status: 'research', arithmetic: 'v29', initiative: 'combo2', reserve: true, market: false, marketBreath: 0, variant: { modules: ['orchard', 'core', 'three', 'exchange'] } },
+  v33_core3_noex: { version: '0.33.0-core.2-3dm-noex', status: 'research', arithmetic: 'v29', initiative: 'combo2', reserve: true, market: false, marketBreath: 0, variant: { modules: ['orchard', 'core', 'three'] } },
   v32_b: { version: '0.32.0-b', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: ['orchard', 'workshop', 'decay'] } },
   v32_visit: { version: '0.32.0-visit', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit'] } },
   v32_visit_draw: { version: '0.32.0-visit-draw', status: 'experiment', base: 'grammar_v30_rc1', variant: { modules: [...['orchard', 'workshop', 'decay'], 'visit_draw'] } },

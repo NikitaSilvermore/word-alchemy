@@ -1,0 +1,72 @@
+row_kind,candidate_id,live_id,type,breath(c/l),strike(c/l),stand(c/l),static_match,behaviour
+card,life.bee,life.bee,thing,1/1,1/1,2/2,yes,"T: pollination is a choice — Fruit (room and none), heal 2 life, or heal 2 marked damage on a friendly Living Thing; one attempt per player per own turn shared with Wind; flight required (Wet grounds Bee)"
+card,life.pear,life.pear,thing,2/2,1/1,3/3,yes,L: live growthGained already makes a Fruit the first time another friendly Plant gains Growth on your turn (room and none)
+card,life.hazel,life.hazel,thing,2/2,0/0,4/4,yes,T: Wind pollinates Hazel with the same three outputs and the shared allowance; Wind is wingless so Wet does not stop it
+card,life.feast,life.feast,spell,2/2,/,/,yes,"T: heal up to 2 on one or two friendly Living Things; optionally sacrifice a Fruit to ready one mature exhausted Thing for defence only until your next Renew (cannot attack, act, carry or fuse). V31/V33 ""second wave"" readying is not used"
+card,life.seed,life.seed,thing,1/1,0/0,2/2,yes,L
+card,life.sapling,life.sapling,thing,2/2,1/1,3/3,yes,"T: gains Bind capability; Graft rootstock. Ageing unchanged (Willow with Water Ground, else Oak)"
+card,life.grow,life.grow,spell,1/1,/,/,yes,"L: +1 Growth and one age event (stage change at age 2, one stage per turn)"
+card,life.abundance,life.abundance,spell,3/3,/,/,yes,T: one or two friendly Plants +1 Growth each; each chosen Tree with ≥2 Growth then gets +2 Strike this turn; no ageing (the V33 ageing revision is off)
+card,life.graft,life.graft3,spell,2/2,/,/,yes,"T: new sense life.graft3 (display Graft). Archived life.graft (Grafted host) untouched. Vessel R01 → Espalier, 2 Breath, no catalyst, Vessel use consumed"
+card,life.wolf,life.wolf,thing,2/2,2/2,3/3,yes,L: packBonus +1 while another friendly Beast
+card,life.bramble,life.bramble,thing,2/2,1/1,4/4,yes,L: Reach; sting-binds a surviving Living attacker after positive retaliation
+card,life.bite,life.bite,action,1/1,/,/,yes,"L: +1, reachable Living Thing or the rival; Sacred target illegal"
+card,life.bind,life.bind,action,1/1,/,/,yes,"T: Sapling, Willow and Espalier may also Bind; Response timing as live; under three a Bound attacker in a committed group deals no damage"
+card,water.water,water.water,ground,2/2,/,3/3,yes,L: upkeep choose a Thing: Wet and heal 1
+card,water.dew,water.dew,spell,1/1,/,/,yes,"T: one mode — Wet one visible Thing (any side; Ward applies), heal 2 on a friendly Living Thing, or remove one poison (you or a friendly Living Thing). The V33 combined heal is off"
+card,reserve.apple,life.apple,thing,3/3,1/1,4/4,yes,T: new card life.apple 3 Breath 1/4; arrival makes a Fruit if you control another Flower and no Fruit (room permitting); insect-pollinated
+card,water.otter,water.otter,thing,2/2,2/2,3/3,yes,L
+card,air.wind,air.wind,thing,2/2,1/1,3/3,yes,L
+card,air.gust,air.gust,spell,2/2,/,/,yes,L: Strike ≤2 non-Heavy enemy Thing returns to hand (made forms dissolve; tokens vanish)
+card,air.owl,air.owl,thing,2/2,2/2,2/2,yes,L: optional reveal on arrival
+card,fire.ember,fire.ember,thing,1/1,1/1,2/2,yes,L
+card,fire.torch,fire.torch,ground,1/1,/,2/2,yes,L
+card,fire.fire,fire.fire,ground,2/2,/,3/3,yes,L
+card,fire.salamander,fire.salamander,thing,2/2,2/2,3/3,yes,L
+card,fire.firebird,fire.firebird,thing,3/3,2/2,2/2,yes,"L: Phoenix ingredient (R06 live recipe, 3 Breath, Ash token admitted)"
+card,fire.naphtha,fire.naphtha,thing,2/2,0/0,3/3,yes,T: Wet prevents ignition again (V33 oil-on-water revision off); first successful Ignite destroys it and deals 3 at once to the two oldest visible enemy Things; no life damage; once per physical card per duel (flag by pid)
+card,fire.burn,fire.burn,action,1/1,/,/,yes,T: may target your own dry Flammable Thing as well as the rival's
+card,fire.scorch,fire.scorch,action,2/2,/,/,yes,L: 2 to a visible enemy Thing or the rival
+card,fire.kindle,fire.kindle,spell,1/1,/,/,yes,"T: choose — Ignite one of your dry Flammable Things, or +1 Strike and combat ignition this turn; ignition fails on a Wet target with a stated reason"
+card,fire.calcine,fire.calcine,spell,2/2,/,/,yes,"T: sacrifice cost; 3 to a visible enemy Thing or the rival; Ash only if chosen at declaration, room and none; countered → sacrifice stands, no Ash"
+card,fire.wildfire,fire.wildfire,spell,4/4,/,/,yes,"T: one or two visible enemy Things: 1 each, or 3 to each Burning at resolution, applied together; never life; no Burning requirement to cast"
+card,fire.drought,fire.drought,weather,2/2,/,/,yes,L (V33): entry dries every Thing; upkeep dries active player's Things; first own-turn hostile Ignite +1 damage
+card,air.swallow,air.swallow,thing,1/1,1/1,1/1,yes,L
+card,air.blow,air.blow,action,2/2,/,/,yes,T: a Feast defence-only Thing cannot be the payload
+card,air.gasp,air.gasp,spell,1/1,/,/,yes,L
+card,air.winged,air.winged,quality,1/1,/,/,yes,L (V33): not offered to a Thing that already flies
+card,reserve.tinder,fire.tinder,thing,1/1,0/0,1/1,yes,"T: new card fire.tinder 1 Breath 0/1; Main, 1 Breath, sacrifice: Ignite a visible dry Flammable Thing other than itself; if it was yours and caught, Ash (room and none). Fresh may be used"
+card,earth.clay,earth.clay,thing,1/1,0/0,3/3,yes,"T: Main, 1 Breath, sacrifice Clay (Fresh or exhausted): the next positive damage packet to another friendly Thing before your next Renew is reduced by up to 3. Golem ingredient"
+card,earth.lead,earth.lead,thing,1/1,1/1,3/3,yes,L
+card,earth.copper,earth.copper,thing,2/2,2/2,2/2,yes,"T: Shape edges added (Hammer, Signet); one metal change per instance per turn shared with Transmute"
+card,earth.silver,earth.silver,thing,3/3,2/2,4/4,yes,T: Shape edge to Signet added
+card,earth.iron,earth.iron,thing,2/2,2/2,4/4,yes,T: Shape edge to Hammer added
+card,earth.flint,earth.flint,thing,1/1,2/2,1/1,yes,L: Burn explicit; Cut derives from Sharp
+card,earth.boulder,earth.boulder,thing,3/3,2/2,6/6,yes,"L: Bedrock +1 at upkeep, cap 2"
+card,earth.crucible,earth.crucible,ground,2/2,/,4/4,yes,"T: temper added — Main, 1 Breath, exhaust a mature ready damaged Metal: heal 2 from it, once per own turn. Fusion discount live (−1, floor 2)"
+card,earth.transmute,earth.transmute,spell,2/2,/,/,yes,L
+card,earth.guard,earth.guard,spell,1/1,/,/,yes,T: Reach and +2 Stand until your next Renew (live V33 gave temporary Guard + 2 Stand this turn); expiry can kill
+card,earth.crush,earth.crush,action,2/2,/,/,yes,T: never targets the rival or a Ground; overflow measured on damage actually dealt (after Clay shield); none if Phoenix rebirth prevents death
+card,lf.shape,earth.shape3,spell,2/2,/,/,yes,T: new sense earth.shape3 (display Shape). Archived earth.shape (Setting) untouched
+card,word.word,word.word,thing,1/1,0/0,3/3,yes,L
+card,word.scribe,word.scribe,thing,2/2,1/1,3/3,yes,L
+card,reserve.hammer,earth.hammer,thing,3/3,2/2,3/3,yes,"T: new card earth.hammer 3 Breath 2/3 Metal Tool; Main, 1 Breath + exhaust: 2 to a visible damaged enemy Thing or the enemy Ground. Same definition for drawn and shaped Hammer"
+card,lf.writ,word.writ3,spell,3/3,/,/,yes,T: new sense word.writ3 (display Writ): exhaust a ready visible enemy Thing with Strike ≤2; or stamp by exhausting your mature ready Signet as a cost to exhaust one or two ready enemy Things of any Strike
+card,word.omen,word.omen,spell,1/1,/,/,yes,L
+card,word.protect,word.protect,spell,1/1,/,/,yes,L
+card,word.doubt,word.doubt,spell,2/2,/,/,yes,"L: cannot cancel abilities, combat, Actions or a bare Vessel fusion"
+card,word.awaken,word.awaken,spell,2/2,/,/,yes,T: any friendly non-living Thing (live excluded Bodies); a Body only gains the Might
+form,token.fruit,token.fruit,thing,/,0/0,1/1,yes,"L (V33): eat for 2 life, 2 marked damage on a Living Thing, or one poison; can pay for Feast"
+form,token.ash,token.ash,thing,/,0/0,1/1,yes,L
+form,form.espalier,made.espalier,thing,/,3/3,5/5,yes,"T: new made.espalier 3/5 Reach, Bind; upkeep: Fruit (none and room) or +1 Growth to another friendly Plant"
+form,form.phoenix,made.phoenix,thing,/,4/4,4/4,yes,"L: 4/4 Flying, once per player per duel destruction replacement (clear damage, exhaust)"
+form,form.golem,made.golem3,thing,/,4/4,5/5,yes,T: new made.golem3 (display Golem) 4/5 Heavy Guard Reach; ordinary attack spills excess through a destroyed blocker once. Archived made.golem 3/5 untouched
+form,form.engraved_signet,earth.signet3,thing,/,0/0,4/4,yes,"T: new form earth.signet3 (display Signet) 0/4 Metal Instrument; Main, 1 + exhaust: Ward another friendly Thing lacking Ward; or pays Writ's stamp. Archived made.signet (Setting + Garnet) and reserve Signet Ground untouched"
+form,reserve.hammer,earth.hammer,thing,/,2/2,3/3,yes,"T: new card earth.hammer 3 Breath 2/3 Metal Tool; Main, 1 Breath + exhaust: 2 to a visible damaged enemy Thing or the enemy Ground. Same definition for drawn and shaped Hammer"
+form,life.sapling,life.sapling,thing,/,1/1,3/3,yes,"T: gains Bind capability; Graft rootstock. Ageing unchanged (Willow with Water Ground, else Oak)"
+form,life.oak,life.oak,thing,/,3/3,6/6,yes,L
+form,life.willow,life.willow,thing,/,1/1,5/5,yes,T: gains Bind
+form,earth.tin,earth.tin,thing,/,1/1,3/3,yes,L
+form,earth.copper,earth.copper,thing,/,2/2,2/2,yes,"T: Shape edges added (Hammer, Signet); one metal change per instance per turn shared with Transmute"
+form,earth.silver,earth.silver,thing,/,2/2,4/4,yes,T: Shape edge to Signet added
+form,form.gold,earth.gold,thing,/,2/2,4/4,yes,L: upkeep +1 Breath within the extra-income cap

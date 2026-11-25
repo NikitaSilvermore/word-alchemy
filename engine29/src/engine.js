@@ -204,6 +204,7 @@ function kws(S, t) {
   const k = new Set((card(t).kw || []).concat(m.kw));
   for (const x of m.kwRemove) k.delete(x);
   if (t.tempGuard) k.add('guard');
+  if (t.g3) k.add('reach'); // three: Guard grants Reach until its controller's next Renew
   const g = S.players[t.ctrl].ground;
   if (g && card(g).static === 'heavyReach' && k.has('heavy')) k.add('reach');
   if (t.status.wet && prop(t, 'winged')) k.delete('flying');
@@ -211,10 +212,11 @@ function kws(S, t) {
   if (k.has('heavy') && prop(t, 'winged') && !(card(t).kw || []).includes('heavy')) k.delete('flying'); // wing-derived flight suppressed while Heavy
   return k;
 }
-function caps(S, t) { const m = modsOf(t); return capabilities({ ...card(t), props: propsOf(t), cap: (card(t).cap || []).concat(m.cap || []) }, kws(S, t)); }
+const THREE_CAPS = { 'life.sapling': ['bind'], 'life.willow': ['bind'] };
+function caps(S, t) { const m = modsOf(t); return capabilities({ ...card(t), props: propsOf(t), cap: (card(t).cap || []).concat(m.cap || [], (threeOn(S) && THREE_CAPS[card(t).id]) || []) }, kws(S, t)); }
 function has(S, t, k) { return kws(S, t).has(k); }
 function prop(t, p) { return propsOf(t).includes(p); }
-function maxStand(S, t) { return card(t).stand + modsOf(t).stand + (t.counters.bedrock || 0) + (t.counters.growth || 0) + (t.tempStand || 0); }
+function maxStand(S, t) { return card(t).stand + modsOf(t).stand + (t.counters.bedrock || 0) + (t.counters.growth || 0) + (t.tempStand || 0) + (t.g3 ? 2 : 0); }
 function curStrike(S, t) {
   let s = card(t).strike + modsOf(t).strike + (t.counters.might || 0) + (t.tempStrike || 0);
   if (card(t).packBonus && S.things.some(o => o !== t && o.ctrl === t.ctrl && prop(o, 'beast'))) s += 1;
@@ -248,15 +250,21 @@ function gainSpark(S, p, why) { if (coreOn(S)) return; const g = Math.min(FORMAT
 function canIgnite(t) { return prop(t, 'flammable') && !t.status.wet; }
 // Ignite = apply/refresh Burning (2 ticks), no implied damage; Wet prevents (§5.5, §5.7)
 function ignite(S, t, bySide) {
-  if (!t || !(canIgnite(t) || (coreOn(S) && card(t).naphtha && prop(t, 'flammable')))) return false; // V33: oil burns on water
+  if (!t || !(canIgnite(t) || (core33(S) && card(t).naphtha && prop(t, 'flammable')))) return false; // V33: oil burns on water (not under 'three')
   t.status.burning = 2; event(S, 'ignite', { tid: t.id });
   if (bySide != null && bySide === S.active && t.ctrl !== bySide && S.sky && card(S.sky).weather === 'drought') {
     const p = S.players[bySide]; if (p.droughtTurn !== p.personalTurn) { p.droughtTurn = p.personalTurn; damageThing(S, t, 1); }
   }
   if (card(t).naphtha && t.pid && !S.flags[t.pid + ':naphtha']) { // first time this physical card is Ignited in the duel
     S.flags[t.pid + ':naphtha'] = true;
+    if (threeOn(S)) { // three: destroy itself; 3 damage at once to the two oldest visible enemy Things; never life
+      const vs = naphthaVictims(S, t); for (const o of vs) damageThing(S, o, 3);
+      event(S, 'flare', { tid: t.id, side: t.ctrl, victims: vs.map(o => o.id) }); say(S, `Naphtha flares: 3 to ${vs.map(o => o.word).join(' and ') || 'nothing'}.`);
+      if (S.things.includes(t)) destroy(S, t);
+      return true;
+    }
     for (const o of S.things.filter(o => o.ctrl !== t.ctrl)) damageThing(S, o, 2);
-    if (coreOn(S)) { loseLife(S, 1 - t.ctrl, 2, 'naphtha'); event(S, 'flare', { tid: t.id, side: t.ctrl }); say(S, `Naphtha flares: 2 to every enemy Thing and 2 to P${1 - t.ctrl}.`); } // V33 bounded flare
+    if (core33(S)) { loseLife(S, 1 - t.ctrl, 2, 'naphtha'); event(S, 'flare', { tid: t.id, side: t.ctrl }); say(S, `Naphtha flares: 2 to every enemy Thing and 2 to P${1 - t.ctrl}.`); } // V33 bounded flare
     if (S.things.includes(t)) destroy(S, t);
   }
   return true;
@@ -363,6 +371,7 @@ function packet(S, src, base, verb) {
 
 function damageThing(S, t, n, fromResonance) {
   if (n <= 0) return;
+  if (t.shield3) { const pr = Math.min(n, t.shield3); n -= pr; delete t.shield3; event(S, 'shielded', { tid: t.id, prevented: pr }); if (n <= 0) return; } // three: Clay's shield takes one positive packet
   t.damage += n; if (t.status.asleep) delete t.status.asleep;
   if (!fromResonance && modsOf(t).resonant && t.resonantTurn !== S.turn) { // first time each turn; resonance never re-triggers
     t.resonantTurn = S.turn;
@@ -411,6 +420,7 @@ function stateCheck(S) {
   }
 }
 
+function naphthaVictims(S, t) { return S.things.filter(o => o.ctrl !== t.ctrl && !o.status.concealed).sort((a, b) => a.entry - b.entry).slice(0, 2); }
 function rebirthAvailable(S, t) { return !!card(t).rebirth && !S.players[t.ctrl].phoenixUsed; }
 function recoverFromGrave(S, pid, owner) {
   const p = S.players[owner], k = p.grave.findIndex(g => g.pid === pid);
@@ -465,7 +475,7 @@ function startTurn(S) {
   p.sentenceSpark = false; p.abilitySpark = false; p.bought = false; p.discountUsed = 0;
   if (p.personalTurn === 1 && S.active !== S.first) p.breath += INITIATIVE[S.rules.initiative].p2FirstTurnBreath || 0;
   if (p.personalTurn === 1 && S.active === S.first) p.breath = Math.max(0, p.breath + (INITIATIVE[S.rules.initiative].p1FirstTurnBreath || 0));
-  for (const t of S.things) if (t.ctrl === S.active) { t.exhausted = false; t.fresh = false; t.actions = 0; t.quickUsed = false; }
+  for (const t of S.things) if (t.ctrl === S.active) { t.exhausted = false; t.fresh = false; t.actions = 0; t.quickUsed = false; delete t.defOnly; delete t.shield3; delete t.g3; } // three: Feast defence, Clay shield and Guard end at Renew
   event(S, 'renew', { side: p.i });
   if (S.invites) S.invites = S.invites.filter(x => x.owner !== p.i); // standing invitations last until their owner's next Renew
   // Sky and Law expire at the caster's second subsequent Renew, before upkeep
@@ -493,6 +503,7 @@ function startTurn(S) {
     if (u === 'stone') { const k = decide(S, p.i, 'stoneUpkeep', ['draw', 'breath'], p.hand.length <= 3 && p.deck.length ? 0 : 1); if (k === 0) drawCard(S, p); else gainExtraBreath(p, 1); }
     if (card(t).lifespan) { t.age = (t.age || 0) + 1; if (t.age >= card(t).lifespan) { leaveField(S, t, 'expired'); say(S, `${t.word} disperses.`); continue; } }
     if (card(t).ladder === 'plant' && ['life.seed', 'life.sapling'].includes(card(t).id)) ageUp(S, t);
+    if (u === 'espalier') espalierUpkeep(S, p, t);
     if (u === 'aloe') { const d = S.things.filter(o => o.ctrl === p.i && o.damage > 0).sort((a, b) => a.entry - b.entry)[0]; if (d) heal(S, d, 1); }
     if (u === 'wormwood') { if (p.poison) p.poison--; else { const d = S.things.find(o => o.ctrl === p.i && o.status.poison); if (d) d.status.poison--; } }
   }
@@ -605,7 +616,7 @@ function endTurn(S) {
 
 // ---------- legality ----------
 function ready(S, t, onTurn) { // can initiate an action
-  if (t.exhausted || incapacitated(t)) return false;
+  if (t.exhausted || incapacitated(t) || t.defOnly) return false; // three: readied by Feast for defence only
   if (t.fresh && !has(S, t, 'swift')) return false;
   return onTurn ? t.actions < (t.quickUsed || t.feastTurn === S.players[t.ctrl].personalTurn ? 2 : 1) : true; // Quick (or Feast) allows one more paid action, hard ceiling two
 }
@@ -700,6 +711,7 @@ function cardPlays(S, side, mode) {
     if (mode === 'main' && d.responseOnly) continue;
     if (d.type === 'thing') { if (hasRoom(S, side, d.id)) out.push({ type: 'deploy', card: c.pid }); continue; }
     if (d.type === 'ground') { out.push({ type: 'ground', card: c.pid }); continue; }
+    if (threeOn(S)) { const tp = threePlays(S, side, c, d, mode); if (tp) { out.push(...tp); continue; } }
     if (mode === 'main') {
       if (d.type === 'weather') { out.push({ type: 'weather', card: c.pid }); continue; }
       if (d.type === 'burden') { out.push({ type: 'burden', card: c.pid }); continue; }
@@ -714,7 +726,7 @@ function cardPlays(S, side, mode) {
       }
       if (d.spell === 'tide') { for (const tg of combos(foes.filter(t => pushable(S, t, 4)).map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: tg }); continue; }
       if (d.spell === 'squall') { for (const tg of combos(mine.filter(t => has(S, t, 'flying') && canAct(S, t)).map(t => t.id), 1, 3)) out.push({ type: 'spell', card: c.pid, targets: tg }); continue; }
-      if (d.spell === 'abundance' && coreOn(S)) { for (const tg of combos(mine.filter(t => prop(t, 'plant')).map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: tg }); continue; }
+      if (d.spell === 'abundance' && core33(S)) { for (const tg of combos(mine.filter(t => prop(t, 'plant')).map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: tg }); continue; }
       if (d.spell === 'abundance') {
         for (const tg of combos(mine.filter(t => prop(t, 'living')).map(t => t.id), 1, 3)) for (const m of tg) out.push({ type: 'spell', card: c.pid, targets: tg, might: m });
         continue;
@@ -747,9 +759,9 @@ function cardPlays(S, side, mode) {
     for (const s of subjects) {
       if (d.verb in COMBAT) {
         if (mode !== 'main') continue; // contact attacks are Main-only
-        out.push({ type: 'attack', subject: s.id, verb: d.verb, card: c.pid, target: 'rival' });
+        if (!(threeOn(S) && d.verb === 'crush')) out.push({ type: 'attack', subject: s.id, verb: d.verb, card: c.pid, target: 'rival' }); // three: Crush never selects the rival
         for (const f of foes) if (contactReach(S, s, f) && (d.verb !== 'bite' || (prop(f, 'living') && !has(S, f, 'sacred')))) out.push({ type: 'attack', subject: s.id, verb: d.verb, card: c.pid, target: f.id });
-        if (enemy(S, side).ground && d.verb !== 'bite') out.push({ type: 'attack', subject: s.id, verb: d.verb, card: c.pid, target: 'ground' });
+        if (enemy(S, side).ground && d.verb !== 'bite' && !(threeOn(S) && d.verb === 'crush')) out.push({ type: 'attack', subject: s.id, verb: d.verb, card: c.pid, target: 'ground' });
         if (d.verb === 'cut') for (const f of mine.filter(t => t.status.bound && contactReach(S, s, t))) out.push({ type: 'remote', subject: s.id, verb: 'cut', card: c.pid, target: f.id }); // free a Bound friend
       } else if (d.verb === 'bind') {
         for (const f of foes.filter(t => contactReach(S, s, t) && !t.status.bound)) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id });
@@ -764,7 +776,7 @@ function cardPlays(S, side, mode) {
         for (const f of foes) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id });
         if (enemy(S, side).ground) out.push({ type: 'remote', subject: s.id, card: c.pid, target: 'ground' });
       } else if (d.verb === 'blow') {
-        for (const pay of mine.filter(t => t !== s && !t.exhausted && !incapacitated(t))) for (const mode2 of ['hot', 'liquid', 'toxic'].filter(x => prop(pay, x))) {
+        for (const pay of mine.filter(t => t !== s && !t.exhausted && !incapacitated(t) && !t.defOnly)) for (const mode2 of ['hot', 'liquid', 'toxic'].filter(x => prop(pay, x))) {
           const elig = foes.filter(t => mode2 === 'hot' ? canIgnite(t) : mode2 === 'toxic' ? prop(t, 'living') : true).map(t => t.id);
           for (const tg of combos(elig, 1, 2)) out.push({ type: 'remote', subject: s.id, card: c.pid, payload: pay.id, mode: mode2, targets: tg });
         }
@@ -773,7 +785,7 @@ function cardPlays(S, side, mode) {
       } else if (d.verb === 'drench') {
         for (const f of S.things.filter(t => !t.status.wet)) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id });
       } else if (d.verb === 'burn') {
-        for (const f of foes.filter(t => prop(t, 'flammable') && !t.status.wet && (t.status.burning || 0) < 2)) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id });
+        for (const f of (threeOn(S) ? foes.concat(mine) : foes).filter(t => prop(t, 'flammable') && !t.status.wet && (t.status.burning || 0) < 2)) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id }); // three: yours or the rival's
       } else {
         out.push({ type: 'remote', subject: s.id, card: c.pid, target: 'rival' });
         for (const f of foes) if (d.verb !== 'poison' || prop(f, 'living')) out.push({ type: 'remote', subject: s.id, card: c.pid, target: f.id });
@@ -825,8 +837,10 @@ function qualityFits(S, t, d) {
 function abilityOptions(S, side) {
   const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
   if (S.rules.modules.length) out.push(...folioAbilityOptions(S, side));
+  if (threeOn(S)) out.push(...threeAbilityOptions(S, side));
   for (const t of mine) {
     const ab = card(t).ability; if (!ab || ab.cost > p.breath || ab.folio) continue;
+    if (threeOn(S) && THREE_ABILITIES.has(ab.id)) continue; // listed by threeAbilityOptions
     if (card(t).folio && ['mould', 'signet'].includes(ab.id)) continue; // module abilities are listed by folioAbilityOptions
     if (ab.sacrificeSelf) { if (incapacitated(t)) continue; } else if (!canAct(S, t)) continue;
     if (ab.id === 'heal2') for (const f of mine.filter(o => o.damage > 0)) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id });
@@ -912,7 +926,7 @@ function ingredientOk(S, side, desc, o, isGround, resolving) {
   if (o.ctrl !== side || o.owner !== side) return false; // controlled and owned
   if (has(S, o, 'final')) return false;
   if (!!desc.token !== !!o.token) return false;
-  if ((o.exhausted && !resolving) || incapacitated(o)) return false; // ready, not incapacitated (own committed exhaustion is fine at resolution)
+  if ((o.exhausted && !resolving) || incapacitated(o) || o.defOnly) return false; // ready, not incapacitated (own committed exhaustion is fine at resolution)
   if (desc.form && card(o).id !== desc.form) return false;
   if (desc.props && !desc.props.every(x => prop(o, x))) return false;
   if (desc.host && card(o).made) return false; // named forms are not compositional hosts
@@ -935,7 +949,7 @@ function previewFusion(S, side, recipe, a, aG, b, bG) {
     if ((recipe.forbidKw || []).some(k => has(S, a, k)) || (recipe.forbidProps || []).some(x => prop(a, x))) return null;
   }
   const dmg = (a.damage || 0) + (b.damage || 0);
-  const stand = recipe.mod ? card(a).stand + modsOf(a).stand + (recipe.mod.stand || 0) : BY_ID[recipe.out].stand;
+  const stand = recipe.mod ? card(a).stand + modsOf(a).stand + (recipe.mod.stand || 0) : BY_ID[recipeOut(S, recipe)].stand;
   if (stand - dmg <= 0) return null; // previewed result would be destroyed: illegal at declaration
   return { cost: fusionPrice(S, side, recipe.cost), catalyst: catalystNeeded(S, a, aG, b, bG), dmg, stand };
 }
@@ -953,7 +967,8 @@ function fusionOptions(S, side) {
   }
   return out;
 }
-const recipeById = id => R.NAMED.find(r => r.id === id) || R.INFUSIONS.find(r => r.id === id) || FOLIO_RECIPES.find(r => r.id === id);
+const recipeById = id => R.NAMED.find(r => r.id === id) || R.INFUSIONS.find(r => r.id === id) || FOLIO_RECIPES.find(r => r.id === id) || ESPALIER.find(r => r.id === id);
+const recipeOut = (S, r) => (threeOn(S) && r.id === 'golem' ? 'made.golem3' : r.out); // three: Golem 4/5 Reach with ordinary spill
 const refObj = (S, side, ref) => ref === 'ground' ? S.players[side].ground : thingById(S, ref);
 function resolveFuse(S, n) {
   const side = n.side, p = S.players[side], recipe = recipeById(n.act.recipe);
@@ -973,7 +988,7 @@ function resolveFuse(S, n) {
       kwRemove: m0.kwRemove.concat(m.kwRemove || []), infusions: m0.infusions.concat(recipe.id), schools: m0.schools.concat(recipe.school), igniteOnHit: m0.igniteOnHit || !!m.igniteOnHit };
     t = newThing(S, side, { word: a.word, form: a.form, mods, lineage, damage: dmg, exhausted: true, fresh: true, quals: keepQuals });
   } else {
-    t = newThing(S, side, { word: recipe.out, form: recipe.out, lineage, damage: dmg, exhausted: true, fresh: true });
+    t = newThing(S, side, { word: recipeOut(S, recipe), form: recipeOut(S, recipe), lineage, damage: dmg, exhausted: true, fresh: true });
   }
   t.madeTurn = p.personalTurn;
   S.stats.fusions++; S.stats.made[recipe.id] = (S.stats.made[recipe.id] || 0) + 1;
@@ -1019,6 +1034,7 @@ function arrive(S, t) {
   if (oa === 'rose' && S.things.some(o => o !== t && o.ctrl === t.ctrl && prop(o, 'flower')) && !S.things.some(o => o.ctrl === t.ctrl && card(o).id === 'token.blossom')) {
     const b = createToken(S, t.ctrl, 'token.blossom'); if (b) flowerEntered(S, b);
   }
+  if (card(t).appleArrive && threeOn(S) && S.things.some(o => o !== t && o.ctrl === t.ctrl && prop(o, 'flower')) && !hasFruit(S, t.ctrl)) { const f = createToken(S, t.ctrl, 'token.fruit'); if (f) event(S, 'apple-fruit', { tid: t.id }); }
   flowerEntered(S, t);
 }
 function flowerEntered(S, t) { // Saffron: first time another Flower enters your field each own turn
@@ -1028,7 +1044,7 @@ function flowerEntered(S, t) { // Saffron: first time another Flower enters your
 }
 function resolveAbility(S, n, tg) {
   const a = n.act, side = n.side, p = S.players[side];
-  if (!n.selfSacrificed && !thingById(S, a.subject)) return false; // subject removed: fails, costs stay paid
+  if (!n.selfSacrificed && !thingById(S, a.subject)) { if (a.ability === 'tinder' || a.ability === 'clayShield') { /* sacrificed as cost */ } else return false; } // subject removed: fails, costs stay paid
   switch (a.ability) {
     case 'heal2': if (!tg || tg.ctrl !== side) return false; heal(S, tg, 2); return true;
     case 'tend': if (!tg || tg.ctrl !== side) return false; if (a.branch === 'cure') { if (tg.status.poison) tg.status.poison--; } else heal(S, tg, 2); return true;
@@ -1039,6 +1055,7 @@ function resolveAbility(S, n, tg) {
     }
     case 'pollinate': case 'shapeWork': case 'signet': case 'mould': return resolveFolioAbility(S, n, tg);
     case 'visit': return resolveVisit(S, n, tg);
+    case 'clayShield': case 'tinder': case 'hammer': case 'seal': case 'temper': return resolveThreeAbility(S, n, tg);
     case 'bear': case 'shapeStart': return resolveProcessStart(S, n, tg);
     case 'eatFruit': if (a.branch === 'mend') { if (!tg || tg.ctrl !== side || !tg.damage) return false; heal(S, tg, 2); return true; }
       if (a.branch === 'life') { gainLife(S, side, 2, 'fruit'); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
@@ -1063,6 +1080,207 @@ function resolveGraft(S, n, h, dn) {
 
 function takeCard(p, pid) { const k = p.hand.findIndex(c => c.pid === pid); if (k < 0) throw new Error('card not in hand ' + pid); return p.hand.splice(k, 1)[0]; }
 
+// ---------- Core Duel "Three Decks Worth Mastering" trial ('three') ----------
+// Narrow authored definitions for the three Core Duel lists. Every effect is spelled out here; the live V33 behaviour of
+// unchanged words is reused untouched. Inputs, prices and limits follow 01_Core_Cards / 01_Result_Forms / 03_Formation_Edges.
+const THREE_ABILITIES = new Set(['tinder', 'hammer', 'seal']);
+const ESPALIER = [ // R01 via Graft: rootstock first; 2 Breath paid by the Graft card; no catalyst
+  { id: 'esp_sp', out: 'made.espalier', cost: 2, a: { thing: true, form: 'life.sapling' }, b: { thing: true, form: 'life.pear' } },
+  { id: 'esp_sa', out: 'made.espalier', cost: 2, a: { thing: true, form: 'life.sapling' }, b: { thing: true, form: 'life.apple' } },
+  { id: 'esp_pa', out: 'made.espalier', cost: 2, a: { thing: true, form: 'life.pear' }, b: { thing: true, form: 'life.apple' } },
+  { id: 'esp_ap', out: 'made.espalier', cost: 2, a: { thing: true, form: 'life.apple' }, b: { thing: true, form: 'life.pear' } },
+];
+const SHAPE3 = { 'earth.copper': ['earth.hammer', 'earth.signet3'], 'earth.iron': ['earth.hammer'], 'earth.silver': ['earth.signet3'] };
+function abSpec(S, t) { if (!t) return null; if (threeOn(S) && card(t).id === 'earth.clay') return { id: 'clayShield', cost: 1, sacrificeSelf: true }; return card(t).ability || null; }
+const visibleThings = (S, side) => S.things.filter(t => t.ctrl === side || !t.status.concealed);
+const isAsh = t => card(t).id === 'token.ash';
+// Why a metal cannot be Shaped into `to` now (null = it can)
+function shape3Why(S, side, t, to) {
+  if (!t || t.ctrl !== side || t.owner !== side) return 'choose a metal you own and control';
+  const from = card(t).id;
+  if (!SHAPE3[from]) return `only Copper or Iron can become a Hammer, and only Copper or Silver a Signet (this is ${nameOf(t)})`;
+  if (to && !SHAPE3[from].includes(to)) return `${nameOf(t)} cannot be shaped into a ${to === 'earth.hammer' ? 'Hammer' : 'Signet'}`;
+  if (has(S, t, 'fixed')) return `${nameOf(t)} is Fixed`;
+  if (t.ladderTurn === S.players[side].personalTurn) return `${nameOf(t)} has already changed form this turn (one metal change per turn)`;
+  if (to) { const st = BY_ID[to].stand + modsOf(t).stand + (t.counters.bedrock || 0) + (t.g3 ? 2 : 0); if (st - t.damage <= 0) return `as a ${to === 'earth.hammer' ? 'Hammer' : 'Signet'} (stand ${st}) it would break from its ${t.damage} damage`; }
+  return null;
+}
+// Why a Kindle/Tinder/Burn ignition would fail on `t` (null = it would catch)
+function igniteWhy(S, t) {
+  if (!t) return 'the target has left play';
+  if (!prop(t, 'flammable')) return `${nameOf(t)} does not burn`;
+  if (t.status.wet) return `${nameOf(t)} is Wet${S.sky && card(S.sky).weather === 'rain' ? ' (Rain)' : ''} — dry it first (Drought)`;
+  if ((t.status.burning || 0) >= 2) return `${nameOf(t)} is already burning`;
+  return null;
+}
+function threePlays(S, side, c, d, mode) {
+  const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
+  const main = mode === 'main';
+  switch (d.spell) {
+    case 'feast': {
+      if (!main) return out;
+      const hurt = mine.filter(t => prop(t, 'living') && t.damage > 0).map(t => t.id);
+      const heals = combos(hurt, 1, 2);
+      for (const h of heals) out.push({ type: 'spell', card: c.pid, targets: h });
+      const fruits = mine.filter(o => card(o).id === 'token.fruit'), rdy = mine.filter(t => t.exhausted && !t.fresh && !incapacitated(t) && !isAsh(t) && card(t).id !== 'token.fruit');
+      for (const f of fruits) for (const r of rdy) for (const h of [[]].concat(heals)) out.push({ type: 'spell', card: c.pid, targets: h, sacrifice: f.id, ready: r.id });
+      return out;
+    }
+    case 'abundance': if (main) for (const tg of combos(mine.filter(t => prop(t, 'plant')).map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: tg }); return out;
+    case 'graft3': {
+      if (!main || p.fusedTurn === p.personalTurn) return out;
+      for (const r of ESPALIER) for (const x of mine) for (const y of mine) if (x !== y && previewFusion(S, side, r, x, false, y, false)) out.push({ type: 'spell', card: c.pid, recipe: r.id, a: x.id, b: y.id });
+      return out;
+    }
+    case 'shape3': if (main) for (const t of mine) for (const to of SHAPE3[card(t).id] || []) if (!shape3Why(S, side, t, to)) out.push({ type: 'spell', card: c.pid, target: t.id, branch: to }); return out;
+    case 'writ3': {
+      if (!main) return out;
+      const rdyFoes = foes.filter(t => !t.exhausted);
+      for (const f of rdyFoes.filter(t => curStrike(S, t) <= 2)) out.push({ type: 'spell', card: c.pid, target: f.id });
+      for (const sg of mine.filter(t => card(t).id === 'earth.signet3' && canAct(S, t))) for (const ts of combos(rdyFoes.map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: ts, endorse: sg.id });
+      return out;
+    }
+    case 'dew': {
+      for (const t of visibleThings(S, side).filter(t => !t.status.wet)) out.push({ type: 'spell', card: c.pid, target: t.id, mode: 'wet' });
+      for (const t of mine.filter(t => prop(t, 'living') && t.damage > 0)) out.push({ type: 'spell', card: c.pid, target: t.id, mode: 'heal' });
+      if (p.poison) out.push({ type: 'spell', card: c.pid, target: 'self', mode: 'cleanse' });
+      for (const t of mine.filter(t => prop(t, 'living') && t.status.poison)) out.push({ type: 'spell', card: c.pid, target: t.id, mode: 'cleanse' });
+      return out;
+    }
+    case 'kindle': {
+      for (const t of mine.filter(t => !igniteWhy(S, t))) out.push({ type: 'spell', card: c.pid, target: t.id, mode: 'ignite' });
+      for (const t of mine) out.push({ type: 'spell', card: c.pid, target: t.id, mode: 'fan' });
+      return out;
+    }
+    case 'calcine': {
+      if (!main) return out;
+      for (const sac of mine) for (const tg of ['rival'].concat(foes.map(f => f.id))) for (const ash of [false, true]) out.push({ type: 'spell', card: c.pid, target: tg, sacrifice: sac.id, ash });
+      return out;
+    }
+    case 'wildfire': if (main) for (const ts of combos(foes.map(t => t.id), 1, 2)) out.push({ type: 'spell', card: c.pid, targets: ts }); return out;
+    case 'awaken': if (main) for (const t of mine.filter(t => !prop(t, 'living'))) out.push({ type: 'spell', card: c.pid, target: t.id }); return out;
+  }
+  return null;
+}
+function threeAbilityOptions(S, side) {
+  const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side), foes = S.things.filter(t => t.ctrl !== side && !t.status.concealed);
+  if (p.breath < 1) return out;
+  for (const t of mine) {
+    const id = card(t).id;
+    if (trait(S, t, 'carrier')) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) {
+      if (!hasFruit(S, side) && freeSlot(S, side)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id, branch: 'fruit' });
+      if (p.life < FORMAT.life) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id, branch: 'life' });
+      for (const m of mine.filter(o => prop(o, 'living') && o.damage > 0)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id, branch: 'mend', mend: m.id });
+    }
+    if (id === 'earth.clay' && !incapacitated(t)) for (const f of mine.filter(o => o !== t && !o.shield3)) out.push({ type: 'ability', subject: t.id, ability: 'clayShield', target: f.id });
+    if (id === 'fire.tinder' && !incapacitated(t)) for (const f of visibleThings(S, side).filter(o => o !== t && !igniteWhy(S, o))) out.push({ type: 'ability', subject: t.id, ability: 'tinder', target: f.id });
+    if ((card(t).ability || {}).id === 'hammer' && canAct(S, t)) { for (const f of foes.filter(o => o.damage > 0)) out.push({ type: 'ability', subject: t.id, ability: 'hammer', target: f.id }); if (enemy(S, side).ground) out.push({ type: 'ability', subject: t.id, ability: 'hammer', target: 'ground' }); }
+    if (id === 'earth.signet3' && canAct(S, t)) for (const f of mine.filter(o => o !== t && !o.status.ward)) out.push({ type: 'ability', subject: t.id, ability: 'seal', target: f.id });
+    if (prop(t, 'metal') && t.damage > 0 && canAct(S, t) && p.ground && card(p.ground).id === 'earth.crucible' && p.temperTurn !== p.personalTurn) out.push({ type: 'ability', subject: t.id, ability: 'temper' });
+  }
+  return out;
+}
+function resolveThreePollinate(S, n, sub, tg) {
+  const a = n.act, side = n.side;
+  const why = pollinationWhy(S, sub, tg, true); if (why) { event(S, 'folio-failed', { why }); return false; }
+  if (a.branch === 'fruit') { if (hasFruit(S, side) || !freeSlot(S, side)) { event(S, 'folio-failed', { why: 'no room or already a Fruit' }); return false; } const f = createToken(S, side, 'token.fruit'); if (!f) return false; f.cropOf = tg.id; event(S, 'pollinated', { carrier: sub.id, host: tg.id, fruit: f.id, branch: 'fruit' }); return true; }
+  if (a.branch === 'life') { gainLife(S, side, 2, 'crop'); event(S, 'pollinated', { carrier: sub.id, host: tg.id, branch: 'life' }); return true; }
+  const m = thingById(S, a.mend); if (!m || m.ctrl !== side || !prop(m, 'living')) return false;
+  heal(S, m, 2); event(S, 'pollinated', { carrier: sub.id, host: tg.id, branch: 'mend', tid: m.id }); return true;
+}
+function resolveThreeAbility(S, n, tg) {
+  const a = n.act, side = n.side, sub = thingById(S, a.subject);
+  switch (a.ability) {
+    case 'clayShield': if (!tg || tg.ctrl !== side) return false; tg.shield3 = 3; event(S, 'shield', { tid: tg.id }); return true;
+    case 'tinder': {
+      const why = igniteWhy(S, tg); if (why) { event(S, 'ignite-failed', { tid: tg && tg.id, why }); return false; }
+      if (tg.ctrl !== side && wardBlocks(S, n, tg)) return true;
+      const wasMine = tg.ctrl === side; if (!ignite(S, tg, side)) return false;
+      if (wasMine && !S.things.some(o => o.ctrl === side && isAsh(o))) createToken(S, side, 'token.ash'); // R05: Ash even after allied Naphtha self-destructs
+      return true;
+    }
+    case 'hammer': {
+      if (!sub || sub.ctrl !== side) return false;
+      if (a.target === 'ground') { const g = enemy(S, side).ground; if (!g) return false; g.damage = (g.damage || 0) + 2; return true; }
+      if (!tg || tg.ctrl === side || !tg.damage) return false; if (wardBlocks(S, n, tg)) return true; damageThing(S, tg, 2); return true;
+    }
+    case 'seal': if (!sub || !tg || tg === sub || tg.ctrl !== side || tg.status.ward) return false; tg.status.ward = true; event(S, 'sealed-ward', { tid: tg.id }); return true;
+    case 'temper': if (!sub || sub.ctrl !== side) return false; heal(S, sub, 2); return true;
+  }
+  return false;
+}
+function resolveThreeSpell(S, n, d, tg) {
+  const side = n.side, a = n.act, p = S.players[side];
+  switch (d.spell) {
+    case 'feast': {
+      let did = false;
+      for (const t of (a.targets || []).map(id => thingById(S, id))) if (t && t.ctrl === side && prop(t, 'living')) { heal(S, t, 2); did = true; }
+      if (a.sacrifice && a.ready) { const r = thingById(S, a.ready); if (r && r.ctrl === side && r.exhausted && !incapacitated(r)) { r.exhausted = false; r.defOnly = true; event(S, 'feast', { tid: r.id, defence: true }); did = true; } }
+      return did;
+    }
+    case 'abundance': {
+      const ps = (a.targets || []).map(id => thingById(S, id)).filter(t => t && t.ctrl === side && prop(t, 'plant'));
+      if (!ps.length) return false;
+      for (const t of ps) addCounter(S, t, 'growth');
+      for (const t of ps) if (S.things.includes(t) && prop(t, 'tree') && (t.counters.growth || 0) >= 2) { t.tempStrike = (t.tempStrike || 0) + 2; event(S, 'abundance-strike', { tid: t.id }); }
+      return true;
+    }
+    case 'graft3': return resolveFuse(S, { side, act: { recipe: a.recipe, a: a.a, b: a.b } });
+    case 'shape3': {
+      if (shape3Why(S, side, tg, a.branch)) return false;
+      transform(S, tg, a.branch);
+      for (const q of (tg.quals || []).slice()) { const qd = BY_ID[q.word].qual; if (qd.needsProp && !prop(tg, qd.needsProp)) { tg.quals = tg.quals.filter(x => x !== q); toGrave(S, q, 'retired'); } }
+      return true;
+    }
+    case 'writ3': {
+      if (n.endorsed) {
+        const ts = a.targets.map(id => thingById(S, id)).filter(t => t && t.ctrl !== side && !t.status.concealed);
+        if (!ts.length) return false;
+        for (const t of ts) { if (ts.length === 1 && a.targets.length === 1 && wardBlocks(S, n, t)) continue; exhaust(t); event(S, 'writ', { tid: t.id }); }
+        return true;
+      }
+      if (!tg || tg.ctrl === side || curStrike(S, tg) > 2) return false; if (wardBlocks(S, n, tg)) return true;
+      exhaust(tg); event(S, 'writ', { tid: tg.id }); return true;
+    }
+    case 'dew': {
+      if (a.mode === 'cleanse' && a.target === 'self') { if (!p.poison) return false; p.poison--; return true; }
+      if (!tg) return false;
+      if (a.mode === 'wet') { if (tg.ctrl !== side && wardBlocks(S, n, tg)) return true; tg.status.wet = true; delete tg.status.burning; return true; }
+      if (tg.ctrl !== side || !prop(tg, 'living')) return false;
+      if (a.mode === 'heal') { heal(S, tg, 2); return true; }
+      if (tg.status.poison) tg.status.poison--; return true;
+    }
+    case 'kindle': {
+      if (!tg || tg.ctrl !== side) return false;
+      if (a.mode === 'ignite') { const why = igniteWhy(S, tg); if (why) { event(S, 'ignite-failed', { tid: tg.id, why }); say(S, `Kindle fails: ${why}.`); return false; } return ignite(S, tg, side); }
+      tg.tempStrike = (tg.tempStrike || 0) + 1; tg.kindled = true; return true;
+    }
+    case 'calcine': {
+      if (a.target === 'rival') loseLife(S, 1 - side, 3, 'calcine');
+      else { if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; damageThing(S, tg, 3); }
+      if (a.ash && !S.things.some(o => o.ctrl === side && isAsh(o))) createToken(S, side, 'token.ash');
+      return true;
+    }
+    case 'wildfire': {
+      const ts = a.targets.map(id => thingById(S, id)).filter(t => t && t.ctrl !== side);
+      if (!ts.length) return false;
+      const hits = ts.map(t => [t, t.status.burning ? 3 : 1]); // amounts fixed at resolution, applied together
+      for (const [t, k] of hits) damageThing(S, t, k);
+      return true;
+    }
+  }
+  return false;
+}
+function espalierUpkeep(S, p, t) {
+  const opts = [];
+  if (!hasFruit(S, p.i) && freeSlot(S, p.i)) opts.push('fruit');
+  for (const o of S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'plant') && (o.counters.growth || 0) < FORMAT.growthCap && !o.status.measured)) opts.push(o.id);
+  if (!opts.length) { event(S, 'espalier', { tid: t.id, did: 'nothing' }); return; }
+  const k = decide(S, p.i, 'espalier', opts, 0), pick = opts[k];
+  if (pick === 'fruit') { const f = createToken(S, p.i, 'token.fruit'); if (f) f.cropOf = t.id; event(S, 'espalier', { tid: t.id, did: 'fruit' }); }
+  else { addCounter(S, thingById(S, pick), 'growth'); event(S, 'espalier', { tid: t.id, did: 'growth', to: pick }); }
+}
+
 // ---------- V31 Expanded Grammar (model B) — active only when the format lists the module ----------
 // Orchard: pollination channels (Bee = insect carrier, Wind = wind carrier; Pear insect-receptive, Hazel wind-receptive) and Feast.
 // Workshop: Shape / Smith turn Copper or Silver into a Setting; Set (built-in Vessel recipe) binds Setting + Garnet into a Signet;
@@ -1070,11 +1288,17 @@ function takeCard(p, pid) { const k = p.hand.findIndex(c => c.pid === pid); if (
 const folioOn = (S, m) => !!(S.rules.modules && S.rules.modules.includes(m));
 // V33 Core Duel ('core' module): grouped free combat at the rival only, Study, no Spark/Market, and a few authored card revisions.
 const coreOn = S => !!(S.rules.modules && S.rules.modules.includes('core'));
+// "Three Decks Worth Mastering" trial ('three'): authored card definitions for the three Core Duel lists. The V33-only
+// card revisions are switched off under 'three' (core33), which carries its own versions of those words.
+const threeOn = S => !!(S.rules.modules && S.rules.modules.includes('three'));
+const core33 = S => coreOn(S) && !threeOn(S);
+const exchangeOn = S => !!(S.rules.modules && S.rules.modules.includes('exchange'));
 function combatants(S, side) { return S.things.filter(t => t.ctrl === side && canAct(S, t) && caps(S, t).has('strike') && curStrike(S, t) > 0 && perm(S, t, 'strike')); }
 function coreOptions(S, side) {
   const p = S.players[side], out = [];
   if (p.combatTurn !== p.personalTurn) { const ids = combatants(S, side).map(t => t.id); for (const g of combos(ids, 1, ids.length)) out.push({ type: 'combat', attackers: g }); }
   if (p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length < FORMAT.handCap) out.push({ type: 'study' });
+  if (exchangeOn(S) && p.studyTurn !== p.personalTurn && p.breath >= CORE.studyCost && p.deck.length && p.hand.length >= FORMAT.handCap) for (const c of p.hand) out.push({ type: 'study', discard: c.pid }); // full hand: Study — exchange
   return out;
 }
 const CORE = { studyCost: 2 };
@@ -1108,6 +1332,7 @@ function pollinationWhy(S, carrier, host, resolving) {
     if (!canAct(S, carrier)) return `${nameOf(carrier)} must be mature and ready (it is ${carrier.exhausted ? 'exhausted' : carrier.fresh ? 'Fresh' : incapacitated(carrier) ? 'unable to act' : 'out of actions'})`;
     if (S.players[side].breath < 1) return 'pollinating costs 1 breath';
   } else if (incapacitated(carrier)) return `${nameOf(carrier)} cannot act`;
+  if (threeOn(S)) { if (!resolving && S.players[side].pollTurn === S.players[side].personalTurn) return 'you have already pollinated this turn (Bee and Wind share one attempt)'; return null; }
   if (hasFruit(S, side)) return 'you already have a Fruit';
   if (!freeSlot(S, side)) return 'no empty field space for the Fruit';
   return null;
@@ -1140,7 +1365,7 @@ function folioPlays(S, side, c, d) {
 function folioAbilityOptions(S, side) {
   const p = S.players[side], out = [], mine = S.things.filter(t => t.ctrl === side);
   for (const t of mine) {
-    if (folioOn(S, 'orchard') && !folioOn(S, 'clife') && trait(S, t, 'carrier')) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id });
+    if (folioOn(S, 'orchard') && !folioOn(S, 'clife') && !threeOn(S) && trait(S, t, 'carrier')) for (const h of mine) if (h !== t && !pollinationWhy(S, t, h)) out.push({ type: 'ability', subject: t.id, ability: 'pollinate', target: h.id });
     if (!canAct(S, t)) continue;
     const ab = trait(S, t, 'ability') || {};
     if (ab.id === 'shapeWork' && p.breath >= 2 && !folioOn(S, 'clife')) for (const m of mine) if (m !== t && !shapeWhy(S, side, m)) out.push({ type: 'ability', subject: t.id, ability: 'shapeWork', target: m.id });
@@ -1154,6 +1379,7 @@ function resolveFolioAbility(S, n, tg) {
   if (!sub || sub.ctrl !== side) return false; // actor left or changed control: fails, costs stay paid
   switch (a.ability) {
     case 'pollinate': {
+      if (threeOn(S)) return resolveThreePollinate(S, n, sub, tg);
       const why = pollinationWhy(S, sub, tg, true); if (why) { event(S, 'folio-failed', { why }); return false; }
       const f = createToken(S, side, 'token.fruit'); if (!f) return false; f.cropOf = tg.id; event(S, 'pollinated', { carrier: sub.id, host: tg.id, fruit: f.id }); return true;
     }
@@ -1477,6 +1703,7 @@ function declare(S, act, side, kind, ctl) {
   if (act.type === 'complete' || act.type === 'hotwork') cost = 1;
   if (act.type === 'claim') cost = 2;
   if (act.type === 'ability') cost = abilityCost(S, thingById(S, act.subject), act.ability);
+  if (act.type === 'ability' && act.ability === 'temper') cost = 1;
   if (act.type === 'law') { // compound: Category + Be + Lawful Quality; one sentence, all three costs
     node.extra = [takeCard(p, act.category), takeCard(p, act.qual)];
     cost += node.extra.reduce((a, c) => a + card(c).cost, 0); node.totalCost = cost;
@@ -1515,7 +1742,9 @@ function declare(S, act, side, kind, ctl) {
   if (act.type === 'ability' && act.ability === 'visit') p.visitTurn = p.personalTurn; // one attempt per visitor per turn, used even if it fails
   if (act.endorse) { const sg = thingById(S, act.endorse); exhaust(sg); sg.actions++; node.endorsed = true; event(S, 'endorse', { tid: sg.id }); } // Writ endorsement is paid at declaration
   if (d && d.spell === 'squall') for (const id of act.targets) { const f = thingById(S, id); exhaust(f); f.actions++; }
-  if (act.type === 'ability' && (card(thingById(S, act.subject)).ability || {}).sacrificeSelf && (card(thingById(S, act.subject)).ability || {}).id === act.ability) {
+  if (act.type === 'ability' && threeOn(S)) { if (act.ability === 'pollinate') p.pollTurn = p.personalTurn; if (act.ability === 'temper') p.temperTurn = p.personalTurn; } // allowances are spent at declaration
+  if (d && d.spell === 'graft3') { p.fusedTurn = p.personalTurn; for (const r of [act.a, act.b]) exhaust(thingById(S, r)); } // Graft uses the Vessel; inputs commit
+  if (act.type === 'ability' && (abSpec(S, thingById(S, act.subject)) || {}).sacrificeSelf && (abSpec(S, thingById(S, act.subject)) || {}).id === act.ability) {
     const f = thingById(S, act.subject); node.selfSacrificed = true;
     if (leaveField(S, f, 'sacrificed')) deathTrigger(S, f, 'sacrificed');
   } else if (act.subject) { const s = thingById(S, act.subject); exhaust(s); if (side === S.active) s.actions++; }
@@ -1561,7 +1790,9 @@ function apply(S, act, ctl) {
   if (!legalActions(S).some(a => sameAction(a, act))) throw new Error('illegal action ' + JSON.stringify(act) + ': ' + whyIllegal(S, act));
   if (act.type === 'pass') { endTurn(S); S.hashes.push(hashState(S)); return; }
   if (act.type === 'buy' || act.type === 'catalyst') { economy(S, act); S.hashes.push(hashState(S)); return; } // no response window
-  if (act.type === 'study') { const p = S.players[S.active]; p.breath -= CORE.studyCost; S.stats.res[p.i].breathSpent += CORE.studyCost; p.studyTurn = p.personalTurn; drawCard(S, p); S.stats.res[p.i].studied = (S.stats.res[p.i].studied || 0) + 1; event(S, 'study', { side: p.i }); say(S, `P${p.i} draws 1 by Study.`); S.hashes.push(hashState(S)); return; } // V33: private, no response window
+  if (act.type === 'study') { const p = S.players[S.active]; p.breath -= CORE.studyCost; S.stats.res[p.i].breathSpent += CORE.studyCost; p.studyTurn = p.personalTurn;
+    if (act.discard) { const k = p.hand.findIndex(c => c.pid === act.discard); const c = p.hand.splice(k, 1)[0]; toGrave(S, c, 'discarded'); event(S, 'exchange', { side: p.i, pid: c.pid }); S.stats.res[p.i].exchanged = (S.stats.res[p.i].exchanged || 0) + 1; } // paid and discarded atomically, then exactly one draw
+    drawCard(S, p); S.stats.res[p.i].studied = (S.stats.res[p.i].studied || 0) + 1; event(S, 'study', { side: p.i }); say(S, `P${p.i} draws 1 by Study.`); S.hashes.push(hashState(S)); return; } // V33: private, no response window
   if (act.type === 'abandon') { closeProcess(S, S.active, 'abandoned'); S.hashes.push(hashState(S)); return; } // public housekeeping, no Clause
   if (act.type === 'invite') { S.players[S.active].invitePlan = { kind: act.kind, host: act.host || null }; event(S, 'invite-planned', { side: S.active, kind: act.kind, host: act.host || null }); S.hashes.push(hashState(S)); return; } // free, public, takes effect at End
   S.clause = { nodes: [] };
@@ -1727,6 +1958,7 @@ function resolveNode(S, n, k) {
         if (S.over != null) break;
         const att = thingById(S, pr.att);
         if (!att || att.ctrl !== side) { say(S, `P${side}: an attacker left combat and deals nothing.`); continue; }
+        if (threeOn(S) && att.status.bound) { say(S, `P${side}: ${att.word} is Bound and deals nothing.`); event(S, 'bound-miss', { tid: att.id }); continue; }
         const ok = resolveAttack(S, { act: { type: 'attack', subject: pr.att, verb: 'strike', target: 'rival' }, side, blocker: pr.blocker, bonus: 0 });
         any = any || ok;
       }
@@ -1744,13 +1976,14 @@ function resolveSpell(S, n, d, tg) {
   const friendly = tg && tg.ctrl === side;
   if (d.type === 'category') { selectTop(S, p, 3, c => card(c).type === 'thing' && (card(c).props || []).includes(d.category)); say(S, `P${side} catalogues ${d.category}s.`); return true; }
   switch (d.spell) {
-    case 'guard': if (!friendly) return false; tg.tempStand = (tg.tempStand || 0) + 2; tg.tempGuard = true; break; // readiness still required to block
-    case 'kindle': if (!friendly) return false; if (coreOn(S) && card(tg).naphtha) return ignite(S, tg, side); tg.tempStrike = (tg.tempStrike || 0) + 1; tg.kindled = true; break;
+    case 'guard': if (threeOn(S)) { if (!friendly) return false; tg.g3 = true; break; } if (!friendly) return false; tg.tempStand = (tg.tempStand || 0) + 2; tg.tempGuard = true; break; // readiness still required to block
+    case 'kindle': if (threeOn(S)) return resolveThreeSpell(S, n, d, tg); if (!friendly) return false; if (core33(S) && card(tg).naphtha) return ignite(S, tg, side); tg.tempStrike = (tg.tempStrike || 0) + 1; tg.kindled = true; break;
     case 'protect': if (!friendly) return false; tg.status.ward = true; break;
     case 'dew':
+      if (threeOn(S)) return resolveThreeSpell(S, n, d, tg);
       if (a.target === 'self') { if (p.poison) p.poison--; break; }
       if (!friendly) return false; tg.status.wet = true; delete tg.status.burning; if (tg.status.poison) tg.status.poison--;
-      if (coreOn(S) && prop(tg, 'living') && tg.damage) heal(S, tg, 2); break; // V33: dew also restores up to 2 marked damage
+      if (core33(S) && prop(tg, 'living') && tg.damage) heal(S, tg, 2); break; // V33: dew also restores up to 2 marked damage
     case 'thaw': if (!tg || !tg.status.frozen) return false; delete tg.status.frozen; if (friendly) heal(S, tg, 1); break;
     case 'frozen': if (!tg || !tg.status.wet) return false; if (wardBlocks(S, n, tg)) return true; tg.status.frozen = true; break;
     case 'sleep': if (!tg || !prop(tg, 'living')) return false; if (wardBlocks(S, n, tg)) return true; tg.status.asleep = true; break;
@@ -1765,7 +1998,9 @@ function resolveSpell(S, n, d, tg) {
       if (p.ground && card(p.ground).potionBonus && p.potionTurn !== p.personalTurn) { p.potionTurn = p.personalTurn; gainLife(S, p.i, 1, 'potion ground'); }
       break;
     }
-    case 'feast': case 'shape': case 'writ': return resolveFolioSpell(S, n, d, tg);
+    case 'feast': if (threeOn(S)) return resolveThreeSpell(S, n, d, tg); return resolveFolioSpell(S, n, d, tg);
+    case 'shape': case 'writ': return resolveFolioSpell(S, n, d, tg);
+    case 'graft3': case 'shape3': case 'writ3': return resolveThreeSpell(S, n, d, tg);
     case 'transmute': {
       if (!friendly || tg.ladderTurn === p.personalTurn || !(METAL_NEXT[card(tg).id] || []).includes(a.branch)) return false;
       transform(S, tg, a.branch); break;
@@ -1775,14 +2010,14 @@ function resolveSpell(S, n, d, tg) {
       addCounter(S, tg, 'growth');
       ageUp(S, tg); break;
     }
-    case 'calcine': {
+    case 'calcine': { if (threeOn(S)) return resolveThreeSpell(S, n, d, tg);
       if (a.target === 'rival') loseLife(S, 1 - side, 3, 'calcine');
       else { if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; damageThing(S, tg, 3); }
       createToken(S, side, 'token.ash'); break;
     }
     case 'separate': if (!resolveSeparate(S, n, tg)) return false; n.noSpark = true; break; // spell-assisted fusion: no sentence spark
     case 'graft': { if (!resolveGraft(S, n, tg, thingById(S, a.donor))) return false; n.noSpark = true; break; }
-    case 'wildfire': {
+    case 'wildfire': { if (threeOn(S)) return resolveThreeSpell(S, n, d, tg);
       const foesBurning = S.things.filter(t => t.ctrl !== side && t.status.burning).length; // counted at the beginning of resolution
       for (const t of S.things.filter(t => t.status.burning)) damageThing(S, t, 2);
       loseLife(S, 1 - side, Math.min(3, foesBurning), 'wildfire'); break;
@@ -1798,7 +2033,8 @@ function resolveSpell(S, n, d, tg) {
     }
     case 'squall': loseLife(S, 1 - side, 2 * a.targets.length, 'squall'); break; // one batch; the Flyers paid as cost
     case 'abundance': {
-      if (coreOn(S)) { // V33: up to two friendly Plants each gain 1 Growth and age once
+      if (threeOn(S)) return resolveThreeSpell(S, n, d, tg);
+      if (core33(S)) { // V33: up to two friendly Plants each gain 1 Growth and age once
         const ps = a.targets.map(id => thingById(S, id)).filter(t => t && t.ctrl === side && prop(t, 'plant'));
         if (!ps.length) return false; for (const t of ps) { addCounter(S, t, 'growth'); if (plantNext(S, t)) ageUp(S, t); } break;
       }
@@ -1843,7 +2079,7 @@ function resolveSpell(S, n, d, tg) {
     case 'gnosis': drawCard(S, p); stateCheck(S); if (S.over == null) drawCard(S, p); for (const t of S.things.filter(t => t.ctrl !== side && t.status.concealed)) reveal(S, t); break;
     case 'name': if (!friendly) return false; tg.status.named = true; break;
     case 'measure': if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; tg.status.measured = true; break;
-    case 'awaken': if (!friendly || prop(tg, 'living')) return false; tg.extraProps = (tg.extraProps || []).concat('body'); addCounter(S, tg, 'might'); break;
+    case 'awaken': if (!friendly || prop(tg, 'living')) return false; if (threeOn(S) && prop(tg, 'body')) { addCounter(S, tg, 'might'); break; } tg.extraProps = (tg.extraProps || []).concat('body'); addCounter(S, tg, 'might'); break;
     case 'echo': p.echo = p.personalTurn; break;
     case 'loan': gainExtraBreath(p, 2); p.tax = 1; break;
     case 'silence': {
@@ -1919,10 +2155,14 @@ function resolveAttack(S, n) {
   if (a.verb === 'bite' && recipient && (!prop(recipient, 'living') || has(S, recipient, 'sacred'))) pk = { n: 0, steps: pk.steps.concat([['bite vs non-living/Sacred', 0]]) };
   record(S, att, a.verb, pk, recipient || ground || enemy(S, n.side));
   const ret = retaliator ? curStrike(S, retaliator) : 0;
-  const before = recipient ? remainingOf(S, recipient) : 0;
+  const before = recipient ? remainingOf(S, recipient) : 0, dmg0 = recipient ? recipient.damage : 0;
   if (recipient) damageThing(S, recipient, pk.n);
   else if (ground) ground.damage = (ground.damage || 0) + pk.n;
   else loseLife(S, defender, pk.n, a.verb);
+  const applied = recipient ? recipient.damage - dmg0 : 0; // after any shield
+  if (threeOn(S) && recipient && n.blocker && a.verb === 'strike' && card(att).golemSpill && applied > before && !rebirthAvailable(S, recipient)) { // Golem: ordinary spill through a destroyed blocker, once
+    const over = applied - Math.max(0, before); record(S, att, 'overflow', { n: over, steps: [['golem spill', over]] }, enemy(S, att.ctrl)); loseLife(S, defender, over, 'golem spill'); event(S, 'spill', { tid: att.id, n: over });
+  }
   if (ret > 0) damageThing(S, att, ret);
   if (ret > 0 && card(retaliator).stingBind && remainingOf(S, att) > 0 && prop(att, 'living')) att.status.bound = true; // Bramble
   if (pk.n > 0) {
@@ -1934,8 +2174,8 @@ function resolveAttack(S, n) {
     if (!recipient && !ground && card(att).magpie && att.magpieTurn !== S.players[att.ctrl].personalTurn) { att.magpieTurn = S.players[att.ctrl].personalTurn; gainAbilitySpark(S, S.players[att.ctrl]); }
     if (card(att).leech && !S.players[att.ctrl].leechUsed && !ground && (!recipient || prop(recipient, 'living'))) { S.players[att.ctrl].leechUsed = true; gainLife(S, att.ctrl, 1, 'leech'); }
   }
-  if (a.verb === 'crush' && recipient && pk.n > before && before >= 0 && !rebirthAvailable(S, recipient)) { // overflow once, never from Ground
-    let over = pk.n - Math.max(0, before);
+  if (a.verb === 'crush' && recipient && (threeOn(S) ? applied : pk.n) > before && before >= 0 && !rebirthAvailable(S, recipient)) { // overflow once, never from Ground
+    let over = (threeOn(S) ? applied : pk.n) - Math.max(0, before);
     if (S.arithmetic === 'legacy') {
       const pl = S.players[att.ctrl];
       if (card(att).school === pl.main) over = Math.round(over * 1.2);
@@ -1952,7 +2192,7 @@ function sameAction(a, b) {
   return a.type === b.type && a.slot === b.slot && a.card === b.card && a.subject === b.subject && a.verb === b.verb && (a.target || null) === (b.target || null)
     && a.recipe === b.recipe && a.a === b.a && a.b === b.b && a.sacrifice === b.sacrifice && a.branch === b.branch
     && a.payload === b.payload && a.mode === b.mode && a.donor === b.donor && a.might === b.might && a.replace === b.replace
-    && a.category === b.category && a.qual === b.qual && a.ability === b.ability && JSON.stringify(a.targets || null) === JSON.stringify(b.targets || null) && JSON.stringify(a.attackers || null) === JSON.stringify(b.attackers || null)
+    && a.category === b.category && a.qual === b.qual && a.ability === b.ability && JSON.stringify(a.targets || null) === JSON.stringify(b.targets || null) && JSON.stringify(a.attackers || null) === JSON.stringify(b.attackers || null) && a.discard === b.discard && a.mode === b.mode && a.ash === b.ash && a.mend === b.mend && a.ready === b.ready && a.recipe === b.recipe
     && a.seal === b.seal && a.endorse === b.endorse;
 }
 
@@ -1971,7 +2211,7 @@ const REVISION = { id: 'r30.1', log: [
 ] };
 
 module.exports = {
-  pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost, processOptions,
+  threeOn, naphthaVictims, shape3Why, igniteWhy, abSpec, ESPALIER, SHAPE3, pollinationWhy, shapeWhy, trait, folioOn, FOLIO_RECIPES, abilityCost, processOptions,
   perm, permWhy, hasRoom, capGeneral, capSupply, invitationWhy, visitWhy, hotworkWhy, w5Why, w5Chain,
   REVISION, FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,

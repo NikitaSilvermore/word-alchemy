@@ -1,0 +1,61 @@
+deck,slot,card_id,headword,school_id,original_slot_card_id,list_change,slot_note,singleton_count,deck_school_count,deck_size
+The Orchard,1,life.bee,Bee,life,life.bee,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,2,life.pear,Pear,life,life.pear,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,3,life.hazel,Hazel,life,life.hazel,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,4,life.feast,Feast,life,life.feast,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,5,life.seed,Seed,life,life.seed,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,6,life.sapling,Sapling,life,life.sapling,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,7,life.grow,Grow,life,life.grow,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,8,life.abundance,Abundance,life,life.abundance,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,9,life.graft,Graft,life,life.plants,Substitute,Graft joins two established orchard pieces and opens a Thing space.,1,3,20
+The Orchard,10,life.wolf,Wolf,life,life.wolf,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,11,life.bramble,Bramble,life,life.bramble,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,12,life.bite,Bite,life,life.bite,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,13,life.bind,Bind,life,life.bind,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,14,water.water,Water,water,water.water,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,15,water.dew,Dew,water,water.dew,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,16,reserve.apple,Apple,life,water.ice,Substitute,"An alternative insect host, scion and first crop. Bramble takes over interception in the air.",1,3,20
+The Orchard,17,water.otter,Otter,water,water.otter,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,18,air.wind,Wind,air,air.wind,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,19,air.gust,Gust,air,air.gust,Keep,Same slot as V33 evidence list.,1,3,20
+The Orchard,20,air.owl,Owl,air,air.owl,Keep,Same slot as V33 evidence list.,1,3,20
+The Furnace,1,fire.ember,Ember,fire,fire.ember,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,2,fire.torch,Torch,fire,fire.torch,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,3,fire.fire,Fire,fire,fire.fire,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,4,fire.salamander,Salamander,fire,fire.salamander,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,5,fire.firebird,Firebird,fire,fire.firebird,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,6,fire.naphtha,Naphtha,fire,fire.naphtha,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,7,fire.burn,Burn,fire,fire.burn,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,8,fire.scorch,Scorch,fire,fire.scorch,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,9,fire.kindle,Kindle,fire,fire.kindle,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,10,fire.calcine,Calcine,fire,fire.calcine,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,11,fire.wildfire,Wildfire,fire,fire.wildfire,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,12,fire.drought,Drought,fire,fire.drought,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,13,air.swallow,Swallow,air,air.swallow,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,14,air.owl,Owl,air,air.owl,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,15,air.wind,Wind,air,air.wind,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,16,air.gust,Gust,air,air.gust,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,17,air.blow,Blow,air,air.blow,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,18,air.gasp,Gasp,air,air.gasp,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,19,air.winged,Winged,air,air.winged,Keep,Same slot as V33 evidence list.,1,2,20
+The Furnace,20,reserve.tinder,Tinder,fire,air.herald,Substitute,Provides an independent ignition and Ash source. Study still serves a short hand.,1,2,20
+The Clay Court,1,earth.clay,Clay,earth,earth.clay,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,2,earth.lead,Lead,earth,earth.lead,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,3,earth.copper,Copper,earth,earth.copper,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,4,earth.silver,Silver,earth,earth.silver,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,5,earth.iron,Iron,earth,earth.iron,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,6,earth.flint,Flint,earth,earth.flint,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,7,earth.boulder,Boulder,earth,earth.boulder,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,8,earth.crucible,Crucible,earth,earth.crucible,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,9,earth.transmute,Transmute,earth,earth.transmute,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,10,earth.guard,Guard,earth,earth.guard,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,11,earth.crush,Crush,earth,earth.crush,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,12,lf.shape,Shape,earth,earth.metals,Substitute,Turns metal already on the field into a useful tool or seal.,1,2,20
+The Clay Court,13,word.word,Word,word,word.word,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,14,word.scribe,Scribe,word,word.scribe,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,15,reserve.hammer,Hammer,earth,word.familiar,Substitute,The tool can be drawn and deployed directly. Removes a redundant fusion discount.,1,2,20
+The Clay Court,16,lf.writ,Writ,word,word.bard,Substitute,Opens a combat lane even without a Speaker or Signet. The old Bard draw needed a Voiced spell.,1,2,20
+The Clay Court,17,word.omen,Omen,word,word.omen,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,18,word.protect,Protect,word,word.protect,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,19,word.doubt,Doubt,word,word.doubt,Keep,Same slot as V33 evidence list.,1,2,20
+The Clay Court,20,word.awaken,Awaken,word,word.awaken,Keep,Same slot as V33 evidence list.,1,2,20
