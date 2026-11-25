@@ -16,3 +16,9 @@ R_ext journeyman:ra heuristic games 60 subject wins 13 21.7% secs 351
 C5 journeyman:ra heuristic games 60 subject wins 29 48.3% secs 260
 R_six journeyman:ra heuristic games 60 subject wins 24 40.0% secs 376
 W5 planner heuristic games 32 subject wins 16 50.0% secs 863
+C5s journeyman:ra heuristic games 60 subject wins 27 45.0% secs 248
+C6 journeyman:ra heuristic games 60 subject wins 29 48.3% secs 324
+Shape2 journeyman:ra heuristic games 60 subject wins 25 41.7% secs 248
+Shape1 journeyman:ra heuristic games 60 subject wins 25 41.7% secs 236
+Shape2 planner heuristic games 24 subject wins 13 54.2% secs 299
+Shape1 planner heuristic games 24 subject wins 12 50.0% secs 283

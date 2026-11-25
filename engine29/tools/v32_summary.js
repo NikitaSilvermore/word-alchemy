@@ -4,7 +4,7 @@ const fs = require('fs'), path = require('path');
 const dir = process.argv[2] || path.join(__dirname, '../sim/out32');
 const wil = (k, n) => { if (!n) return [0, 0]; const z = 1.96, p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d; return [c - h, c + h]; };
 const out = {};
-for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort()) {
+for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'SUMMARY.json').sort()) {
   const r = JSON.parse(fs.readFileSync(path.join(dir, f))), rows = r.rows, n = rows.length, w = rows.filter(x => x.win === 'win').length;
   const sum = (sel) => rows.reduce((a, x) => { for (const [k, v] of Object.entries(sel(x) || {})) a[k] = (a[k] || 0) + v; return a; }, {});
   const fun = {}; for (const x of rows) for (const [k, v] of Object.entries(x.fun)) { fun[k] = fun[k] || { offered: 0, chosen: 0 }; fun[k].offered += v.offered; fun[k].chosen += v.chosen; }

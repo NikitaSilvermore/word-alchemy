@@ -1,0 +1,870 @@
+{
+ "C5": {
+  "arm": "C5",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 48.3,
+  "ci95": [
+   36.2,
+   60.7
+  ],
+  "rounds": 7.9,
+  "byOpp": {
+   "V01_neighbours_orchard": [
+    23,
+    30
+   ],
+   "V08_patient_predator": [
+    6,
+    30
+   ]
+  },
+  "causes": {
+   "life": 60
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/365",
+   "writ": "0/51"
+  }
+ },
+ "C5s": {
+  "arm": "C5s",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 45,
+  "ci95": [
+   33.1,
+   57.5
+  ],
+  "rounds": 8.1,
+  "byOpp": {
+   "V01_neighbours_orchard": [
+    21,
+    30
+   ],
+   "V08_patient_predator": [
+    6,
+    30
+   ]
+  },
+  "causes": {
+   "life": 59
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/374",
+   "writ": "0/67"
+  }
+ },
+ "C6": {
+  "arm": "C6",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 48.3,
+  "ci95": [
+   36.2,
+   60.7
+  ],
+  "rounds": 7.8,
+  "byOpp": {
+   "V01_neighbours_orchard": [
+    21,
+    30
+   ],
+   "V08_patient_predator": [
+    8,
+    30
+   ]
+  },
+  "causes": {
+   "life": 60
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/403",
+   "writ": "0/80"
+  }
+ },
+ "H": {
+  "arm": "H",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 42.5,
+  "ci95": [
+   28.5,
+   57.8
+  ],
+  "rounds": 7.7,
+  "byOpp": {
+   "V13_giver_of_fire": [
+    17,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {},
+  "rival": {
+   "invite-open": 1
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/105",
+   "writ": "0/32",
+   "invite-heat": "0/92",
+   "hotwork": "0/4"
+  }
+ },
+ "H2": {
+  "arm": "H2",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 42.5,
+  "ci95": [
+   28.5,
+   57.8
+  ],
+  "rounds": 8.1,
+  "byOpp": {
+   "V13_giver_of_fire": [
+    17,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {},
+  "rival": {
+   "invite-open": 1,
+   "invite-cancelled": 1
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "invite-heat": "0/326",
+   "shape": "0/259",
+   "hotwork": "0/3"
+  }
+ },
+ "H2_ctrl": {
+  "arm": "H2_ctrl",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 42.5,
+  "ci95": [
+   28.5,
+   57.8
+  ],
+  "rounds": 8.1,
+  "byOpp": {
+   "V13_giver_of_fire": [
+    17,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/259"
+  }
+ },
+ "H_always": {
+  "arm": "H",
+  "tier": "journeyman:ra",
+  "invite": "always",
+  "n": 40,
+  "win": 45,
+  "ci95": [
+   30.7,
+   60.2
+  ],
+  "rounds": 7.6,
+  "byOpp": {
+   "V13_giver_of_fire": [
+    18,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {
+   "invite-open": 12,
+   "invite-void": 1
+  },
+  "rival": {
+   "invite-open": 110,
+   "invite-void": 11,
+   "invite-cancelled": 5
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "hotwork": "0/195",
+   "shape": "0/107",
+   "writ": "0/25",
+   "invite-heat": "14/67"
+  }
+ },
+ "H_ctrl": {
+  "arm": "H_ctrl",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 42.5,
+  "ci95": [
+   28.5,
+   57.8
+  ],
+  "rounds": 7.7,
+  "byOpp": {
+   "V13_giver_of_fire": [
+    17,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/105",
+   "writ": "0/32"
+  }
+ },
+ "R_ctrl": {
+  "arm": "R_ctrl",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 26.7,
+  "ci95": [
+   17.1,
+   39
+  ],
+  "rounds": 8.8,
+  "byOpp": {
+   "V08_patient_predator": [
+    6,
+    30
+   ],
+   "V11_world_tree_maker": [
+    10,
+    30
+   ]
+  },
+  "causes": {
+   "life": 59
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "0/18"
+  }
+ },
+ "R_ext": {
+  "arm": "R_ext",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 21.7,
+  "ci95": [
+   13.1,
+   33.6
+  ],
+  "rounds": 9.6,
+  "byOpp": {
+   "V08_patient_predator": [
+    2,
+    30
+   ],
+   "V11_world_tree_maker": [
+    11,
+    30
+   ]
+  },
+  "causes": {
+   "life": 58
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "1/11"
+  }
+ },
+ "R_fruit": {
+  "arm": "R_fruit",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 28.3,
+  "ci95": [
+   18.5,
+   40.8
+  ],
+  "rounds": 8.8,
+  "byOpp": {
+   "V08_patient_predator": [
+    6,
+    30
+   ],
+   "V11_world_tree_maker": [
+    11,
+    30
+   ]
+  },
+  "causes": {
+   "life": 59
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "0/18"
+  }
+ },
+ "R_six": {
+  "arm": "R_six",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 40,
+  "ci95": [
+   28.6,
+   52.6
+  ],
+  "rounds": 9.7,
+  "byOpp": {
+   "V08_patient_predator": [
+    6,
+    30
+   ],
+   "V11_world_tree_maker": [
+    18,
+    30
+   ]
+  },
+  "causes": {
+   "life": 60
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "0/6"
+  }
+ },
+ "Shape1": {
+  "arm": "Shape1",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 41.7,
+  "ci95": [
+   30.1,
+   54.3
+  ],
+  "rounds": 8.3,
+  "byOpp": {
+   "V08_patient_predator": [
+    6,
+    30
+   ],
+   "D2_lockkeepers_wall": [
+    19,
+    30
+   ]
+  },
+  "causes": {
+   "life": 60
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/443",
+   "writ": "0/22"
+  }
+ },
+ "Shape1_planner": {
+  "arm": "Shape1",
+  "tier": "planner",
+  "invite": "heuristic",
+  "n": 24,
+  "win": 50,
+  "ci95": [
+   31.4,
+   68.6
+  ],
+  "rounds": 8.1,
+  "byOpp": {
+   "V08_patient_predator": [
+    3,
+    12
+   ],
+   "D2_lockkeepers_wall": [
+    9,
+    12
+   ]
+  },
+  "causes": {
+   "life": 24
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 24
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "6/261",
+   "writ": "0/3",
+   "set": "1/8"
+  }
+ },
+ "Shape2": {
+  "arm": "Shape2",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 60,
+  "win": 41.7,
+  "ci95": [
+   30.1,
+   54.3
+  ],
+  "rounds": 8.3,
+  "byOpp": {
+   "V08_patient_predator": [
+    6,
+    30
+   ],
+   "D2_lockkeepers_wall": [
+    19,
+    30
+   ]
+  },
+  "causes": {
+   "life": 60
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 60
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "0/376",
+   "writ": "0/22"
+  }
+ },
+ "Shape2_planner": {
+  "arm": "Shape2",
+  "tier": "planner",
+  "invite": "heuristic",
+  "n": 24,
+  "win": 54.2,
+  "ci95": [
+   35.1,
+   72.1
+  ],
+  "rounds": 8.1,
+  "byOpp": {
+   "V08_patient_predator": [
+    4,
+    12
+   ],
+   "D2_lockkeepers_wall": [
+    9,
+    12
+   ]
+  },
+  "causes": {
+   "life": 24
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 24
+  },
+  "displaced": 0,
+  "funnel": {
+   "shape": "1/246",
+   "writ": "0/3"
+  }
+ },
+ "V": {
+  "arm": "V",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 57.5,
+  "ci95": [
+   42.2,
+   71.5
+  ],
+  "rounds": 9.7,
+  "byOpp": {
+   "V04_orchard_cellar": [
+    23,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {
+   "invite-open": 3
+  },
+  "rival": {
+   "invite-open": 8,
+   "invite-cancelled": 2
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "6/34",
+   "invite-orchard": "3/92",
+   "visit": "0/22"
+  }
+ },
+ "V_always": {
+  "arm": "V",
+  "tier": "journeyman:ra",
+  "invite": "always",
+  "n": 40,
+  "win": 57.5,
+  "ci95": [
+   42.2,
+   71.5
+  ],
+  "rounds": 9.5,
+  "byOpp": {
+   "V04_orchard_cellar": [
+    23,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {
+   "invite-open": 18,
+   "invite-cancelled": 5
+  },
+  "rival": {
+   "invite-open": 21,
+   "invite-cancelled": 6
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "5/26",
+   "invite-orchard": "18/83",
+   "visit": "0/16"
+  }
+ },
+ "V_ctrl": {
+  "arm": "V_ctrl",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 55,
+  "ci95": [
+   39.8,
+   69.3
+  ],
+  "rounds": 9.6,
+  "byOpp": {
+   "V04_orchard_cellar": [
+    22,
+    40
+   ]
+  },
+  "causes": {
+   "life": 39
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "5/30"
+  }
+ },
+ "V_draw": {
+  "arm": "V_draw",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 40,
+  "win": 57.5,
+  "ci95": [
+   42.2,
+   71.5
+  ],
+  "rounds": 9.7,
+  "byOpp": {
+   "V04_orchard_cellar": [
+    23,
+    40
+   ]
+  },
+  "causes": {
+   "life": 40
+  },
+  "me": {
+   "invite-open": 3
+  },
+  "rival": {
+   "invite-open": 8,
+   "invite-cancelled": 2
+  },
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "6/34",
+   "invite-orchard": "3/92",
+   "visit": "0/14"
+  }
+ },
+ "V_never": {
+  "arm": "V",
+  "tier": "journeyman:ra",
+  "invite": "never",
+  "n": 40,
+  "win": 55,
+  "ci95": [
+   39.8,
+   69.3
+  ],
+  "rounds": 9.6,
+  "byOpp": {
+   "V04_orchard_cellar": [
+    22,
+    40
+   ]
+  },
+  "causes": {
+   "life": 39
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 40
+  },
+  "displaced": 0,
+  "funnel": {
+   "feast": "5/30",
+   "invite-orchard": "0/97"
+  }
+ },
+ "W5": {
+  "arm": "W5",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 80,
+  "win": 40,
+  "ci95": [
+   30,
+   51
+  ],
+  "rounds": 8.8,
+  "byOpp": {
+   "V08_patient_predator": [
+    8,
+    40
+   ],
+   "D2_lockkeepers_wall": [
+    24,
+    40
+   ]
+  },
+  "causes": {
+   "life": 78
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 68,
+   "1": 12
+  },
+  "displaced": 0,
+  "funnel": {}
+ },
+ "W5_chain": {
+  "arm": "W5",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 80,
+  "win": 37.5,
+  "ci95": [
+   27.7,
+   48.5
+  ],
+  "rounds": 8.8,
+  "byOpp": {
+   "V08_patient_predator": [
+    9,
+    40
+   ],
+   "D2_lockkeepers_wall": [
+    21,
+    40
+   ]
+  },
+  "causes": {
+   "life": 77,
+   "work": 2
+  },
+  "me": {
+   "wt-growth": 6,
+   "claim-declared": 4,
+   "claim-broken": 2
+  },
+  "rival": {},
+  "w5stage": {
+   "0": 55,
+   "1": 20,
+   "2": 1,
+   "6": 2,
+   "7": 2
+  },
+  "displaced": 0,
+  "funnel": {
+   "claim": "4/4"
+  }
+ },
+ "W5_ctrl": {
+  "arm": "W5_ctrl",
+  "tier": "journeyman:ra",
+  "invite": "heuristic",
+  "n": 80,
+  "win": 40,
+  "ci95": [
+   30,
+   51
+  ],
+  "rounds": 8.8,
+  "byOpp": {
+   "V08_patient_predator": [
+    8,
+    40
+   ],
+   "D2_lockkeepers_wall": [
+    24,
+    40
+   ]
+  },
+  "causes": {
+   "life": 78
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 68,
+   "1": 12
+  },
+  "displaced": 0,
+  "funnel": {}
+ },
+ "W5_planner": {
+  "arm": "W5",
+  "tier": "planner",
+  "invite": "heuristic",
+  "n": 32,
+  "win": 50,
+  "ci95": [
+   33.6,
+   66.4
+  ],
+  "rounds": 9.6,
+  "byOpp": {
+   "V08_patient_predator": [
+    3,
+    16
+   ],
+   "D2_lockkeepers_wall": [
+    13,
+    16
+   ]
+  },
+  "causes": {
+   "life": 32
+  },
+  "me": {},
+  "rival": {},
+  "w5stage": {
+   "0": 27,
+   "1": 5
+  },
+  "displaced": 0,
+  "funnel": {}
+ }
+}
