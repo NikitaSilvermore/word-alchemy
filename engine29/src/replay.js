@@ -23,12 +23,19 @@ function recordMatch({ format, decks, seed, first = 0 }, agents, maxSteps = 3000
   };
   const hashes = [];
   for (let k = 0; k < maxSteps && S.over == null; k++) { const a = log('act', S.active, agents[S.active].act(S)); E.apply(S, a, ctl); hashes.push(S.hashes[S.hashes.length - 1]); }
-  const rep = { format, formatVersion: resolveFormat(format).version, decks, seed, first, inputs, hashes, result: S.over };
+  const rep = { format, formatVersion: resolveFormat(format).version, engineRevision: E.REVISION.id, decks, seed, first, inputs, hashes, result: S.over };
   rep.id = replayId(rep);
   return { replay: rep, state: S };
 }
 
 function replayMatch(rep) {
+  const cur = resolveFormat(rep.format).version;
+  if (rep.formatVersion && rep.formatVersion !== cur) throw new Error(`replay is for ${rep.format} ${rep.formatVersion}; this engine has ${cur}`);
+  const rev = rep.engineRevision || 'r30.0';
+  try { return { ...replayMatch0(rep), revision: rev, sameRevision: rev === E.REVISION.id }; }
+  catch (e) { if (rev !== E.REVISION.id) e.message += ` (recorded under engine ${rev}; changes since: ${E.REVISION.log.filter(r => r.id > rev).map(r => r.id + ' ' + r.note).join(' | ')})`; throw e; }
+}
+function replayMatch0(rep) {
   let k = 0;
   const next = (kind, side) => {
     const x = rep.inputs[k++];

@@ -61,3 +61,60 @@ test('V30: Guard block holds when the protected target disappears; a vanished bl
     assert.equal(S.players[0].life, life0);
   }
 });
+
+// Rules-version integrity after the Alkahest correction: 24 matches recorded with the pre-correction engine
+// (commit 69c5e05, revision r30.0) replay input-for-input to identical hashes under the current revision.
+test('V30: pre-Alkahest replays still replay exactly; format version is enforced; revision is recorded', () => {
+  const { replayMatch, recordMatch } = require('../src/replay');
+  const E = require('../src/engine');
+  const old = require('./data/replays_pre_alkahest.json');
+  for (const r of old) { const x = replayMatch(r); assert.ok(x.ok); assert.equal(x.revision, 'r30.0'); assert.equal(x.state.hashes.at(-1), r.hashes.at(-1)); }
+  assert.throws(() => replayMatch({ ...old[0], formatVersion: '0.30.0-rc0' }), /this engine has/);
+  const { replay } = recordMatch({ format: 'grammar_v30_rc1', decks: [REF.D1_living_sky, REF.D2_lockkeepers_wall], seed: 9, first: 0 }, [J.botAgent('careful:apprentice'), J.botAgent('careful:apprentice')]);
+  assert.equal(replay.engineRevision, E.REVISION.id);
+});
+
+test('V30: healing is recorded — life gained (capped, by source) and damage healed on Things', () => {
+  const { fixture, give, place, E } = require('./helpers');
+  const S = fixture(); S.active = 0; S.players[0].life = 28;
+  const c = give(S, 0, 'water.tonic');
+  const a = E.legalActions(S).find(x => x.card === c.pid); assert.ok(a, 'tonic is castable');
+  E.apply(S, a, { block: () => null, respond: null });
+  assert.equal(S.players[0].life, 30); assert.equal(S.stats.res[0].healed, 2, 'only the 2 actually gained count'); assert.equal(S.stats.res[0].healedBy.tonic, 2);
+  const t = place(S, 0, 'life.wolf', { damage: 2 }); place(S, 0, 'life.aloe'); const m = give(S, 0, 'life.mend');
+  const b = E.legalActions(S).find(x => x.card === m.pid && x.target === t.id); assert.ok(b);
+  E.apply(S, b, { block: () => null, respond: null });
+  assert.equal(t.damage, 0); assert.equal(S.stats.res[0].thingHealed, 2);
+});
+
+// C2: the response-aware policy sees only its own hand and public state. Swapping the rival's real hand (and both
+// deck orders) for anything else never changes its Main choice or its Clause choice.
+test('V30: response-aware bots ignore hidden information; they respond more often than the reference bots', () => {
+  const B = require('../src/bots'), E = require('../src/engine'), F = require('../src/formats');
+  const pol = () => 'careful:journeyman:ra';
+  let windows = 0, raResp = 0, refResp = 0;
+  for (const seed of [41, 42, 43, 44]) {
+    const S = F.createFromFormat('grammar_v30_rc1', { decks: [REF.D2_lockkeepers_wall, REF.D7_speaking_house], seed, first: 0 });
+    for (let k = 0; k < 40 && S.over == null; k++) {
+      const me = S.active, rv = S.players[1 - me], keep = rv.hand, keepD = S.players.map(p => p.deck);
+      const a1 = B.chooseAction(S, pol);
+      rv.hand = rv.hand.map(c => ({ ...c, word: 'water.sleep' })); for (const p of S.players) p.deck = p.deck.slice().reverse();
+      const a2 = B.chooseAction(S, pol); rv.hand = keep; S.players.forEach((p, i) => { p.deck = keepD[i]; });
+      assert.deepEqual(a1, a2);
+      const ctl = B.controller(pol), resp = ctl.respond;
+      ctl.respond = (S2, side, kind) => {
+        const opts = E.legalResponses(S2, side, kind);
+        if (opts.length) {
+          windows++;
+          const r1 = resp(S2, side, kind), o = S2.players[1 - side], h = o.hand; o.hand = h.map(c => ({ ...c, word: 'word.doubt' }));
+          const r2 = resp(S2, side, kind); o.hand = h; assert.deepEqual(r1, r2);
+          if (r1) raResp++; if (B.responder(() => 'careful:journeyman')(S2, side, kind)) refResp++;
+          return r1;
+        }
+        return null;
+      };
+      E.apply(S, a1, ctl);
+    }
+  }
+  assert.ok(windows > 0); assert.ok(raResp >= refResp, `ra ${raResp} vs ref ${refResp} of ${windows}`);
+});

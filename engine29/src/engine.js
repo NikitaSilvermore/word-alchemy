@@ -368,7 +368,9 @@ function damageThing(S, t, n, fromResonance) {
     for (const o of S.things.filter(o => o !== t && o.word === t.word)) damageThing(S, o, 1, true);
   }
 }
-function heal(S, t, n) { t.damage = Math.max(0, t.damage - n); }
+function heal(S, t, n) { const d = Math.min(t.damage, Math.max(0, n)); t.damage -= d; if (d) S.stats.res[t.ctrl].thingHealed = (S.stats.res[t.ctrl].thingHealed || 0) + d; }
+// player life gain, capped at starting life; records only what was actually gained (stats only, never in the state hash)
+function gainLife(S, pi, n, why) { const p = S.players[pi], g = Math.max(0, Math.min(FORMAT.life - p.life, n)); p.life += g; if (g) { const r = S.stats.res[pi]; r.healed += g; r.healedBy = r.healedBy || {}; r.healedBy[why] = (r.healedBy[why] || 0) + g; } return g; }
 function loseLife(S, pi, n, why) { if (n <= 0) return; S.players[pi].life -= n; const L = S.stats.res[pi].lifeLost; L[why] = (L[why] || 0) + n; say(S, `P${pi} loses ${n} life (${why}).`); }
 
 function refreshLaw(S) {
@@ -478,9 +480,9 @@ function startTurn(S) {
     if (has(S, t, 'bedrock') && t.arrivedTurn < p.personalTurn) addCounter(S, t, 'bedrock');
     const u = card(t).upkeep;
     if (u === 'energy' || u === 'gold') gainExtraBreath(p, 1);
-    if (u === 'lifeHeal') p.life = Math.min(FORMAT.life, p.life + 1);
+    if (u === 'lifeHeal') gainLife(S, p.i, 1, 'life');
     if (u === 'worldTree') {
-      p.life = Math.min(FORMAT.life, p.life + 2);
+      gainLife(S, p.i, 2, 'world tree');
       const o = S.things.filter(o => o !== t && o.ctrl === p.i && prop(o, 'living') && (o.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
       if (o) addCounter(S, o, 'growth');
     }
@@ -1017,7 +1019,7 @@ function resolveAbility(S, n, tg) {
       if (a.target === 'ground') { const g = enemy(S, side).ground; if (!g) return false; g.damage = 999; return true; } // destroyed by the state check
       if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; destroy(S, tg); return true;
     }
-    case 'eatFruit': if (a.branch === 'life') { p.life = Math.min(FORMAT.life, p.life + 2); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
+    case 'eatFruit': if (a.branch === 'life') { gainLife(S, side, 2, 'fruit'); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
   }
   return false;
 }
@@ -1293,8 +1295,8 @@ function resolveSpell(S, n, d, tg) {
     }
     case 'gasp': { const g = Math.min(2, FORMAT.extraBreathCap - p.extraBreath, FORMAT.poolCap - p.breath); p.breath += g; p.extraBreath += g; break; }
     case 'tonic': {
-      p.life = Math.min(FORMAT.life, p.life + 3); if (p.poison) p.poison--;
-      if (p.ground && card(p.ground).potionBonus && p.potionTurn !== p.personalTurn) { p.potionTurn = p.personalTurn; p.life = Math.min(FORMAT.life, p.life + 1); }
+      gainLife(S, p.i, 3, 'tonic'); if (p.poison) p.poison--;
+      if (p.ground && card(p.ground).potionBonus && p.potionTurn !== p.personalTurn) { p.potionTurn = p.personalTurn; gainLife(S, p.i, 1, 'potion ground'); }
       break;
     }
     case 'transmute': {
@@ -1459,7 +1461,7 @@ function resolveAttack(S, n) {
     if ((card(att).igniteOnHit || modsOf(att).igniteOnHit || att.kindled) && alive) ignite(S, recipient, att.ctrl);
     if (card(recipient || {}).wetAttacker && S.things.includes(att) && recipient.iceTurn !== S.turn) { recipient.iceTurn = S.turn; att.status.wet = true; delete att.status.burning; } // Ice
     if (!recipient && !ground && card(att).magpie && att.magpieTurn !== S.players[att.ctrl].personalTurn) { att.magpieTurn = S.players[att.ctrl].personalTurn; gainAbilitySpark(S, S.players[att.ctrl]); }
-    if (card(att).leech && !S.players[att.ctrl].leechUsed && !ground && (!recipient || prop(recipient, 'living'))) { S.players[att.ctrl].leechUsed = true; S.players[att.ctrl].life = Math.min(FORMAT.life, S.players[att.ctrl].life + 1); }
+    if (card(att).leech && !S.players[att.ctrl].leechUsed && !ground && (!recipient || prop(recipient, 'living'))) { S.players[att.ctrl].leechUsed = true; gainLife(S, att.ctrl, 1, 'leech'); }
   }
   if (a.verb === 'crush' && recipient && pk.n > before && before >= 0 && !rebirthAvailable(S, recipient)) { // overflow once, never from Ground
     let over = pk.n - Math.max(0, before);
@@ -1487,8 +1489,15 @@ function hashState(S) {
   let h = 2166136261; for (let i = 0; i < pub.length; i++) { h ^= pub.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16);
 }
 
+// Engine behaviour revisions. Formats pin rules parameters; this pins engine behaviour inside a format.
+// A replay records the revision it was made under; replaying under a later one is hash-checked action by action.
+const REVISION = { id: 'r30.1', log: [
+  { id: 'r30.0', note: 'V30 foundation (commit 69c5e05).' },
+  { id: 'r30.1', note: 'Alkahest gains its printed ability (1 breath, sacrifice: destroy an enemy Thing or damageable Ground). Changes play only in matches where Alkahest is made. Healing is now recorded in stats (not in the state hash).' },
+] };
+
 module.exports = {
-  FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
+  REVISION, FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
   fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
 };

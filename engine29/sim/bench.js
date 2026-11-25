@@ -25,7 +25,7 @@ function deckBench(set, tier, n, seed0, shard, opts = {}) {
 }
 
 // Tier ladder: every pair of tiers on the same deal four ways (decks swapped, seats swapped) so neither deck nor seat favours a tier.
-function ladder(set, n, seed0, tiers, shard) {
+function ladder(set, n, seed0, tiers, shard, opts = {}) {
   const names = Object.keys(SETS[set]), out = [];
   const [si, sn] = shardOf(shard); let job = 0;
   for (let a = 0; a < tiers.length; a++) for (let b = a + 1; b < tiers.length; b++) for (let g = 0; g < n; g += 4) {
@@ -37,7 +37,7 @@ function ladder(set, n, seed0, tiers, shard) {
       const swapDecks = v >> 1, first = v % 2;
       const d = swapDecks ? [y, x] : [x, y];
       const pols = ['careful:' + tiers[a], 'careful:' + tiers[b]];
-      out.push({ mode: 'ladder', tiers: [tiers[a], tiers[b]], ...playOne(d[0], d[1], seed, 'v29', first, pols, { set }) });
+      out.push({ mode: 'ladder', tiers: [tiers[a], tiers[b]], ...playOne(d[0], d[1], seed, 'v29', first, pols, { set, ...opts }) });
     }
   }
   return out;
@@ -125,8 +125,9 @@ if (require.main === module) {
     const r = deckBench(set, tier, +n, +seed, shard, { initiative: f.initiative, variant: f.variant, marketBreath: f.marketBreath, label: formatId }).map(x => ({ ...x, set, format: formatId, formatVersion: f.version }));
     fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length, ((Date.now() - t0) / 1000).toFixed(0) + 's');
   } else if (mode === 'ladder') {
-    const [set, n, seed, out, tiers, shard] = rest;
-    const r = ladder(set, +n, +seed, (tiers || TIER_ORDER.join(',')).split(','), shard).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
+    const [set, n, seed, out, tiers, shard, formatId] = rest;
+    const f = formatId ? require('../src/formats').resolveFormat(formatId) : null;
+    const r = ladder(set, +n, +seed, (tiers || TIER_ORDER.join(',')).split(','), shard, f ? { initiative: f.initiative, variant: f.variant, marketBreath: f.marketBreath, label: formatId } : {}).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
   } else if (mode === 'report') {
     const [out, ...ins] = rest;
     const recs = ins.flatMap(f => JSON.parse(fs.readFileSync(f, 'utf8')));

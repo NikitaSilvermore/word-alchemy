@@ -1,5 +1,7 @@
 # V30 "The Crucible" — implementation and playtest report
 
+> **Correction (Crucible 2):** the deck win rates in sections 3 and 5 used different denominators. Section 3 counted decided games only, mirrors included. Section 5 counted all games, with draws as non-wins. Use the reconciled figures in `V30_CRUCIBLE2_REPORT.md` §2: mirrors excluded, draws count half. Healing showed 0 because it was not instrumented; it is now.
+
 Branch `v30-crucible` (from `v29-grammar`). Reference rules `grammar_v30_rc1` (0.30.0-rc1) are unchanged; every alternative has its own format ID. Nothing is deployed to production; V28 is untouched.
 
 ## 1. What was delivered

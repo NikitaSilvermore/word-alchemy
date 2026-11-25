@@ -11,8 +11,15 @@ const { THEMED, COUNTERS } = require('../../engine29/data/themed_decks');
 const SPEC = require('../../engine29/data/spec_catalogue.json');
 const { createController, restoreController } = require('./controller');
 const { FIXTURES } = require('./fixtures');
+const ART = new Set(require('./art_index.json'));
 
-const VERSION = 'V30 Crucible playtest 1';
+const FMT_GROUPS = [
+  ['Reference', [['grammar_v30_rc1', 'V30 rc1 — original market (2/3 spark)']]],
+  ['Market comparison', [['grammar_v30_exp_price34', 'Market at 3/4 spark (experiment)']]],
+  ['Other test variants', [['grammar_v30_exp_nosentence', 'No spark from sentences'], ['grammar_v30_exp_income2', 'Spark income every second turn'], ['grammar_v30_exp_buy2', 'Buy every second turn'], ['grammar_v30_exp_reserve3', 'Reserve cap 3'], ['grammar_v30_exp_cheapresp', 'Cheaper responses']]],
+  ['Earlier', [['grammar_v29_spec', 'V29 specification']]],
+];
+const VERSION = 'V30 Crucible playtest 2';
 const SCHOOLS = ['fire', 'water', 'air', 'earth', 'life', 'rot', 'word'];
 const SCHOOL_NAME = { fire: 'Fire', water: 'Water', air: 'Air', earth: 'Earth', life: 'Life', rot: 'Rot', word: 'The Word' };
 const TIERS = B.TIER_ORDER;
@@ -45,8 +52,8 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const TYPE_NAME = { thing: 'Thing', action: 'Action', spell: 'Spell', ground: 'Ground', quality: 'Quality', weather: 'Weather', burden: 'Burden', category: 'Category' };
 
 // ---------- app state ----------
-const A = { names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-const lobby = Object.assign({ mine: 'D1_living_sky', theirs: 'D2_lockkeepers_wall', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'grammar_v30_rc1' }, store.get('wa30.lobby') || {});
+const A = { view: store.get('wa30.view') || 'art', names: {}, screen: 'lobby', C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+const lobby = Object.assign({ ra: 'ra', mine: 'D1_living_sky', theirs: 'D2_lockkeepers_wall', tier: 'journeyman', style: 'careful', seat: 'first', seed: 1001, format: 'grammar_v30_rc1' }, store.get('wa30.lobby') || {});
 function allDecks() {
   const custom = store.get('wa30.custom') || {};
   const out = [];
@@ -64,7 +71,7 @@ function startMatch(cfgOverride) {
   stopBot();
   const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
   const first = lobby.seat === 'first' ? 0 : lobby.seat === 'second' ? 1 : (lobby.seed % 2);
-  const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ':' + lobby.tier };
+  const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ':' + lobby.tier + (lobby.ra ? ':' + lobby.ra : '') };
   A.cfg = cfg; A.C = createController(cfg, hooks); A.sel = null; A.why = null; A.review = null; A.screen = 'match';
   A.C.start(); render();
 }
@@ -133,6 +140,9 @@ function cardWord(S, pid) {
   for (const p of S.players) { const c = p.hand.concat(p.grave, p.sealed).find(x => x.pid === pid); if (c) return c.word; }
   if (S.clause) for (const n of S.clause.nodes) { if (n.card && n.card.pid === pid) return n.card.word; for (const c of n.extra || []) if (c.pid === pid) return c.word; }
   for (const t of S.things) for (const q of t.quals || []) if (q.pid === pid) return q.word;
+  for (const t of S.things) if (t.pid === pid) return t.status.concealed && t.ctrl !== A.C.human ? '?' : t.word;
+  for (const p of S.players) if (p.ground && p.ground.pid === pid) return p.ground.word;
+  if (S.sky && S.sky.pid === pid) return S.sky.word;
   return null;
 }
 function valueLabel(S, key, v) {
@@ -278,11 +288,15 @@ function statusChips(S, t) {
   if (t.counters && t.counters.age) out.push(['Age ' + t.counters.age, 'c']);
   return out.map(([l, k]) => `<span class="chip ${k}">${esc(l)}</span>`).join('');
 }
+const artKey = id => String(id).split('.').pop();
 function artWindow(id, name, text) {
-  const s = schoolOf(id);
+  const s = schoolOf(id), k = artKey(id);
+  if (text != null && A.view === 'text') return `<div class="art s-${s} txt"><span class="rtx">${esc(text)}</span></div>`;
+  if (ART.has(k)) return `<div class="art s-${s} pic"><img src="assets/art/${k}.webp" alt="" loading="lazy" decoding="async"></div>`;
   if (text != null) return `<div class="art s-${s} txt"><span class="rtx">${esc(text)}</span><span class="pending">art pending</span></div>`;
   return `<div class="art s-${s}"><span class="glyph" aria-hidden="true">${esc(name.slice(0, 1))}</span><span class="pending">art pending</span></div>`;
 }
+const rulesBox = id => (A.view === 'text' || !ART.has(artKey(id)) ? propLine(id) : textOf(id));
 function propLine(id) { const d = BY_ID[id]; return d && d.props && d.props.length ? d.props.join(' · ') : (d && d.kw ? d.kw.join(' · ') : ''); }
 function thingCard(S, t, o = {}) {
   const hidden = t.status.concealed && t.ctrl !== A.C.human;
@@ -304,11 +318,11 @@ function handCard(S, c, o = {}) {
   const d = BY_ID[c.word], s = d.school;
   const typeLine = TYPE_NAME[d.type] + (d.r ? ' · Response' : '') + (d.type === 'thing' ? ` · ${d.strike}/${d.stand}` : d.type === 'ground' ? ` · stand ${d.stand}` : '');
   const cls = ['card', 'hand', o.hi ? 'hi' : '', o.sel ? 'sel' : '', o.dim ? 'dim' : ''].join(' ');
-  return `<button class="${cls}" data-card="${esc(c.pid)}" aria-label="${esc(nm(c.word))}, ${esc(typeLine)}, cost ${d.cost}">
+  return `<button class="${cls}" data-card="${esc(c.pid)}" title="${esc(nm(c.word) + ' — ' + textOf(c.word))}" aria-label="${esc(nm(c.word))}, ${esc(typeLine)}, cost ${d.cost}. ${esc(textOf(c.word))}">
     <img class="frame" src="assets/frames/tall_${s}.webp" alt="">
     <span class="nm">${esc(nm(c.word))}</span><span class="gem">${d.cost}</span>
     ${artWindow(c.word, nm(c.word), textOf(c.word))}
-    <span class="tl">${esc(typeLine)}</span><span class="rt">${esc(propLine(c.word))}</span>
+    <span class="tl">${esc(typeLine)}</span><span class="rt${A.view !== 'text' && ART.has(artKey(c.word)) ? ' clamp' : ''}">${esc(rulesBox(c.word))}</span>
     ${o.hi ? '<span class="pick">Choose</span>' : ''}
     <span class="info" data-inspect-word="${esc(c.word)}" role="button" tabindex="0" aria-label="Inspect ${esc(nm(c.word))}">i</span>
   </button>`;
@@ -329,7 +343,6 @@ function render() {
 function renderLobby() {
   const decks = allDecks(), groups = [...new Set(decks.map(d => d.group))];
   const opts = sel => groups.map(g => `<optgroup label="${esc(g)}">${decks.filter(d => d.group === g).map(d => `<option value="${esc(d.id)}"${d.id === sel ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</optgroup>`).join('');
-  const fmts = Object.entries(F.FORMATS).filter(([k, f]) => f.status !== 'diagnostic');
   const last = store.get('wa30.last');
   root().innerHTML = `<main class="lobby">
     <header class="lob-head"><h1>The Crucible</h1><p>${esc(VERSION)} · experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
@@ -338,21 +351,25 @@ function renderLobby() {
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
       <label>Rival skill<select id="l-tier">${TIERS.map(t => `<option${t === lobby.tier ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Rival style<select id="l-style">${['careful', 'aggressive'].map(t => `<option${t === lobby.style ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Rival responses<select id="l-ra">${[['ra', 'Response-aware (holds reserve, answers)'], ['', 'Reference (rarely responds)']].map(([v, l]) => `<option value="${v}"${v === lobby.ra ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label>Your seat<select id="l-seat">${[['first', 'You start'], ['second', 'Rival starts'], ['random', 'Seed decides']].map(([v, l]) => `<option value="${v}"${v === lobby.seat ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label>Seed<span class="row"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
-      <label class="wide">Rules version<select id="l-format">${fmts.map(([k, f]) => `<option value="${k}"${k === lobby.format ? ' selected' : ''}>${k} — ${f.status}${k === 'grammar_v30_rc1' ? ' (reference)' : ''}</option>`).join('')}</select></label>
-      <div class="wide btns"><button type="submit" class="go">Start match</button>
+      <label>Seed<span class="inrow"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
+      <label class="wide">Rules version<select id="l-format">${FMT_GROUPS.map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(([k, l]) => `<option value="${k}"${k === lobby.format ? ' selected' : ''}>${esc(l)} · ${esc(F.resolveFormat(k).version)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+      <p class="wide small">For the market comparison, play the same decks and seed once with <b>Original market</b> and once with <b>Market at 3/4 spark</b>.</p>
+      <div class="wide btns"><button type="button" id="l-start" class="go">Start match</button>
       ${last ? `<button type="button" id="l-resume">Resume last match${last.result != null ? ' (finished — review)' : ''}</button>` : ''}
       <button type="button" id="l-editor">Deck editor</button><button type="button" id="l-fix">Scenario fixtures</button><button type="button" id="l-load">Load a replay</button></div>
     </form>
     <section class="lob-decks"><h2>${esc(deckById(lobby.mine).label)}</h2><p class="dl">${deckById(lobby.mine).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p>
     <h2>${esc(deckById(lobby.theirs).label)}</h2><p class="dl">${deckById(lobby.theirs).words.map(w => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(' ')}</p></section>
   </main>`;
-  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format') }); store.set('wa30.lobby', lobby); };
+  const upd = () => { Object.assign(lobby, { mine: v('l-mine'), theirs: v('l-theirs'), tier: v('l-tier'), style: v('l-style'), seat: v('l-seat'), seed: +v('l-seed') || 1, format: v('l-format'), ra: v('l-ra') }); store.set('wa30.lobby', lobby); };
   const v = id => document.getElementById(id).value;
-  for (const id of ['l-mine', 'l-theirs', 'l-tier', 'l-style', 'l-seat', 'l-seed', 'l-format']) document.getElementById(id).addEventListener('change', () => { upd(); if (id === 'l-mine' || id === 'l-theirs') renderLobby(); });
+  for (const id of ['l-mine', 'l-theirs', 'l-tier', 'l-style', 'l-ra', 'l-seat', 'l-seed', 'l-format']) document.getElementById(id).addEventListener('change', () => { upd(); if (id === 'l-mine' || id === 'l-theirs') renderLobby(); });
   document.getElementById('l-dice').onclick = () => { document.getElementById('l-seed').value = 1 + Math.floor(Math.random() * 99999); upd(); };
-  document.getElementById('lob').onsubmit = e => { e.preventDefault(); upd(); startMatch(); };
+  // artifact frames are sandboxed without form submission, so the form never submits: Start is a plain button
+  document.getElementById('lob').onsubmit = e => { e.preventDefault(); };
+  document.getElementById('l-start').onclick = () => { upd(); startMatch(); };
   document.getElementById('l-editor').onclick = () => { A.screen = 'editor'; A.ed = A.ed || { words: deckById(lobby.mine).words.slice(), name: 'My test deck', filter: 'all', q: '' }; render(); };
   document.getElementById('l-fix').onclick = () => { A.screen = 'fixtures'; render(); };
   document.getElementById('l-load').onclick = () => { A.screen = 'match'; A.modal = { kind: 'load' }; if (!A.C) { A.screen = 'lobby'; } render(); if (!A.C) renderModalOver(); };
@@ -423,6 +440,7 @@ function renderMatch() {
     <button class="ghost" id="m-lobby">Lobby</button>
     <span class="title">The Crucible <small>${esc(A.cfg.fixture ? 'Fixture: ' + A.cfg.fixture.title : (A.cfg.deckNames || []).join(' vs '))}</small></span>
     <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} · seed ${esc(A.cfg.seed)} · round ${S.round} · turn ${S.turn}${A.review ? ' · reviewing' : ''}</span>
+    <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== 'text' ? ' selected' : ''}>Art</option><option value="text"${A.view === 'text' ? ' selected' : ''}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? ' checked' : ''}> Auto-pass my responses</label>
     <label class="tog">Rival speed <select id="m-speed">${[[250, 'fast'], [600, 'normal'], [1100, 'slow']].map(([v, l]) => `<option value="${v}"${A.speed === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="ghost" id="m-export">Export replay</button><button class="ghost" id="m-rematch">Rematch</button><button class="ghost" id="m-swap">Swap seats</button>
@@ -481,7 +499,9 @@ function builderHTML(S, sel, inPrompt) {
   const fixed = Object.entries(A.sel.fixed).map(([k, v]) => `<li><span>${esc(KEY_LABEL[k] || k)}</span> ${esc(valueLabel(S, k, JSON.parse(v)))}</li>`).join('');
   const anchor = A.sel.anchor;
   const head = anchor ? (anchor.kind === 'card' ? nm(cardWord(S, anchor.id)) : anchor.kind === 'thing' ? thingName(S, anchor.id) : anchor.kind === 'vessel' ? 'The Vessel' : anchor.kind === 'market' ? 'Market offer' : anchor.kind === 'ground' ? 'Your Ground' : '') : '';
-  if (!sel.cands.length) return `<h3>${esc(head)}</h3><p class="why">${esc(A.why || 'Nothing legal to do with this now.')}</p><div class="btns"><button id="a-cancel">Back</button></div>`;
+  const aw = anchor && anchor.kind === 'card' ? cardWord(S, anchor.id) : anchor && anchor.kind === 'thing' ? (S.things.find(t => t.id === anchor.id) || {}).form || (S.things.find(t => t.id === anchor.id) || {}).word : null;
+  const reader = aw && BY_ID[aw] ? `<p class="reader">${esc(textOf(aw))}</p>` : '';
+  if (!sel.cands.length) return `<h3>${esc(head)}</h3>${reader}<p class="why">${esc(A.why || 'Nothing legal to do with this now.')}</p><div class="btns"><button id="a-cancel">Back</button></div>`;
   let body = '';
   if (sel.next) {
     body = `<p class="step">${esc(KEY_LABEL[sel.next] || sel.next)}${boardTargets(sel).size ? ' — click a highlighted card or choose below' : ''}</p>
@@ -493,7 +513,7 @@ function builderHTML(S, sel, inPrompt) {
       <div class="pred"><b>If ${inPrompt ? 'nothing else answers' : 'unblocked and unanswered'}:</b><ul>${predict(a).map(x => `<li>${esc(x)}</li>`).join('')}</ul><small>A legal declaration is not a guaranteed outcome: blocks, responses and revalidation can change it.</small></div>
       <div class="btns"><button id="a-confirm" class="go">${inPrompt ? 'Respond' : 'Declare'}</button></div>`;
   }
-  return `<h3>${esc(head)}</h3>${fixed ? `<ul class="fixed">${fixed}</ul>` : ''}${body}<div class="btns"><button id="a-cancel">Back</button></div>`;
+  return `<h3>${esc(head)}</h3>${reader}${fixed ? `<ul class="fixed">${fixed}</ul>` : ''}${body}<div class="btns"><button id="a-cancel">Back</button></div>`;
 }
 function promptHTML(S, sel) {
   const q = A.C.pending;
@@ -649,6 +669,7 @@ function bindMatch() {
   on('m-rematch', () => rematch(false)); on('s-rematch', () => rematch(false)); on('m-swap', () => rematch(true)); on('s-swap', () => rematch(true));
   on('s-lobby', () => { stopBot(); A.screen = 'lobby'; render(); });
   const ap = document.getElementById('m-autopass'); if (ap) ap.onchange = () => { C.auto.passAll = ap.checked; };
+  const vw = document.getElementById('m-view'); if (vw) vw.onchange = () => { A.view = vw.value; store.set('wa30.view', A.view); render(); };
   const sp = document.getElementById('m-speed'); if (sp) sp.onchange = () => { A.speed = +sp.value; };
   if (A.review) { on('rv-0', () => reviewTo(0)); on('rv-p', () => reviewTo(A.review.k - 1)); on('rv-n', () => reviewTo(A.review.k + 1)); on('rv-e', () => reviewTo(A.review.total)); on('rv-play', () => { A.review = null; render(); }); }
   on('a-end', () => { A.flash = null; A.why = null; C.act({ type: 'pass' }); });

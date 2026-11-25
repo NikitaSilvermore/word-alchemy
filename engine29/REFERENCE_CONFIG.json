@@ -1,0 +1,49 @@
+{
+ "name": "V30 control \u2014 frozen reference for all later comparisons (V31 included)",
+ "git_tag": "v30-control",
+ "engine_revision": "r30.1",
+ "format": {
+  "id": "grammar_v30_rc1",
+  "version": "0.30.0-rc1",
+  "initiative": "combo2 (P1 opens with 2 breath, P2 with 5)",
+  "market": "original 2 own / 3 other spark"
+ },
+ "market_comparison_format": {
+  "id": "grammar_v30_exp_price34",
+  "version": "0.30.0-exp.price34",
+  "note": "kept separate; never mixed into rc1 comparisons"
+ },
+ "bots": {
+  "reference": "careful|aggressive : journeyman (styles alternate per mirrored pair)",
+  "response_aware": "careful|aggressive : journeyman:ra",
+  "RA_OPTS": {
+   "hold": false,
+   "samples": true,
+   "cardPen": 0.3,
+   "threshold": 0.2,
+   "deny": 1.0
+  }
+ },
+ "decks": {
+  "REF": "engine29/data/reference_decks.js (10 decks)",
+  "themed": "engine29/data/themed_decks.js (9 themed + 2 counter)"
+ },
+ "benchmark": {
+  "command": "node sim/bench.js fdecks REF journeyman 10 32000 <out> 0/1 grammar_v30_rc1",
+  "games": 550,
+  "seeds": "32000 + i*100000 + j*1000 + (g>>1); mirrored pairs share a seed, starting player swapped",
+  "baseline_file": "engine29/results/v30b_ref_healing.json"
+ },
+ "deck_score_definition": "mirrors excluded; draws count half; score = (W + D/2) / games (tools/v30_score.js)",
+ "file_hashes_sha256_16": {
+  "src/engine.js": "8c8948146adc0d9d",
+  "src/bots.js": "d5cda86c839afca9",
+  "src/formats.js": "274d8ab30493522a",
+  "src/cards.js": "08576fe057c5c663",
+  "src/recipes.js": "113aabd689cd23c6",
+  "src/replay.js": "784749249afff6e0",
+  "data/reference_decks.js": "4cda987a8dfbcfac",
+  "data/themed_decks.js": "873e984a316f51a2",
+  "results/v30b_ref_healing.json": "0670a3dc10fb635e"
+ }
+}

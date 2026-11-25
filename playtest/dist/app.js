@@ -922,7 +922,20 @@
         }
       }
       function heal(S, t, n) {
-        t.damage = Math.max(0, t.damage - n);
+        const d = Math.min(t.damage, Math.max(0, n));
+        t.damage -= d;
+        if (d) S.stats.res[t.ctrl].thingHealed = (S.stats.res[t.ctrl].thingHealed || 0) + d;
+      }
+      function gainLife(S, pi, n, why) {
+        const p = S.players[pi], g = Math.max(0, Math.min(FORMAT.life - p.life, n));
+        p.life += g;
+        if (g) {
+          const r = S.stats.res[pi];
+          r.healed += g;
+          r.healedBy = r.healedBy || {};
+          r.healedBy[why] = (r.healedBy[why] || 0) + g;
+        }
+        return g;
       }
       function loseLife(S, pi, n, why) {
         if (n <= 0) return;
@@ -1092,9 +1105,9 @@
           if (has(S, t, "bedrock") && t.arrivedTurn < p.personalTurn) addCounter(S, t, "bedrock");
           const u = card(t).upkeep;
           if (u === "energy" || u === "gold") gainExtraBreath(p, 1);
-          if (u === "lifeHeal") p.life = Math.min(FORMAT.life, p.life + 1);
+          if (u === "lifeHeal") gainLife(S, p.i, 1, "life");
           if (u === "worldTree") {
-            p.life = Math.min(FORMAT.life, p.life + 2);
+            gainLife(S, p.i, 2, "world tree");
             const o = S.things.filter((o2) => o2 !== t && o2.ctrl === p.i && prop(o2, "living") && (o2.counters.growth || 0) < FORMAT.growthCap).sort((a, b) => a.entry - b.entry)[0];
             if (o) addCounter(S, o, "growth");
           }
@@ -1856,7 +1869,7 @@
           }
           case "eatFruit":
             if (a.branch === "life") {
-              p.life = Math.min(FORMAT.life, p.life + 2);
+              gainLife(S, side, 2, "fruit");
               return true;
             }
             if (!tg || tg.ctrl !== side) return false;
@@ -2350,11 +2363,11 @@
             break;
           }
           case "tonic": {
-            p.life = Math.min(FORMAT.life, p.life + 3);
+            gainLife(S, p.i, 3, "tonic");
             if (p.poison) p.poison--;
             if (p.ground && card(p.ground).potionBonus && p.potionTurn !== p.personalTurn) {
               p.potionTurn = p.personalTurn;
-              p.life = Math.min(FORMAT.life, p.life + 1);
+              gainLife(S, p.i, 1, "potion ground");
             }
             break;
           }
@@ -2637,7 +2650,7 @@
           }
           if (card(att).leech && !S.players[att.ctrl].leechUsed && !ground && (!recipient || prop(recipient, "living"))) {
             S.players[att.ctrl].leechUsed = true;
-            S.players[att.ctrl].life = Math.min(FORMAT.life, S.players[att.ctrl].life + 1);
+            gainLife(S, att.ctrl, 1, "leech");
           }
         }
         if (a.verb === "crush" && recipient && pk.n > before && before >= 0 && !rebirthAvailable(S, recipient)) {
@@ -2668,7 +2681,12 @@
         }
         return (h >>> 0).toString(16);
       }
+      var REVISION = { id: "r30.1", log: [
+        { id: "r30.0", note: "V30 foundation (commit 69c5e05)." },
+        { id: "r30.1", note: "Alkahest gains its printed ability (1 breath, sacrifice: destroy an enemy Thing or damageable Ground). Changes play only in matches where Alkahest is made. Healing is now recorded in stats (not in the state hash)." }
+      ] };
       module.exports = {
+        REVISION,
         FORMAT,
         INITIATIVE,
         createMatch,
@@ -2782,6 +2800,8 @@
       }
       var styleOf = (pol) => String(pol).split(":")[0];
       var tierOf = (pol) => String(pol).split(":")[1] || "journeyman";
+      var raOf = (pol) => String(pol).split(":")[2] === "ra";
+      var RA_OPTS = { hold: false, samples: true, cardPen: 0.3, threshold: 0.2, deny: 1 };
       var TIERS2 = {
         apprentice: { depth: 1, beam: 1, noise: 0.45, responses: false },
         initiate: { depth: 1, beam: 1, noise: 0.15, responses: true },
@@ -2826,11 +2846,25 @@
           return best;
         };
       }
-      function holdValue(S, me, w) {
-        const p = S.players[me];
-        const rs = p.hand.filter((c) => c.word !== HIDDEN && E2.card(c).r && E2.card(c).cost <= 2);
+      function holdValue(S, me, w, ra = false) {
+        const p = S.players[me], cap = S.rules.reserveCap || 2;
+        if (!ra || !RA_OPTS.hold) {
+          const r0 = p.hand.filter((c) => c.word !== HIDDEN && E2.card(c).r && E2.card(c).cost <= 2);
+          if (!r0.length || !S.rules.reserve) return 0;
+          return w.hold * Math.min(2, p.breath, Math.max(...r0.map((c) => E2.card(c).cost)));
+        }
+        const rs = p.hand.filter((c) => c.word !== HIDDEN && E2.card(c).r && respCost(S, c) <= cap);
         if (!rs.length || !S.rules.reserve) return 0;
-        return w.hold * Math.min(2, p.breath, Math.max(...rs.map((c) => E2.card(c).cost)));
+        const need = Math.min(...rs.map((c) => respCost(S, c)));
+        const threat = S.things.some((t) => t.ctrl !== me && E2.curStrike(S, t) > 0) || S.players[1 - me].hand.length > 2;
+        return p.breath >= need ? w.hold * (threat ? 1.6 : 0.6) * need + 0.4 * Math.min(rs.length, 2) : 0;
+      }
+      function respCost(S, c) {
+        const d = E2.card(c), disc = S.rules.responseDiscount && S.rules.responseDiscount[d.id];
+        return Math.max(1, d.cost - (disc || 0));
+      }
+      function denied(S, me) {
+        return S.things.filter((t) => t.ctrl !== me && E2.incapacitated(t)).reduce((a, t) => a + E2.curStrike(S, t), 0);
       }
       function responder(policyOf) {
         return (S, side, kind) => {
@@ -2860,10 +2894,39 @@
           return best;
         };
       }
+      function responderRA(policyOf) {
+        return (S, side, kind) => {
+          const opts = E2.legalResponses(S, side, kind);
+          if (!opts.length) return null;
+          const w = POLICIES[styleOf(policyOf(side))], hand = S.players[side].hand;
+          const run = (opt) => {
+            const c = redact(S, side);
+            if (opt) E2.addResponse(c, side, opt, { block: null });
+            E2.resolveClause(c);
+            const card = opt && hand.find((x) => x.pid === opt.card);
+            const pen = opt ? RA_OPTS.cardPen * cardWorth(S, side, card.word) + (kind === "answer" ? 0.4 * respCost(S, card) : 0) : 0;
+            return value(c, side, w) + RA_OPTS.deny * w.str * denied(c, side) - pen;
+          };
+          let best = null, bestV = run(null) + RA_OPTS.threshold;
+          for (const o of opts) {
+            let v;
+            try {
+              v = run(o);
+            } catch (e) {
+              continue;
+            }
+            if (v > bestV) {
+              bestV = v;
+              best = o;
+            }
+          }
+          return best;
+        };
+      }
       function controller(policyOf, { responses = true } = {}) {
-        const tierResp = (side) => TIERS2[tierOf(policyOf(side))].responses;
-        const r = responder(policyOf);
-        return { block: blocker(policyOf), respond: responses ? (S, side, kind) => tierResp(side) ? r(S, side, kind) : null : null };
+        const tierResp = (side) => TIERS2[tierOf(policyOf(side))].responses || raOf(policyOf(side));
+        const r = responder(policyOf), ra = responderRA(policyOf);
+        return { block: blocker(policyOf), respond: responses ? (S, side, kind) => !tierResp(side) ? null : raOf(policyOf(side)) ? ra(S, side, kind) : r(S, side, kind) : null };
       }
       function decider(policyOf) {
         return (S, side, kind, options, dflt) => {
@@ -2885,8 +2948,8 @@
           return dflt;
         };
       }
-      function stateRand(S, salt) {
-        let h = parseInt(E2.hashState(S), 16) ^ salt;
+      function stateRand(S, salt, pub = false) {
+        let h = parseInt(E2.hashState(pub ? redact(S, S.active) : S), 16) ^ salt;
         return () => {
           h = h + 1831565813 | 0;
           let t = Math.imul(h ^ h >>> 15, 1 | h);
@@ -2900,9 +2963,9 @@
         const pool = Object.values(require_cards().BY_ID).filter((c) => c.deckLegal && rv.schools.includes(c.school) && !seen.has(c.id)).map((c) => c.id);
         return rv.hand.map((x, k) => ({ pid: "?s" + k, word: pool.length ? pool[Math.floor(r() * pool.length)] : HIDDEN, owner: rv.i }));
       }
-      function stepValue(S0, c, me, w, a) {
+      function stepValue(S0, c, me, w, a, ra = false) {
         const bonus = a.type === "deploy" || a.type === "ground" ? 0.8 : a.type === "buy" ? cardWorth(S0, me, S0.market[a.slot].word) : 0;
-        return value(c, me, w) + holdValue(c, me, w) + bonus;
+        return value(c, me, w) + holdValue(c, me, w, ra) + bonus;
       }
       function tryApply(c, a, ctl) {
         try {
@@ -2913,14 +2976,15 @@
         }
       }
       function chooseAction(S, policyOf) {
-        const me = S.active, pol = policyOf(me), w = POLICIES[styleOf(pol)], T = TIERS2[tierOf(pol)], blk = blocker(policyOf);
+        const me = S.active, pol = policyOf(me), w = POLICIES[styleOf(pol)], T = TIERS2[tierOf(pol)], blk = blocker(policyOf), ra = raOf(pol);
+        const samples = T.samples || (ra && RA_OPTS.samples && S.players[1 - me].reserve > 0 ? 1 : 0);
         const acts = E2.legalActions(S).filter((a) => a.type !== "pass");
-        const base = value(S, me, w) + holdValue(S, me, w);
+        const base = value(S, me, w) + holdValue(S, me, w, ra);
         const kids = [];
         for (const a of acts) {
           const c = clone(S);
           if (!tryApply(c, a, { block: blk, respond: null })) continue;
-          kids.push({ a, c, v: stepValue(S, c, me, w, a) });
+          kids.push({ a, c, v: stepValue(S, c, me, w, a, ra) });
         }
         kids.sort((x, y) => y.v - x.v);
         if (T.depth > 1) {
@@ -2931,7 +2995,7 @@
             for (const a of next) {
               const c = clone(node.c);
               if (!tryApply(c, a, { block: blk, respond: null })) continue;
-              gs.push({ a, c, v: stepValue(node.c, c, me, w, a) + (node.v - value(node.c, me, w) - holdValue(node.c, me, w)) });
+              gs.push({ a, c, v: stepValue(node.c, c, me, w, a, ra) + (node.v - value(node.c, me, w) - holdValue(node.c, me, w, ra)) });
             }
             gs.sort((x, y) => y.v - x.v);
             let best = node.v;
@@ -2941,28 +3005,28 @@
           for (const k of kids.slice(0, T.beam)) k.deep = extend(k, T.depth);
           for (const k of kids) if (k.deep === void 0) k.deep = k.v;
         } else for (const k of kids) k.deep = k.v;
-        if (T.samples) {
-          const r = stateRand(S, 7);
+        if (samples) {
+          const r = stateRand(S, 7, ra), rival = ra ? responderRA(policyOf) : responder(policyOf);
           for (const k of kids.slice(0, T.beam)) {
             let tot = 0;
-            for (let s = 0; s < T.samples; s++) {
+            for (let s = 0; s < samples; s++) {
               const c = clone(S);
               c.players[1 - me].hand = sampleRivalHand(S, me, r);
-              const ctl = { block: blk, respond: (S2, side, kind) => side !== me ? responder(policyOf)(S2, side, kind) : null };
-              tot += tryApply(c, k.a, ctl) ? stepValue(S, c, me, w, k.a) : k.v;
+              const ctl = { block: blk, respond: (S2, side, kind) => side !== me ? rival(S2, side, kind) : null };
+              tot += tryApply(c, k.a, ctl) ? stepValue(S, c, me, w, k.a, ra) : k.v;
             }
-            k.deep += tot / T.samples - k.v;
+            k.deep += tot / samples - k.v;
           }
         }
         const ranked = kids.filter((k) => k.deep > base + 0.05).sort((x, y) => y.deep - x.deep);
         if (!ranked.length) return { type: "pass" };
         if (T.noise) {
-          const r = stateRand(S, 13);
+          const r = stateRand(S, 13, ra);
           if (r() < T.noise) return ranked[Math.min(ranked.length - 1, 1 + Math.floor(r() * 2))].a;
         }
         return ranked[0].a;
       }
-      module.exports = { chooseAction, blocker, responder, controller, decider, mulligan, POLICIES, TIERS: TIERS2, TIER_ORDER, clone, redact, value, sampleRivalHand };
+      module.exports = { RA_OPTS, chooseAction, blocker, responder, responderRA, raOf, controller, decider, mulligan, POLICIES, TIERS: TIERS2, TIER_ORDER, clone, redact, value, sampleRivalHand };
     }
   });
 
@@ -4866,11 +4930,22 @@
           E2.apply(S, a, ctl);
           hashes.push(S.hashes[S.hashes.length - 1]);
         }
-        const rep = { format, formatVersion: resolveFormat(format).version, decks, seed, first, inputs, hashes, result: S.over };
+        const rep = { format, formatVersion: resolveFormat(format).version, engineRevision: E2.REVISION.id, decks, seed, first, inputs, hashes, result: S.over };
         rep.id = replayId(rep);
         return { replay: rep, state: S };
       }
       function replayMatch(rep) {
+        const cur = resolveFormat(rep.format).version;
+        if (rep.formatVersion && rep.formatVersion !== cur) throw new Error(`replay is for ${rep.format} ${rep.formatVersion}; this engine has ${cur}`);
+        const rev = rep.engineRevision || "r30.0";
+        try {
+          return { ...replayMatch0(rep), revision: rev, sameRevision: rev === E2.REVISION.id };
+        } catch (e) {
+          if (rev !== E2.REVISION.id) e.message += ` (recorded under engine ${rev}; changes since: ${E2.REVISION.log.filter((r) => r.id > rev).map((r) => r.id + " " + r.note).join(" | ")})`;
+          throw e;
+        }
+      }
+      function replayMatch0(rep) {
         let k = 0;
         const next = (kind, side) => {
           const x = rep.inputs[k++];
@@ -5278,6 +5353,13 @@
     }
   });
 
+  // src/art_index.json
+  var require_art_index = __commonJS({
+    "src/art_index.json"(exports, module) {
+      module.exports = ["abundance", "adder", "air", "alkahest", "aloe", "amber", "apothecary", "ash", "awaken", "bard", "be", "beasts", "bellows", "bind", "birds", "bite", "blow", "boulder", "bramble", "burn", "calcine", "carrion", "clay", "copper", "crow", "crucible", "crush", "cut", "debt", "decay", "desert", "dew", "dissolve", "doubt", "drench", "drought", "earth", "echo", "eel", "ember", "energy", "feeble", "feral", "fire", "firebrand", "fixed", "flask", "flint", "frozen", "gasp", "ghost", "gnosis", "gold", "golem", "graft", "grow", "guard", "gust", "hare", "harvest", "haunt", "hawk", "hermit", "homunculus", "ice", "ink", "iron", "ivy", "kindle", "lead", "leaden", "leech", "life", "loan", "magpie", "measure", "memory", "mend", "metals", "miasma", "name", "naphtha", "night", "oak", "omen", "orrery", "otter", "ouroboros", "owl", "philosophers_stone", "phoenix", "pike", "poison", "quick", "quicksilver", "rain", "rat", "reckoning", "resonant", "rust", "saffron", "salamander", "salt", "sapling", "scarab", "scorch", "scream", "scribe", "seed", "separate", "shadow", "silence", "silver", "sleep", "smith", "spider", "spore", "spring", "squall", "stag", "steam", "stone", "storm", "swallow", "swamp", "tame", "temper", "thaw", "thorny", "tide", "tin", "toadstool", "tonic", "torch", "tower", "transmute", "venomous", "vitriol", "wash", "water", "wildfire", "willow", "wind", "winged", "winter", "wither", "wolf", "word", "wormwood", "yew"];
+    }
+  });
+
   // src/main.js
   init_define_process_env();
   var E = require_engine();
@@ -5290,7 +5372,14 @@
   var SPEC = require_spec_catalogue();
   var { createController, restoreController } = require_controller();
   var { FIXTURES } = require_fixtures();
-  var VERSION = "V30 Crucible playtest 1";
+  var ART = new Set(require_art_index());
+  var FMT_GROUPS = [
+    ["Reference", [["grammar_v30_rc1", "V30 rc1 \u2014 original market (2/3 spark)"]]],
+    ["Market comparison", [["grammar_v30_exp_price34", "Market at 3/4 spark (experiment)"]]],
+    ["Other test variants", [["grammar_v30_exp_nosentence", "No spark from sentences"], ["grammar_v30_exp_income2", "Spark income every second turn"], ["grammar_v30_exp_buy2", "Buy every second turn"], ["grammar_v30_exp_reserve3", "Reserve cap 3"], ["grammar_v30_exp_cheapresp", "Cheaper responses"]]],
+    ["Earlier", [["grammar_v29_spec", "V29 specification"]]]
+  ];
+  var VERSION = "V30 Crucible playtest 2";
   var SCHOOLS = ["fire", "water", "air", "earth", "life", "rot", "word"];
   var SCHOOL_NAME = { fire: "Fire", water: "Water", air: "Air", earth: "Earth", life: "Life", rot: "Rot", word: "The Word" };
   var TIERS = B.TIER_ORDER;
@@ -5343,8 +5432,8 @@
   }
   var esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   var TYPE_NAME = { thing: "Thing", action: "Action", spell: "Spell", ground: "Ground", quality: "Quality", weather: "Weather", burden: "Burden", category: "Category" };
-  var A = { names: {}, screen: "lobby", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
-  var lobby = Object.assign({ mine: "D1_living_sky", theirs: "D2_lockkeepers_wall", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "grammar_v30_rc1" }, store.get("wa30.lobby") || {});
+  var A = { view: store.get("wa30.view") || "art", names: {}, screen: "lobby", C: null, sel: null, why: null, inspect: null, modal: null, speed: 600, review: null, botTimer: null, flash: null };
+  var lobby = Object.assign({ ra: "ra", mine: "D1_living_sky", theirs: "D2_lockkeepers_wall", tier: "journeyman", style: "careful", seat: "first", seed: 1001, format: "grammar_v30_rc1" }, store.get("wa30.lobby") || {});
   function allDecks() {
     const custom = store.get("wa30.custom") || {};
     const out = [];
@@ -5366,7 +5455,7 @@
     stopBot();
     const d1 = deckById(lobby.mine), d2 = deckById(lobby.theirs);
     const first = lobby.seat === "first" ? 0 : lobby.seat === "second" ? 1 : lobby.seed % 2;
-    const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ":" + lobby.tier };
+    const cfg = cfgOverride || { format: lobby.format, decks: [d1.words, d2.words], deckNames: [d1.label, d2.label], seed: +lobby.seed, first, humanSide: 0, botPolicy: lobby.style + ":" + lobby.tier + (lobby.ra ? ":" + lobby.ra : "") };
     A.cfg = cfg;
     A.C = createController(cfg, hooks);
     A.sel = null;
@@ -5474,6 +5563,9 @@
       for (const c of n.extra || []) if (c.pid === pid) return c.word;
     }
     for (const t of S.things) for (const q of t.quals || []) if (q.pid === pid) return q.word;
+    for (const t of S.things) if (t.pid === pid) return t.status.concealed && t.ctrl !== A.C.human ? "?" : t.word;
+    for (const p of S.players) if (p.ground && p.ground.pid === pid) return p.ground.word;
+    if (S.sky && S.sky.pid === pid) return S.sky.word;
     return null;
   }
   function valueLabel(S, key, v) {
@@ -5673,11 +5765,15 @@
     if (t.counters && t.counters.age) out.push(["Age " + t.counters.age, "c"]);
     return out.map(([l, k]) => `<span class="chip ${k}">${esc(l)}</span>`).join("");
   }
+  var artKey = (id) => String(id).split(".").pop();
   function artWindow(id, name, text) {
-    const s = schoolOf(id);
+    const s = schoolOf(id), k = artKey(id);
+    if (text != null && A.view === "text") return `<div class="art s-${s} txt"><span class="rtx">${esc(text)}</span></div>`;
+    if (ART.has(k)) return `<div class="art s-${s} pic"><img src="assets/art/${k}.webp" alt="" loading="lazy" decoding="async"></div>`;
     if (text != null) return `<div class="art s-${s} txt"><span class="rtx">${esc(text)}</span><span class="pending">art pending</span></div>`;
     return `<div class="art s-${s}"><span class="glyph" aria-hidden="true">${esc(name.slice(0, 1))}</span><span class="pending">art pending</span></div>`;
   }
+  var rulesBox = (id) => A.view === "text" || !ART.has(artKey(id)) ? propLine(id) : textOf(id);
   function propLine(id) {
     const d = BY_ID[id];
     return d && d.props && d.props.length ? d.props.join(" \xB7 ") : d && d.kw ? d.kw.join(" \xB7 ") : "";
@@ -5702,11 +5798,11 @@
     const d = BY_ID[c.word], s = d.school;
     const typeLine = TYPE_NAME[d.type] + (d.r ? " \xB7 Response" : "") + (d.type === "thing" ? ` \xB7 ${d.strike}/${d.stand}` : d.type === "ground" ? ` \xB7 stand ${d.stand}` : "");
     const cls = ["card", "hand", o.hi ? "hi" : "", o.sel ? "sel" : "", o.dim ? "dim" : ""].join(" ");
-    return `<button class="${cls}" data-card="${esc(c.pid)}" aria-label="${esc(nm(c.word))}, ${esc(typeLine)}, cost ${d.cost}">
+    return `<button class="${cls}" data-card="${esc(c.pid)}" title="${esc(nm(c.word) + " \u2014 " + textOf(c.word))}" aria-label="${esc(nm(c.word))}, ${esc(typeLine)}, cost ${d.cost}. ${esc(textOf(c.word))}">
     <img class="frame" src="assets/frames/tall_${s}.webp" alt="">
     <span class="nm">${esc(nm(c.word))}</span><span class="gem">${d.cost}</span>
     ${artWindow(c.word, nm(c.word), textOf(c.word))}
-    <span class="tl">${esc(typeLine)}</span><span class="rt">${esc(propLine(c.word))}</span>
+    <span class="tl">${esc(typeLine)}</span><span class="rt${A.view !== "text" && ART.has(artKey(c.word)) ? " clamp" : ""}">${esc(rulesBox(c.word))}</span>
     ${o.hi ? '<span class="pick">Choose</span>' : ""}
     <span class="info" data-inspect-word="${esc(c.word)}" role="button" tabindex="0" aria-label="Inspect ${esc(nm(c.word))}">i</span>
   </button>`;
@@ -5724,7 +5820,6 @@
   function renderLobby() {
     const decks = allDecks(), groups = [...new Set(decks.map((d) => d.group))];
     const opts = (sel) => groups.map((g) => `<optgroup label="${esc(g)}">${decks.filter((d) => d.group === g).map((d) => `<option value="${esc(d.id)}"${d.id === sel ? " selected" : ""}>${esc(d.label)}</option>`).join("")}</optgroup>`).join("");
-    const fmts = Object.entries(F.FORMATS).filter(([k, f]) => f.status !== "diagnostic");
     const last = store.get("wa30.last");
     root().innerHTML = `<main class="lobby">
     <header class="lob-head"><h1>The Crucible</h1><p>${esc(VERSION)} \xB7 experimental rules <b>${esc(lobby.format)}</b>. Separate from the live game: nothing here touches your V28 collection.</p></header>
@@ -5733,10 +5828,12 @@
       <label>Rival deck<select id="l-theirs">${opts(lobby.theirs)}</select></label>
       <label>Rival skill<select id="l-tier">${TIERS.map((t) => `<option${t === lobby.tier ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       <label>Rival style<select id="l-style">${["careful", "aggressive"].map((t) => `<option${t === lobby.style ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Rival responses<select id="l-ra">${[["ra", "Response-aware (holds reserve, answers)"], ["", "Reference (rarely responds)"]].map(([v2, l]) => `<option value="${v2}"${v2 === lobby.ra ? " selected" : ""}>${l}</option>`).join("")}</select></label>
       <label>Your seat<select id="l-seat">${[["first", "You start"], ["second", "Rival starts"], ["random", "Seed decides"]].map(([v2, l]) => `<option value="${v2}"${v2 === lobby.seat ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-      <label>Seed<span class="row"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
-      <label class="wide">Rules version<select id="l-format">${fmts.map(([k, f]) => `<option value="${k}"${k === lobby.format ? " selected" : ""}>${k} \u2014 ${f.status}${k === "grammar_v30_rc1" ? " (reference)" : ""}</option>`).join("")}</select></label>
-      <div class="wide btns"><button type="submit" class="go">Start match</button>
+      <label>Seed<span class="inrow"><input id="l-seed" type="number" inputmode="numeric" value="${esc(lobby.seed)}"><button type="button" id="l-dice" class="ghost">New</button></span></label>
+      <label class="wide">Rules version<select id="l-format">${FMT_GROUPS.map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(([k, l]) => `<option value="${k}"${k === lobby.format ? " selected" : ""}>${esc(l)} \xB7 ${esc(F.resolveFormat(k).version)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+      <p class="wide small">For the market comparison, play the same decks and seed once with <b>Original market</b> and once with <b>Market at 3/4 spark</b>.</p>
+      <div class="wide btns"><button type="button" id="l-start" class="go">Start match</button>
       ${last ? `<button type="button" id="l-resume">Resume last match${last.result != null ? " (finished \u2014 review)" : ""}</button>` : ""}
       <button type="button" id="l-editor">Deck editor</button><button type="button" id="l-fix">Scenario fixtures</button><button type="button" id="l-load">Load a replay</button></div>
     </form>
@@ -5744,11 +5841,11 @@
     <h2>${esc(deckById(lobby.theirs).label)}</h2><p class="dl">${deckById(lobby.theirs).words.map((w) => `<span class="dot s-${schoolOf(w)}"></span>${esc(nm(w))}`).join(" ")}</p></section>
   </main>`;
     const upd = () => {
-      Object.assign(lobby, { mine: v("l-mine"), theirs: v("l-theirs"), tier: v("l-tier"), style: v("l-style"), seat: v("l-seat"), seed: +v("l-seed") || 1, format: v("l-format") });
+      Object.assign(lobby, { mine: v("l-mine"), theirs: v("l-theirs"), tier: v("l-tier"), style: v("l-style"), seat: v("l-seat"), seed: +v("l-seed") || 1, format: v("l-format"), ra: v("l-ra") });
       store.set("wa30.lobby", lobby);
     };
     const v = (id) => document.getElementById(id).value;
-    for (const id of ["l-mine", "l-theirs", "l-tier", "l-style", "l-seat", "l-seed", "l-format"]) document.getElementById(id).addEventListener("change", () => {
+    for (const id of ["l-mine", "l-theirs", "l-tier", "l-style", "l-ra", "l-seat", "l-seed", "l-format"]) document.getElementById(id).addEventListener("change", () => {
       upd();
       if (id === "l-mine" || id === "l-theirs") renderLobby();
     });
@@ -5758,6 +5855,8 @@
     };
     document.getElementById("lob").onsubmit = (e) => {
       e.preventDefault();
+    };
+    document.getElementById("l-start").onclick = () => {
       upd();
       startMatch();
     };
@@ -5869,6 +5968,7 @@
     <button class="ghost" id="m-lobby">Lobby</button>
     <span class="title">The Crucible <small>${esc(A.cfg.fixture ? "Fixture: " + A.cfg.fixture.title : (A.cfg.deckNames || []).join(" vs "))}</small></span>
     <span class="meta">${esc(A.cfg.format)} ${esc(fmt.version)} \xB7 seed ${esc(A.cfg.seed)} \xB7 round ${S.round} \xB7 turn ${S.turn}${A.review ? " \xB7 reviewing" : ""}</span>
+    <label class="tog">Cards <select id="m-view"><option value="art"${A.view !== "text" ? " selected" : ""}>Art</option><option value="text"${A.view === "text" ? " selected" : ""}>Large text</option></select></label>
     <label class="tog"><input type="checkbox" id="m-autopass"${C.auto.passAll ? " checked" : ""}> Auto-pass my responses</label>
     <label class="tog">Rival speed <select id="m-speed">${[[250, "fast"], [600, "normal"], [1100, "slow"]].map(([v, l]) => `<option value="${v}"${A.speed === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
     <button class="ghost" id="m-export">Export replay</button><button class="ghost" id="m-rematch">Rematch</button><button class="ghost" id="m-swap">Swap seats</button>
@@ -5931,7 +6031,9 @@
     const fixed = Object.entries(A.sel.fixed).map(([k, v]) => `<li><span>${esc(KEY_LABEL[k] || k)}</span> ${esc(valueLabel(S, k, JSON.parse(v)))}</li>`).join("");
     const anchor = A.sel.anchor;
     const head = anchor ? anchor.kind === "card" ? nm(cardWord(S, anchor.id)) : anchor.kind === "thing" ? thingName(S, anchor.id) : anchor.kind === "vessel" ? "The Vessel" : anchor.kind === "market" ? "Market offer" : anchor.kind === "ground" ? "Your Ground" : "" : "";
-    if (!sel.cands.length) return `<h3>${esc(head)}</h3><p class="why">${esc(A.why || "Nothing legal to do with this now.")}</p><div class="btns"><button id="a-cancel">Back</button></div>`;
+    const aw = anchor && anchor.kind === "card" ? cardWord(S, anchor.id) : anchor && anchor.kind === "thing" ? (S.things.find((t) => t.id === anchor.id) || {}).form || (S.things.find((t) => t.id === anchor.id) || {}).word : null;
+    const reader = aw && BY_ID[aw] ? `<p class="reader">${esc(textOf(aw))}</p>` : "";
+    if (!sel.cands.length) return `<h3>${esc(head)}</h3>${reader}<p class="why">${esc(A.why || "Nothing legal to do with this now.")}</p><div class="btns"><button id="a-cancel">Back</button></div>`;
     let body = "";
     if (sel.next) {
       body = `<p class="step">${esc(KEY_LABEL[sel.next] || sel.next)}${boardTargets(sel).size ? " \u2014 click a highlighted card or choose below" : ""}</p>
@@ -5943,7 +6045,7 @@
       <div class="pred"><b>If ${inPrompt ? "nothing else answers" : "unblocked and unanswered"}:</b><ul>${predict(a).map((x) => `<li>${esc(x)}</li>`).join("")}</ul><small>A legal declaration is not a guaranteed outcome: blocks, responses and revalidation can change it.</small></div>
       <div class="btns"><button id="a-confirm" class="go">${inPrompt ? "Respond" : "Declare"}</button></div>`;
     }
-    return `<h3>${esc(head)}</h3>${fixed ? `<ul class="fixed">${fixed}</ul>` : ""}${body}<div class="btns"><button id="a-cancel">Back</button></div>`;
+    return `<h3>${esc(head)}</h3>${reader}${fixed ? `<ul class="fixed">${fixed}</ul>` : ""}${body}<div class="btns"><button id="a-cancel">Back</button></div>`;
   }
   function promptHTML(S, sel) {
     const q = A.C.pending;
@@ -6193,6 +6295,12 @@
     const ap = document.getElementById("m-autopass");
     if (ap) ap.onchange = () => {
       C.auto.passAll = ap.checked;
+    };
+    const vw = document.getElementById("m-view");
+    if (vw) vw.onchange = () => {
+      A.view = vw.value;
+      store.set("wa30.view", A.view);
+      render();
     };
     const sp = document.getElementById("m-speed");
     if (sp) sp.onchange = () => {

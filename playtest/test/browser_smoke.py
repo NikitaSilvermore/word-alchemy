@@ -56,7 +56,7 @@ with sync_playwright() as p:
             page.select_option('#l-mine', rnd.choice(decks)); page.select_option('#l-theirs', rnd.choice(decks))
             page.select_option('#l-tier', rnd.choice(['apprentice', 'journeyman', 'expert']))
             page.select_option('#l-seat', rnd.choice(['first', 'second']))
-            page.fill('#l-seed', str(1000 + g)); page.click('button.go')
+            page.fill('#l-seed', str(1000 + g)); page.click('#l-start')
             page.wait_for_selector('.match, .mull', timeout=5000)
             page.evaluate('() => { WA30.A.speed = 0 }')
             kinds = {}
@@ -85,9 +85,16 @@ with sync_playwright() as p:
         report.append({'width': width, 'fixtures': n})
         page.goto(url); page.click('#l-editor'); page.wait_for_selector('.ed-grid'); page.click('[data-f=fire]')
         page.screenshot(path=f'/tmp/smoke_{width}_editor.png')
-        page.goto(url); page.wait_for_selector('#lob'); page.click('button.go'); page.wait_for_timeout(400)
+        page.goto(url); page.wait_for_selector('#lob'); page.click('#l-start'); page.wait_for_timeout(400)
         page.screenshot(path=f'/tmp/smoke_{width}_match.png', full_page=True)
         page.close()
+    # artifact viewers run the page in a sandboxed frame without form submission: start a match there too
+    import os
+    open(os.path.join(dist, '_sandbox.html'), 'w').write('<iframe id=f sandbox="allow-scripts allow-same-origin" src="index.html" style="width:1200px;height:900px"></iframe>')
+    page = br.new_page(viewport={'width': 1240, 'height': 940}); page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))
+    page.goto(f'http://127.0.0.1:{srv.server_port}/_sandbox.html'); fr = page.frame_locator('#f')
+    fr.locator('#l-start').click(); fr.locator('.match, .mull').first.wait_for(timeout=5000)
+    report.append({'sandboxed_frame_start': 'ok'}); os.remove(os.path.join(dist, '_sandbox.html'))
     br.close()
 print(json.dumps(report, indent=1))
 print('console errors:', len(errors)); [print(' ', e[:300]) for e in errors[:20]]

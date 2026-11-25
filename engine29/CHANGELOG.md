@@ -77,3 +77,10 @@
 - Browser playtest (`../playtest`): lobby, full board, sentence builder on the engine's legal actions, all prompts, inspector, chronicle, replay export/review/resume, fixtures, deck editor.
 - Experiment formats (C1/C2) via `base` + `variant`; instrumentation for hand saturation, blocked draws, response windows, bought-and-played, fusion turns.
 - Themed and counter decks. Alkahest ability implemented. Guard-target-disappears test.
+
+## 0.30.0-crucible.2 (engine revision r30.1)
+- Real card art in the playtest (150 IDs); Large-text view; reader; viewer sandbox fix for Start.
+- Healing instrumented (life gained by source, Thing damage healed); one deck-score definition across tools.
+- Response-aware bot policy (`:ra`), hidden-information tests; C2 rerun.
+- Engine REVISION recorded in replays; pre-Alkahest replay compatibility test; format-version check on replay.
+- REFERENCE_CONFIG.json freezes the V30 control (tag v30-control).
