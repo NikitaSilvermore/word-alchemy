@@ -330,3 +330,6 @@ New in V29 (not in the V21 list): 28 — fire.torch, fire.scorch, fire.wildfire,
 | wraith | rot | — | legacy — not in the 150 (keep ID, disable in V29 format) |
 | wyvern | fire | — | legacy — not in the 150 (keep ID, disable in V29 format) |
 | yew | rot | rot.yew | kept |
+## V30
+- No word IDs changed or removed. Added: experiment format IDs `grammar_v30_exp_{price34,nosentence,income2,buy2,reserve3,cheapresp}` (each `base: grammar_v30_rc1`), themed deck IDs `T_*` and counter deck IDs `C_*`.
+- V28 catalogue export: not done (the live artifact's files are over the 4 MB read limit). V28 art packs `assets/pack/art0–8.json` remain the source for card art.

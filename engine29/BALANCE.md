@@ -52,3 +52,8 @@ Returning Earth (D6) is strongest at about 61–65%; Orchard (D4) and Clay and G
 ## 5. Not settled by simulation
 
 Bots look at most three plies ahead and value lasting effects crudely; they rarely play weather, Laws or long engines. Response use stays low (0.4 per game). Whether the Clause feels good, and whether slow decks are fun, needs human play.
+
+## V30 (branch v30-crucible)
+- rc1 REF matrix 880 games: first seat 52%, D6 Returning Earth 67% (poison channel), Orchard 34%, Speaking House 37%.
+- Market floods hands: 52% of rounds at hand ≥7, 2.2 blocked draws per player. `grammar_v30_exp_price34` cuts that to 13% and 0.3 and narrows the deck spread (D6 59%, Orchard 38%). Recommended for rc2 pending human play.
+- Response use 1.4% of reserve windows; reserve cap 3 is inert with current bots. Details: `../V30_PLAYTEST_REPORT.md`.

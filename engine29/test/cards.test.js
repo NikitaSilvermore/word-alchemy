@@ -344,3 +344,13 @@ test('F: all ten §10 reference decks are legal 20-word decks and complete a see
   const r = playOne('D7_speaking_house', 'D5B_patient_ruin', 4242, 'v29', 0, ['careful', 'aggressive'], { set: 'REF', audit: true });
   assert.ok(r.rounds >= 1);
 });
+
+test('made.alkahest: Main, 1 breath, sacrifice Alkahest — destroy an enemy Thing or damageable Ground (target declared before the sacrifice)', () => {
+  const S = fixture(); const v = place(S, 0, 'water.vitriol'), q = place(S, 0, 'water.quicksilver');
+  E.apply(S, { type: 'fuse', recipe: 'alkahest', a: v.id, b: q.id }, nb);
+  const al = S.things.find(t => E.card(t).id === 'made.alkahest'); turn(S);
+  const big = place(S, 1, 'earth.boulder'); ground(S, 1, 'earth.tower');
+  assert.ok(E.legalActions(S).some(a => a.ability === 'alkahest' && a.target === 'ground'));
+  play(S, { type: 'ability', subject: al.id, ability: 'alkahest', target: big.id });
+  assert.ok(!S.things.includes(big)); assert.ok(!S.things.includes(al)); audit(S);
+});

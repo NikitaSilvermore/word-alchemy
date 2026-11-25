@@ -194,7 +194,7 @@ const MADE = [
   MD('made.golem', ['earth', 'word'], 3, 5, ['clay', 'stone', 'body'], { kw: ['heavy', 'guard'] }),
   MD('made.homunculus', ['water', 'word'], 2, 3, ['living', 'person', 'speaker', 'body'], { onMade: 'seekSpell' }),
   MD('made.phoenix', ['fire'], 4, 4, ['living', 'beast', 'bird', 'winged', 'hot', 'body'], { kw: ['flying', 'final'], rebirth: true }),
-  MD('made.alkahest', ['water'], 0, 3, ['liquid'], { kw: ['final'] }),
+  MD('made.alkahest', ['water'], 0, 3, ['liquid'], { kw: ['final'], ability: { id: 'alkahest', cost: 1, sacrificeSelf: true } }),
   MD('made.ouroboros', ['rot', 'life'], 3, 4, ['living', 'beast', 'serpent', 'body'], { kw: ['venomous', 'final'], cap: ['bite'], ouroboros: true }),
   MD('made.life', ['life', 'earth', 'water'], 0, 4, ['living'], { upkeep: 'lifeHeal' }),
   MD('made.world_tree', ['life', 'earth', 'water'], 2, 7, ['living', 'plant', 'tree', 'body'], { kw: ['guard', 'final'], upkeep: 'worldTree' }),

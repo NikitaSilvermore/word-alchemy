@@ -12,6 +12,13 @@ const FORMATS = {
   grammar_v30_rc1: { version: '0.30.0-rc1', status: 'candidate', arithmetic: 'v29', initiative: 'combo2', reserve: true, market: true, marketBreath: 0, variant: {} },
   // Journey encounters use the candidate until a designer signs off a final competitive format.
   journey_standard: { version: '0.30.0-rc1', status: 'candidate', alias: 'grammar_v30_rc1' },
+  // V30 Crucible experiments — each changes ONE lever against the frozen rc1 reference.
+  grammar_v30_exp_price34: { version: '0.30.0-exp.price34', status: 'experiment', base: 'grammar_v30_rc1', variant: { priceOwn: 3, priceOff: 4 } },
+  grammar_v30_exp_nosentence: { version: '0.30.0-exp.nosentence', status: 'experiment', base: 'grammar_v30_rc1', variant: { sentenceSpark: false } },
+  grammar_v30_exp_income2: { version: '0.30.0-exp.income2', status: 'experiment', base: 'grammar_v30_rc1', variant: { incomeEvery: 2 } },
+  grammar_v30_exp_buy2: { version: '0.30.0-exp.buy2', status: 'experiment', base: 'grammar_v30_rc1', variant: { buyEvery: 2 } },
+  grammar_v30_exp_reserve3: { version: '0.30.0-exp.reserve3', status: 'experiment', base: 'grammar_v30_rc1', variant: { reserveCap: 3 } },
+  grammar_v30_exp_cheapresp: { version: '0.30.0-exp.cheapresp', status: 'experiment', base: 'grammar_v30_rc1', variant: { responseDiscount: { 'water.sleep': 1, 'water.frozen': 1, 'air.gust': 1, 'word.doubt': 1 } } },
   // Only for comparison with the V28 maths; never for play.
   legacy_v28_maths: { version: '0.28-emulation', status: 'diagnostic', arithmetic: 'legacy', initiative: 'spec', reserve: true, market: true, marketBreath: 0, variant: {} },
 };
@@ -20,6 +27,7 @@ function resolveFormat(id) {
   let f = FORMATS[id];
   if (!f) throw new Error('unknown format ' + id);
   if (f.alias) f = { ...FORMATS[f.alias], version: f.version, status: f.status };
+  if (f.base) f = { ...FORMATS[f.base], version: f.version, status: f.status, variant: { ...FORMATS[f.base].variant, ...f.variant } };
   return { id, ...f };
 }
 

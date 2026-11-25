@@ -24,3 +24,8 @@ Status of each gate for the headless engine on branch `v29-grammar`. The live ga
 1. Designer review of `BALANCE.md`, `IMPLEMENTATION_STATUS.md` and §15 questions.
 2. A UI build on this engine and human playtests.
 3. The live V21–V28 source committed to git, so the migration can be checked against real V28 definitions (only the V21 list is in git today).
+
+## V30 update
+- Human playtests: **Ready** — browser build on engine29 (artifact `d42773a3-fbb2-4328-a718-7abd264d312c`), human test sheet `../playtest/HUMAN_TEST_SHEET.md`.
+- Several viable archetypes: **Partly** — themed decks show Water control and Word speakers below 30%; see `../V30_PLAYTEST_REPORT.md`.
+- Guard block whose protected target leaves: semantics written and tested (block holds; vanished blocker misses, no redirect).

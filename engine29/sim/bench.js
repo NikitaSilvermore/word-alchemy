@@ -118,6 +118,12 @@ if (require.main === module) {
     const [set, tier, n, seed, out, shard, initiative = 'spec', marketBreath = '0', variantJson = '{}'] = rest;
     const variant = JSON.parse(variantJson);
     const r = deckBench(set, tier, +n, +seed, shard, { initiative, marketBreath: +marketBreath, variant, label: initiative + (+marketBreath ? '+mb' + marketBreath : '') + (variantJson !== '{}' ? variantJson : '') + (process.env.WA_PATCH ? '+' + process.env.WA_PATCH : '') }).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);
+  } else if (mode === 'fdecks') { // format-pinned deck benchmark: fdecks <set> <tier> <n> <seed> <out> <shard> <formatId>
+    const [set, tier, n, seed, out, shard, formatId = 'grammar_v30_rc1'] = rest;
+    const f = require('../src/formats').resolveFormat(formatId);
+    const t0 = Date.now();
+    const r = deckBench(set, tier, +n, +seed, shard, { initiative: f.initiative, variant: f.variant, marketBreath: f.marketBreath, label: formatId }).map(x => ({ ...x, set, format: formatId, formatVersion: f.version }));
+    fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length, ((Date.now() - t0) / 1000).toFixed(0) + 's');
   } else if (mode === 'ladder') {
     const [set, n, seed, out, tiers, shard] = rest;
     const r = ladder(set, +n, +seed, (tiers || TIER_ORDER.join(',')).split(','), shard).map(x => ({ ...x, set })); fs.writeFileSync(out, JSON.stringify(r)); console.log(out, r.length);

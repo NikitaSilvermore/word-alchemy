@@ -72,3 +72,8 @@
 - 45-card prototype subset (spec §8 stats). Rules not yet implemented: Clause/responses, reserve, spark, market, fusion, weather, Ground as a target, Kindle's ignition rider.
 - 19 regression tests (`npm test`); seeded paired simulations in `results/`.
 - V28 untouched: live artifact version 1795480641-3ee5; local V20 engine tagged `v28-baseline-local-v20`.
+
+## 0.30.0-crucible.1
+- Browser playtest (`../playtest`): lobby, full board, sentence builder on the engine's legal actions, all prompts, inspector, chronicle, replay export/review/resume, fixtures, deck editor.
+- Experiment formats (C1/C2) via `base` + `variant`; instrumentation for hand saturation, blocked draws, response windows, bought-and-played, fusion turns.
+- Themed and counter decks. Alkahest ability implemented. Guard-target-disappears test.

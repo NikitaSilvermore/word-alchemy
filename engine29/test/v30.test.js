@@ -40,3 +40,24 @@ test('V30: Journey encounter contract returns a stable result; rewards are paid 
   assert.equal(again.replayId, res.replayId, 'same inputs, same replay id');
   assert.deepEqual(Object.keys(J.RIVALS).length, 10);
 });
+
+// §6 interpretation: a Guard block that loses its protected target. Reference semantics (rc1, unchanged):
+// once committed, the block is the attack's recipient. The protected Thing leaving does not cancel or redirect the attack;
+// the Guard still takes it and still strikes back. If the Guard itself leaves, the attack misses (no redirect).
+test('V30: Guard block holds when the protected target disappears; a vanished blocker makes the attack miss', () => {
+  const { fixture, place, E } = require('./helpers');
+  for (const gone of ['target', 'blocker']) {
+    const S = fixture(); S.active = 1;
+    const att = place(S, 1, 'fire.salamander'), tgt = place(S, 0, 'water.eel'), grd = place(S, 0, 'water.ice');
+    assert.ok(E.has(S, grd, 'guard'));
+    const life0 = S.players[0].life, dmg0 = grd.damage;
+    E.apply(S, { type: 'attack', subject: att.id, verb: 'strike', target: tgt.id }, {
+      block: (S2, info) => { assert.ok(info.candidates.some(b => b.id === grd.id)); return grd.id; },
+      respond: (S2, side) => { if (side === 0) E.leaveField(S2, gone === 'target' ? S2.things.find(t => t.id === tgt.id) : S2.things.find(t => t.id === grd.id), 'bounced'); return null; },
+    });
+    assert.deepEqual(E.zoneAudit(S), []);
+    if (gone === 'target') { const g = S.things.find(t => t.id === grd.id); assert.ok(!g || g.damage > dmg0, 'the Guard takes the hit'); }
+    else assert.ok(!S.things.find(t => t.id === tgt.id).damage, 'no redirect to the original target');
+    assert.equal(S.players[0].life, life0);
+  }
+});

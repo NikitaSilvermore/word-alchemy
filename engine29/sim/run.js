@@ -42,7 +42,8 @@ const DECKS_E = {
   pack: DECKS_R.pack,
 };
 const { REF } = require('../data/reference_decks');
-const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E, REF };
+const { ALL: THEMED_ALL } = require('../data/themed_decks');
+const SETS = { A: DECKS, R: DECKS_R, E: DECKS_E, REF, TH: THEMED_ALL };
 
 function playOne(d0, d1, seed, arithmetic, first, pols, o = {}) {
   const set = SETS[o.set || 'A'];

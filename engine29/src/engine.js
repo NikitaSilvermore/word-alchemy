@@ -86,7 +86,10 @@ function createMatch({ decks, seed = 1, arithmetic = 'v29', first = null, reserv
   let nextId = 1;
   const S = {
     format: FORMAT.id, arithmetic, seed, turn: 0, round: 0, active: 0, over: null, seq: 0, ev: 0,
-    rules: { reserve, market, initiative, marketBreath, freeStrike: !!variant.freeStrike, draws: variant.draws || 1 }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
+    rules: { reserve, market, initiative, marketBreath, freeStrike: !!variant.freeStrike, draws: variant.draws || 1,
+      // V30 experiment levers (defaults = rc1 reference)
+      priceOwn: variant.priceOwn || FORMAT.ownPrice, priceOff: variant.priceOff || FORMAT.offPrice, sentenceSpark: variant.sentenceSpark !== false,
+      incomeEvery: variant.incomeEvery || 1, buyEvery: variant.buyEvery || 1, reserveCap: variant.reserveCap || FORMAT.reserveCap, responseDiscount: variant.responseDiscount || null }, mseed: (seed ^ 0x5bd1e995) >>> 0, market: [],
     rand: r, log: [], events: [], hashes: [], clause: null, registry: {}, flags: {},
     players: decks.map((d, i) => ({
       i, life: FORMAT.life, breath: 0, reserve: 0, extraBreath: 0, personalTurn: 0, fatigue: 0, poison: 0,
@@ -150,16 +153,16 @@ function newOffer(S, k) {
 }
 function marketStep(S) {
   const p = S.players[S.active];
-  gainSpark(S, p, 'income'); // guaranteed income
+  if ((p.personalTurn - 1) % S.rules.incomeEvery === 0) gainSpark(S, p, 'income'); // guaranteed income (cadence is an experiment lever)
   if (!S.rules.market) return;
   const refresh = (MKT === 'p2refresh' ? S.active !== S.first : S.active === S.first) && FORMAT.marketRefreshRounds.includes(S.round);
   for (let k = 0; k < S.market.length; k++) if (refresh || !S.market[k]) { S.market[k] = null; S.market[k] = newOffer(S, k); }
   event(S, 'market', { refresh, offers: S.market.map(o => o && o.word) });
 }
-function priceOf(S, side, word) { return S.players[side].schools.includes(BY_ID[word].school) ? FORMAT.ownPrice : FORMAT.offPrice; }
+function priceOf(S, side, word) { return S.players[side].schools.includes(BY_ID[word].school) ? S.rules.priceOwn : S.rules.priceOff; }
 function sparkFor(S, n) { // first qualifying successful paid hand-card sentence this own turn
   const p = S.players[n.side];
-  if (NO_SENTENCE_SPARK || n.side !== S.active || n.kind === 'response' || !n.cardUsed || n.noEffect || n.noSpark || p.sentenceSpark) return;
+  if (NO_SENTENCE_SPARK || !S.rules.sentenceSpark || n.side !== S.active || n.kind === 'response' || !n.cardUsed || n.noEffect || n.noSpark || p.sentenceSpark) return;
   p.sentenceSpark = true; gainSpark(S, p, 'sentence');
 }
 
@@ -326,7 +329,7 @@ function zoneAudit(S) {
     if (p.ground) put(p.ground.pid, 'ground' + p.i);
     if (p.hand.length > FORMAT.handCap) errs.push('hand over cap P' + p.i);
     if (S.things.filter(t => t.ctrl === p.i).length > FORMAT.slots) errs.push('field over slots P' + p.i);
-    if (p.reserve > FORMAT.reserveCap) errs.push('reserve over cap P' + p.i);
+    if (p.reserve > S.rules.reserveCap) errs.push('reserve over cap P' + p.i);
     if (p.spark > FORMAT.sparkCap || p.spark < 0) errs.push('spark out of range P' + p.i);
     if (p.breath > FORMAT.poolCap) errs.push('pool over cap P' + p.i);
     for (const [w, n] of Object.entries(p.acquired)) if (n > FORMAT.copyLimit) errs.push('copy limit ' + w);
@@ -512,6 +515,11 @@ function startTurn(S) {
   if (!(S.active === S.first && p.personalTurn === 1)) for (let k = 0; k < S.rules.draws; k++) { drawCard(S, p); stateCheck(S); if (S.over != null) return; } // §15 Q1 experiment: draws per turn
   stateCheck(S); if (S.over != null) return;
   marketStep(S);
+  const R0 = S.stats.res[p.i];
+  R0.handByRound = R0.handByRound || {}; R0.handByRound[S.round] = p.hand.length; // occupancy after draw and market step
+  if (fusionOptions(S, p.i).length) R0.fusionTurns = (R0.fusionTurns || 0) + 1;
+  if (S.round <= 3 && !legalActions(S).some(a => a.type !== 'pass' && a.type !== 'buy')) R0.earlyNoPlay = (R0.earlyNoPlay || 0) + 1;
+  R0.turns = (R0.turns || 0) + 1;
 }
 // owner's own deck top: inspect and reorder (deterministic policy: cheapest first)
 function perms(a) { return a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map(r => [x].concat(r))); }
@@ -565,7 +573,7 @@ function ageUp(S, t) { // one age event; at age 2 advance one edge (max one plan
 }
 
 function drawCard(S, p) {
-  if (p.hand.length >= FORMAT.handCap) return;
+  if (p.hand.length >= FORMAT.handCap) { S.stats.res[p.i].blockedDraws = (S.stats.res[p.i].blockedDraws || 0) + 1; return; }
   if (!p.deck.length) { p.fatigue++; loseLife(S, p.i, p.fatigue, 'fatigue'); return; }
   p.hand.push(p.deck.shift()); S.stats.res[p.i].drawn++;
 }
@@ -576,7 +584,7 @@ function endTurn(S) {
     if (t.ctrl === p.i) { t.tempGuard = false; for (const k of ['wet', 'frozen', 'asleep', 'bound', 'blinded', 'grounded']) delete t.status[k]; } // controller-relative End
   }
   stateCheck(S);
-  p.reserve = S.rules.reserve ? Math.min(FORMAT.reserveCap, p.breath) : 0;
+  p.reserve = S.rules.reserve ? Math.min(S.rules.reserveCap, p.breath) : 0;
   S.stats.res[p.i].reserveKept += p.reserve; S.stats.res[p.i].breathWasted += p.breath - p.reserve;
   p.breath = 0;
   event(S, 'end', { side: p.i, reserve: p.reserve });
@@ -677,7 +685,8 @@ function cardPlays(S, side, mode) {
   const free = FORMAT.slots - mine.length;
   for (const c of p.hand) {
     const d = card(c);
-    if (d.cost > budget) continue;
+    const eff = mode !== 'main' && S.rules.responseDiscount && S.rules.responseDiscount[d.id] ? Math.max(1, d.cost - S.rules.responseDiscount[d.id]) : d.cost;
+    if (eff > budget) continue;
     if (mode !== 'main' && !isR(d)) continue;
     if (mode === 'main' && d.responseOnly) continue;
     if (d.type === 'thing') { if (free > 0) out.push({ type: 'deploy', card: c.pid }); continue; }
@@ -773,6 +782,7 @@ function legalActions(S) {
       const price = priceOf(S, p.i, o.word), off = price === FORMAT.offPrice;
       if (p.spark < price || (off && p.offSchoolBought >= FORMAT.offSchoolBuysPerDuel) || (p.acquired[o.word] || 0) >= FORMAT.copyLimit) continue;
       if (p.breath < S.rules.marketBreath) continue; // stage H variant: buying also costs breath
+      if ((p.personalTurn - 1) % S.rules.buyEvery !== 0) continue; // purchase-cadence experiment
       out.push({ type: 'buy', slot: o.slot });
     }
     if (p.catalyst < FORMAT.catalystCap && p.spark >= FORMAT.catalystPrice) out.push({ type: 'catalyst' });
@@ -805,6 +815,7 @@ function abilityOptions(S, side) {
     if (ab.id === 'heal2') for (const f of mine.filter(o => o.damage > 0)) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id });
     if (ab.id === 'tend') { for (const f of mine.filter(o => o.damage > 0)) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id, branch: 'heal' }); for (const f of mine.filter(o => o.status.poison)) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id, branch: 'cure' }); }
     if (ab.id === 'etch') for (const f of foes.filter(o => prop(o, 'metal') || prop(o, 'stone'))) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id });
+    if (ab.id === 'alkahest') { for (const f of foes) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id }); if (enemy(S, side).ground) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: 'ground' }); } // target declared before the sacrifice
     if (ab.id === 'eatFruit') { if (p.life < FORMAT.life) out.push({ type: 'ability', subject: t.id, ability: ab.id, branch: 'life' }); for (const f of mine.filter(o => o.status.poison)) out.push({ type: 'ability', subject: t.id, ability: ab.id, target: f.id, branch: 'cure' }); }
   }
   return out;
@@ -1002,6 +1013,10 @@ function resolveAbility(S, n, tg) {
     case 'heal2': if (!tg || tg.ctrl !== side) return false; heal(S, tg, 2); return true;
     case 'tend': if (!tg || tg.ctrl !== side) return false; if (a.branch === 'cure') { if (tg.status.poison) tg.status.poison--; } else heal(S, tg, 2); return true;
     case 'etch': if (!tg || tg.ctrl === side || !(prop(tg, 'metal') || prop(tg, 'stone'))) return false; if (wardBlocks(S, n, tg)) return true; damageThing(S, tg, 3); return true;
+    case 'alkahest': {
+      if (a.target === 'ground') { const g = enemy(S, side).ground; if (!g) return false; g.damage = 999; return true; } // destroyed by the state check
+      if (!tg || tg.ctrl === side) return false; if (wardBlocks(S, n, tg)) return true; destroy(S, tg); return true;
+    }
     case 'eatFruit': if (a.branch === 'life') { p.life = Math.min(FORMAT.life, p.life + 2); return true; } if (!tg || tg.ctrl !== side) return false; if (tg.status.poison) tg.status.poison--; return true;
   }
   return false;
@@ -1043,9 +1058,10 @@ function declare(S, act, side, kind, ctl) {
   }
   const courage = act.type === 'attack' && S.arithmetic === 'legacy' && p.life <= 8 && kind === 'main';
   if (courage) cost = 0;
+  if (kind !== 'main' && d && S.rules.responseDiscount && S.rules.responseDiscount[d.id]) cost = Math.max(1, cost - S.rules.responseDiscount[d.id]); // never zero-cost
   if (kind === 'response') { if (cost > p.reserve) throw new Error('reserve'); p.reserve -= cost; S.stats.res[side].reserveUsed += cost; }
   else { if (cost > p.breath) throw new Error('cannot afford'); p.breath -= cost; S.stats.res[side].breathSpent += cost; }
-  if (node.card) { const pl = S.stats.res[side].played; pl[node.card.word] = (pl[node.card.word] || 0) + 1; }
+  if (node.card) { const pl = S.stats.res[side].played; pl[node.card.word] = (pl[node.card.word] || 0) + 1; if (/^m/.test(node.card.pid)) S.stats.res[side].boughtPlayed = (S.stats.res[side].boughtPlayed || 0) + 1; }
   for (const id of [act.subject, act.payload, act.type === 'fuse' ? act.a : null, act.type === 'fuse' ? act.b : null].concat(act.targets && act.type === 'spell' && d && d.spell === 'squall' ? act.targets : [])) {
     const t = id && id !== 'ground' && thingById(S, id); if (t && t.status.concealed) reveal(S, t); // reveal before it acts or fuses
   }
@@ -1100,6 +1116,8 @@ function apply(S, act, ctl) {
   S.clause.nodes.push(declare(S, act, S.active, 'main', ctl));
   stateCheck(S); // cost-generated automatic events resolve before the window
   if (S.over == null && ctl.respond) {
+    const R1 = S.stats.res[1 - S.active], ro = legalResponses(S, 1 - S.active, 'response').length;
+    R1.windows = (R1.windows || 0) + 1; if (ro) R1.windowsWithOption = (R1.windowsWithOption || 0) + 1; if (S.players[1 - S.active].reserve > 0) R1.windowsWithReserve = (R1.windowsWithReserve || 0) + 1;
     const r = ctl.respond(S, 1 - S.active, 'response');
     if (r) {
       addResponse(S, 1 - S.active, r, ctl);
@@ -1122,6 +1140,7 @@ function economy(S, act) {
   const c = { pid: 'm' + p.i + '_' + (++S.seq), word: o.word, owner: p.i };
   if (S.registry) S.registry[c.pid] = true;
   p.hand.push(c); S.market[act.slot] = null; // slot stays empty until the next market step
+  S.stats.res[p.i].boughtSchools = S.stats.res[p.i].boughtSchools || { own: 0, off: 0 }; S.stats.res[p.i].boughtSchools[price === S.rules.priceOff && price !== S.rules.priceOwn ? 'off' : 'own']++;
   event(S, 'buy', { side: p.i, word: o.word, price, pid: c.pid }); say(S, `P${p.i} buys ${o.word} for ${price} spark.`);
 }
 
@@ -1175,8 +1194,9 @@ function resolveNode(S, n, k) {
     case 'deploy': {
       if (S.things.filter(t => t.ctrl === side).length >= FORMAT.slots) return false; // never displace
       const c = n.card; n.card = null;
-      const t = newThing(S, side, { pid: c.pid, word: c.word, owner: c.owner, attuned: S.arithmetic === 'legacy' && card(c).school === p.main }); say(S, `P${side} brings forth ${c.word}.`);
+      const t = newThing(S, side, { pid: c.pid, word: c.word, owner: c.owner, attuned: S.arithmetic === 'legacy' && card(c).school === p.main });
       arrive(S, t);
+      say(S, t.status.concealed ? `P${side} brings forth a concealed word.` : `P${side} brings forth ${c.word}.`); // never leak a Concealed identity
       return true;
     }
     case 'ground': {
@@ -1469,6 +1489,6 @@ function hashState(S) {
 
 module.exports = {
   FORMAT, INITIATIVE, createMatch, setDecider, applyMulligan, priceOf, legalActions, legalResponses, apply, addResponse, resolveClause, whyIllegal, zoneAudit,
-  fusionOptions, previewFusion, abilityOptions, addCounter, ignite, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
+  fusionOptions, previewFusion, abilityOptions, addCounter, ignite, modsOf, maxStand, propsOf, caps, qualityDefs, recipeById, decide, schoolsOf, lineagePids, createToken, leaveField, transform, prop,
   curStrike, remainingOf, standOf, groundRemaining, packet, deckErrors, hashState, card, has, kws, stateCheck, endTurn, startTurn, incapacitated,
 };
