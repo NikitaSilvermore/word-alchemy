@@ -32,7 +32,8 @@ function value(S, me, w) {
   const al = w.alchemy || 1, garnet = i => S.things.some(o => o.ctrl === i && E.card(o).id === 'earth.garnet');
   const proc = i => (S.processes || []).filter(x => x.open && x.owner === i && !(S.active === i && P[i].personalTurn >= x.earliest)).reduce( /* completable now = lapses at this End unless completed: no stored value */(a, x) => a + 0.6 * Math.max(0, x.family === 'bear' ? al * 1.2 + 0.55 : al * (0.6 + (garnet(i) ? 0.6 : 0)) - 0.55), 0);
   const claim = i => (S.claims || []).some(x => x.open && x.owner === i) ? V32_OPTS.claimWorth : 0; // W5: an open claim is one rival turn from a win
-  return claim(me) - claim(1 - me) + w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
+  const room = i => { if (!E.threeOn(S)) return 0; const things = P[i].hand.filter(c => c.word !== '?' && E.card(c).type === 'thing').length; return 0.4 * Math.min(things, Math.max(0, 5 - side(i).length)); };
+  return room(me) - room(1 - me) + claim(me) - claim(1 - me) + w.life * (P[me].life - P[1 - me].life) + board(me) - board(1 - me) + proc(me) - proc(1 - me) + w.hand * (P[me].hand.length - P[1 - me].hand.length)
     - 1.5 * (P[me].poison - P[1 - me].poison) + w.spark * (P[me].spark - P[1 - me].spark) + 0.5 * (P[me].catalyst - P[1 - me].catalyst)
     + (S.sky ? (S.sky.caster === me ? 1.2 : -1.2) : 0) + (P[1 - me].burden ? 1 : 0) - (P[me].burden ? 1 : 0) // lasting effects a one-ply view under-rates + (P[1 - me].life <= 0 ? 1e5 : 0);
 }
@@ -52,16 +53,21 @@ function mulligan(S, i) {
 }
 
 // Worth a one-ply search cannot see: engines, recursion and progress along a recipe chain or ladder.
-const ENGINE = { energy: 1.6, gold: 1.6, lifeHeal: 1.2, worldTree: 2.5, stone: 2.5 };
+const ENGINE = { energy: 1.6, gold: 1.6, lifeHeal: 1.2, worldTree: 2.5, stone: 2.5, espalier: 3.4 }; // Espalier: a Fruit or a Growth every upkeep for the rest of the duel
 const FORM_PROGRESS = { 'earth.tin': 0.6, 'earth.copper': 0.6, 'earth.silver': 1.2, 'earth.gold': 2, 'life.sapling': 0.8, 'life.oak': 1.5, 'life.willow': 1.2 };
 // V31 (formats with modules only): preparation and future outputs a one-ply search cannot see
-const FOLIO_WORTH = { 'token.fruit': 1.2, 'earth.setting': 0.6, 'made.signet': 1.6, 'earth.garnet': 0.4, 'rot.mould': 0.5 };
+const FOLIO_WORTH = { 'token.fruit': 1.2, 'earth.setting': 0.6, 'made.signet': 1.6, 'earth.garnet': 0.4, 'rot.mould': 0.5, 'earth.hammer': 0.8, 'earth.signet3': 1.0, 'fire.naphtha': 1.0, 'fire.tinder': 0.3 };
 function folioWorth(S, t) {
   const c = E.card(t); let v = FOLIO_WORTH[c.id] || 0;
   if (E.trait(S, t, 'carrier') && S.things.some(h => h.ctrl === t.ctrl && E.trait(S, h, 'pollination') === E.trait(S, t, 'carrier'))) v += 0.5; // a working pollination pair
   if (E.trait(S, t, 'pollination') && S.things.some(h => h.ctrl === t.ctrl && E.trait(S, h, 'carrier') === E.trait(S, t, 'pollination'))) v += 0.5;
   if ((c.id === 'earth.copper' || c.id === 'earth.silver') && S.things.some(o => o.ctrl === t.ctrl && E.card(o).id === 'earth.garnet')) v += 0.3; // a jewel waiting for a setting
   if (c.id === 'earth.setting' && S.things.some(o => o.ctrl === t.ctrl && E.card(o).id === 'earth.garnet')) v += 0.6;
+  if (E.threeOn(S)) { // Core Duel trial: preparation a one-ply view cannot see (public information only)
+    if (c.id === 'token.ash' && S.things.some(o => o.ctrl === t.ctrl && E.card(o).id === 'fire.firebird')) v += 1.0; // a Phoenix waiting
+    if (c.id === 'earth.signet3' && S.players[t.ctrl].hand.some(h => h.word === 'word.writ3')) v += 0.6;
+    if (t.shield3) v += S.things.some(o => o.ctrl !== t.ctrl && !E.incapacitated(o) && E.curStrike(S, o) > 0) ? 1.2 : 0.3; // a shield matters when something can hit
+  }
   return v;
 }
 function alchemyWorth(t, S) {
@@ -240,7 +246,24 @@ function stepValue(S0, c, me, w, a, ra = false) {
     for (const id of a.targets) { const t = c.things.find(x => x.id === id); if (t && !t.exhausted && k >= 1) { bonus += 0.8 * E.curStrike(c, t); k--; } }
   }
   if (S0.rules.modules && S0.rules.modules.includes('core')) bonus -= 0.35 * w.life * rivalThreat(c, me); // V33: leaving no defenders is a risk
+  if (E.threeOn(S0) && a.type !== 'combat' && a.type !== 'pass' && c.active === me) bonus += deferredAttack(S0, c, me, w); // trial: a development step does not forfeit this turn's attack
   return value(c, me, w) + holdValue(c, me, w, ra) + bonus;
+}
+// one estimate per decision: the best grouped attack now; after a non-combat step, the share of that attack still ready
+const DEFER = new WeakMap();
+function deferredAttack(S0, c, me, w) {
+  if (c.players[me].combatTurn === c.players[me].personalTurn) return 0;
+  let best = DEFER.get(S0);
+  if (best === undefined) {
+    best = { gain: 0, strike: 0 }; const base = value(S0, me, w) - 0.35 * w.life * rivalThreat(S0, me);
+    const opts = E.legalActions(S0).filter(a => a.type === 'combat');
+    best.strike = opts.length ? opts.reduce((m, a) => Math.max(m, a.attackers.length), 0) : 0;
+    for (const a of opts) { const d = clone(S0); if (!tryApply(d, a, { block: blocker(() => 'careful:journeyman'), respond: null })) continue; best.gain = Math.max(best.gain, value(d, me, w) - 0.35 * w.life * rivalThreat(d, me) - base); }
+    DEFER.set(S0, best);
+  }
+  if (best.gain <= 0 || !best.strike) return 0;
+  const still = E.legalActions(c).filter(a => a.type === 'combat').reduce((m, a) => Math.max(m, a.attackers.length), 0);
+  return best.gain * Math.min(1, still / best.strike) * 0.9;
 }
 function tryApply(c, a, ctl) { try { E.apply(c, a, ctl); return true; } catch (e) { return false; } }
 
@@ -336,4 +359,4 @@ function chooseAction(S, policyOf) {
   return ranked[0].a;
 }
 
-module.exports = { V32_OPTS, planRank, rivalThreat, RA_OPTS, chooseAction, blocker, responder, responderRA, raOf, controller, decider, mulligan, POLICIES, TIERS, TIER_ORDER, clone, redact, value, sampleRivalHand };
+module.exports = { stepValue, V32_OPTS, planRank, rivalThreat, RA_OPTS, chooseAction, blocker, responder, responderRA, raOf, controller, decider, mulligan, POLICIES, TIERS, TIER_ORDER, clone, redact, value, sampleRivalHand };
